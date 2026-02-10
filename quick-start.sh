@@ -3,6 +3,8 @@
 #
 # Usage:
 #   curl -fsSL https://github.com/.../releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh
+#   bash quick-start.sh --dev               # Use dev branch instead of release tag
+#   bash quick-start.sh --branch=staging    # Use a specific branch
 #
 # Prerequisites:
 #   - Docker Engine + Docker Compose v2
@@ -12,6 +14,15 @@
 #   - A logo file (any format: png, jpg, svg) in the current directory
 
 set -euo pipefail
+
+# ─── Parse arguments ─────────────────────────────────────────────
+USE_BRANCH=""
+for arg in "$@"; do
+    case "$arg" in
+        --dev)  USE_BRANCH="dev" ;;
+        --branch=*) USE_BRANCH="${arg#--branch=}" ;;
+    esac
+done
 
 # ─── Configuration ───────────────────────────────────────────────
 VERSION="${VERSION:-1.0.0}"
@@ -271,6 +282,7 @@ docker run -d \
     -v "$(pwd):/workspace" \
     -e PHASE=all \
     -e "VERSION=${VERSION}" \
+    -e "BRANCH=${USE_BRANCH}" \
     -e "HISTORY_DAYS=${HISTORY_DAYS}" \
     -e "PORT_NGINX=${PORT_NGINX}" \
     -e "PORT_GRAFANA=${PORT_GRAFANA}" \
