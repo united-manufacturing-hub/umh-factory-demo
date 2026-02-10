@@ -1,0 +1,814 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "panels": [],
+      "title": "Machine Status - ${workcell}",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" } }, "type": "value" },
+            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
+            { "options": { "SETUP": { "color": "orange", "index": 2, "text": "SETUP" } }, "type": "value" },
+            { "options": { "PLANNED STOP": { "color": "blue", "index": 3, "text": "PLANNED STOP" } }, "type": "value" },
+            { "options": { "UNPLANNED STOP": { "color": "red", "index": 4, "text": "UNPLANNED STOP" } }, "type": "value" },
+            { "options": { "MAINTENANCE": { "color": "purple", "index": 5, "text": "MAINTENANCE" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^state$/", "values": false },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp as time,\n  CASE\n    WHEN value = '0' OR value = 'IDLE' THEN 'IDLE'\n    WHEN value = '1' OR value = 'SETUP' THEN 'SETUP'\n    WHEN value = '2' OR value = 'RUNNING' THEN 'RUNNING'\n    WHEN value = '3' OR value = 'PLANNED STOP' THEN 'PLANNED STOP'\n    WHEN value = '4' OR value = 'UNPLANNED STOP' THEN 'UNPLANNED STOP'\n    WHEN value = 'MAINTENANCE' THEN 'MAINTENANCE'\n    ELSE value\n  END as state\nFROM tag_string\nWHERE asset_id = ${asset_id}\n  AND name = 'State'\nORDER BY timestamp DESC\nLIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Machine State",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 60 },
+              { "color": "red", "value": 300 }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT NOW() as time,\n  COALESCE(EXTRACT(EPOCH FROM (NOW() - start_time))::int, 0) as duration_seconds\nFROM machine_stops\nWHERE asset_id = ${asset_id}\n  AND end_time IS NULL\nORDER BY start_time DESC\nLIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Stop Duration",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^Current Order$/", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COALESCE(po.order_id, 'No Active Order') as \"Current Order\",\n  COALESCE(po.part_number, '-') as \"Part\",\n  po.quantity_completed::text || ' / ' || po.quantity::text as \"Progress\"\nFROM production_orders po\nJOIN asset a ON a.id = po.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND po.status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY po.created_at DESC\nLIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Order",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 60 },
+              { "color": "green", "value": 85 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 18, "y": 1 },
+      "id": 11,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(oee_pct, 0) as \"OEE\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
+          "refId": "A"
+        }
+      ],
+      "title": "OEE (24h)",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 150,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "orange", "value": 70 },
+              { "color": "yellow", "value": 90 },
+              { "color": "green", "value": 100 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 2, "x": 22, "y": 1 },
+      "id": 21,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH produced AS (\n  SELECT COALESCE(\n    GREATEST(\n      (SELECT MAX(value) FROM tag WHERE asset_id = ${asset_id} AND name = 'GoodParts' AND timestamp <= NOW()) -\n      (SELECT COALESCE(MAX(value), 0) FROM tag WHERE asset_id = ${asset_id} AND name = 'GoodParts' AND timestamp < DATE_TRUNC('day', NOW())),\n      0\n    ), 0\n  ) as actual\n),\nplanned AS (\n  SELECT COALESCE(\n    (SELECT po.quantity FROM production_orders po WHERE po.asset_id = ${asset_id} AND po.status IN ('IN_PROGRESS', 'RELEASED') ORDER BY po.created_at DESC LIMIT 1),\n    500\n  ) as target\n)\nSELECT ROUND((p.actual * 100.0 / NULLIF(pl.target, 0))::numeric, 1) as \"vs Plan\"\nFROM produced p, planned pl",
+          "refId": "A"
+        }
+      ],
+      "title": "vs Plan",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 7 },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(good_parts, 0)::int as \"Good Parts\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
+          "refId": "A"
+        }
+      ],
+      "title": "Good Parts (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 7 },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(scrap_parts, 0)::int as \"Scrap Parts\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrap Parts (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": 0 }]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 7 },
+      "id": 16,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(availability_pct, 0) as \"Availability\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
+          "refId": "A"
+        }
+      ],
+      "title": "Availability (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": 0 }]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 7 },
+      "id": 17,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(quality_pct, 0) as \"Quality\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
+          "refId": "A"
+        }
+      ],
+      "title": "Quality (24h)",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "id": 101,
+      "panels": [],
+      "title": "Change Machine State",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Click a button to change the machine state",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 12 },
+      "id": 20,
+      "options": {
+        "afterRender": "const assetId = context.grafana.replaceVariables('${asset_id}');\nconst buttons = context.element.querySelectorAll('button[data-state]');\nbuttons.forEach(btn => {\n  btn.addEventListener('click', function() {\n    const state = this.dataset.state;\n    if (!confirm('Set machine state to ' + state + '?')) return;\n    const payload = { asset_id: Number(assetId), state: state, timestamp: new Date().toISOString() };\n    fetch('/api/v1/machine-state', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify(payload)\n    })\n    .then(r => {\n      if (r.ok) {\n        context.grafana.notifySuccess(['Success', 'State changed to ' + state]);\n        context.grafana.refresh();\n      } else {\n        context.grafana.notifyError(['Error', 'Failed to update state']);\n      }\n    })\n    .catch(e => context.grafana.notifyError(['Error', e.message]));\n  });\n});",
+        "content": "<div style=\"display: flex; justify-content: center; align-items: center; gap: 16px; height: 100%; flex-wrap: wrap; padding: 8px;\">\n  <button data-state=\"RUNNING\" style=\"background-color: #73BF69; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">▶ RUNNING</button>\n  <button data-state=\"IDLE\" style=\"background-color: #FADE2A; color: black; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⏸ IDLE</button>\n  <button data-state=\"SETUP\" style=\"background-color: #FF9830; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⚙ SETUP</button>\n  <button data-state=\"PLANNED STOP\" style=\"background-color: #5794F2; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">📅 PLANNED</button>\n  <button data-state=\"UNPLANNED STOP\" style=\"background-color: #F2495C; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⚠ UNPLANNED</button>\n</div>",
+        "defaultContent": "Loading...",
+        "editors": ["afterRender"],
+        "externalStyles": [],
+        "helpers": "",
+        "renderMode": "everyRow",
+        "status": "default",
+        "styles": "",
+        "wrap": true
+      },
+      "pluginVersion": "5.6.0",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ${asset_id} as asset_id",
+          "refId": "A"
+        }
+      ],
+      "title": "Change Machine State",
+      "type": "marcusolsson-dynamictext-panel"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "id": 102,
+      "panels": [],
+      "title": "Stop Reason Entry",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 17 },
+      "id": 3,
+      "options": {
+        "buttonGroup": { "orientation": "center", "size": "lg" },
+        "confirmModal": {
+          "body": "Please confirm to update changed values",
+          "cancel": "Cancel",
+          "columns": { "include": ["name", "oldValue", "newValue"], "name": "Label", "newValue": "New Value", "oldValue": "Old Value" },
+          "confirm": "Confirm",
+          "elementDisplayMode": "modified",
+          "title": "Confirm update request"
+        },
+        "elementValueChanged": "",
+        "elements": [
+          {
+            "allowCustomValue": false,
+            "id": "stop_id",
+            "labelWidth": 12,
+            "options": [],
+            "optionsSource": "Query",
+            "queryOptions": { "source": "B", "value": "Stop ID" },
+            "title": "Stop ID",
+            "type": "select",
+            "uid": "0f1c4ea9-164b-44a0-be60-af1d7aff207c",
+            "value": 0
+          },
+          {
+            "allowCustomValue": false,
+            "id": "reason_id",
+            "labelWidth": 12,
+            "optionsSource": "Query",
+            "queryField": { "label": "name", "value": "id" },
+            "queryOptions": { "source": "A", "value": "name" },
+            "title": "Reason",
+            "type": "select",
+            "uid": "f6df7f9d-dac8-48e4-8da2-32c9c338ba53"
+          }
+        ],
+        "initial": {
+          "code": "",
+          "contentType": "application/json",
+          "getPayload": "return {}",
+          "highlight": false,
+          "highlightColor": "red",
+          "method": "-",
+          "payload": {}
+        },
+        "layout": { "orientation": "horizontal", "padding": 10, "sectionVariant": "default", "variant": "single" },
+        "reset": { "backgroundColor": "purple", "foregroundColor": "yellow", "icon": "process", "text": "Reset", "variant": "hidden" },
+        "resetAction": {
+          "code": "if (context.panel.response) {\n  context.grafana.notifySuccess(['Update', 'Values updated successfully.']);\n  context.grafana.refresh();\n} else {\n  context.grafana.notifyError(['Update', 'An error occurred updating values.']);\n}",
+          "confirm": false,
+          "getPayload": "return {}",
+          "mode": "initial",
+          "payload": {}
+        },
+        "saveDefault": { "icon": "save", "text": "Save Default", "variant": "hidden" },
+        "submit": {
+          "backgroundColor": "purple",
+          "contentType": "application/json",
+          "foregroundColor": "yellow",
+          "getPayload": "return { stop_id: Number(context.panel.elements.find(e => e.id === \"stop_id\").value), reason_id: Number(context.panel.elements.find(e => e.id === \"reason_id\").value) };",
+          "icon": "cloud-upload",
+          "method": "POST",
+          "payloadMode": "custom",
+          "text": "Submit",
+          "url": "/api/v1/stop-reason",
+          "variant": "primary"
+        },
+        "sync": true,
+        "update": {
+          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Stop reason updated\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to update\"]); }",
+          "confirm": false,
+          "contentType": "application/json",
+          "getPayload": "return { stop_id: Number(context.panel.elements.find(e => e.id === \"stop_id\").value), reason_id: Number(context.panel.elements.find(e => e.id === \"reason_id\").value) };",
+          "method": "POST",
+          "payload": {},
+          "payloadMode": "custom",
+          "url": "/api/v1/stop-reason"
+        },
+        "updateEnabled": "auto"
+      },
+      "pluginVersion": "6.3.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id, name FROM stop_reasons WHERE name != 'Unspecified' ORDER BY name",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT ms.id as \"Stop ID\",\n  ms.start_time as \"Start Time\",\n  ms.end_time as \"End Time\",\n  CASE WHEN ms.end_time IS NULL THEN 'ONGOING'\n       ELSE ROUND(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)))::text || 's'\n  END as \"Duration\",\n  sr.name as \"Reason\",\n  sr.category as \"Category\"\nFROM machine_stops ms\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE ms.asset_id = ${asset_id}\n  AND sr.name = 'Unspecified'\nORDER BY ms.start_time DESC\nLIMIT 20",
+          "refId": "B"
+        }
+      ],
+      "title": "Select Stop Reason",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "footer": { "reducers": [] },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 80 }]
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Stop ID" }, "properties": [{ "id": "custom.width", "value": 80 }] }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 17 },
+      "id": 4,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ms.id as \"Stop ID\",\n  ms.start_time as \"Start Time\",\n  CASE WHEN ms.end_time IS NULL THEN 'ONGOING'\n       ELSE ROUND(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)))::text || 's'\n  END as \"Duration\",\n  CASE\n    WHEN ms.state_value = 0 THEN 'Idle'\n    WHEN ms.state_value = 1 THEN 'Setup'\n    WHEN ms.state_value = 3 THEN 'PlannedStop'\n    WHEN ms.state_value = 4 THEN 'UnplannedStop'\n  END as \"State\"\nFROM machine_stops ms\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE ms.asset_id = ${asset_id}\n  AND sr.name = 'Unspecified'\nORDER BY ms.start_time DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Stops Needing Reasons",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "footer": { "reducers": [] },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 80 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 17 },
+      "id": 5,
+      "options": { "cellHeight": "sm", "showHeader": true },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ms.id as \"Stop ID\",\n  ms.start_time as \"Start Time\",\n  CASE WHEN ms.end_time IS NULL THEN 'ONGOING'\n       ELSE ROUND(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)))::text || 's'\n  END as \"Duration\",\n  sr.name as \"Reason\"\nFROM machine_stops ms\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE ms.asset_id = ${asset_id}\nORDER BY ms.start_time DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Activity",
+      "type": "table"
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": ["operator", "stops", "machine", "state-change"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "label": "Data Source",
+        "name": "DS_POSTGRESQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": { "selected": false, "text": "UMH-factory", "value": "UMH-factory" },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Enterprise",
+        "name": "enterprise",
+        "options": [],
+        "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": false, "text": "Paris", "value": "Paris" },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Site",
+        "name": "site",
+        "options": [],
+        "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' ORDER BY line",
+        "includeAll": false,
+        "label": "Line",
+        "name": "line",
+        "options": [],
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' ORDER BY line",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' ORDER BY workcell",
+        "includeAll": false,
+        "label": "Machine",
+        "name": "workcell",
+        "options": [],
+        "query": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' ORDER BY workcell",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' AND workcell = '${workcell}' LIMIT 1",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Asset ID",
+        "name": "asset_id",
+        "options": [],
+        "query": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' AND workcell = '${workcell}' LIMIT 1",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Operator Dashboard",
+  "uid": "operator-dashboard",
+  "version": 1,
+  "weekStart": ""
+}

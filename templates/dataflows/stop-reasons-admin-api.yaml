@@ -1,0 +1,109 @@
+# Stop Reasons Admin API Dataflow
+# CRUD API for managing stop reasons
+# POST /api/v1/stop-reasons - Create new reason
+# PUT /api/v1/stop-reasons - Update existing reason
+# DELETE /api/v1/stop-reasons - Delete reason
+
+input:
+  http_server:
+    address: 0.0.0.0:8092
+    allowed_verbs:
+      - POST
+      - PUT
+      - DELETE
+    path: /api/v1/stop-reasons
+    sync_response:
+      headers:
+        Content-Type: application/json
+      status: ${! json("status").or("200") }
+
+pipeline:
+  processors:
+    - bloblang: |-
+        root.method = meta("http_server_verb")
+        root.name = this.name.or("")
+        root.category = this.category.or("")
+        root.id = this.id.or(0).number()
+      label: extract_params
+    - switch:
+        - check: this.method == "POST"
+          processors:
+            - sql_raw:
+                args_mapping: root = [this.name, this.category]
+                driver: postgres
+                dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+                exec_only: false
+                init_statement: |
+                  CREATE TABLE IF NOT EXISTS asset (
+                    id SERIAL PRIMARY KEY,
+                    enterprise VARCHAR(255) NOT NULL,
+                    site VARCHAR(255) DEFAULT '',
+                    area VARCHAR(255) DEFAULT '',
+                    line VARCHAR(255) DEFAULT '',
+                    workcell VARCHAR(255) DEFAULT '',
+                    origin_id VARCHAR(255) DEFAULT '',
+                    UNIQUE (enterprise, site, area, line, workcell, origin_id)
+                  );
+                  CREATE TABLE IF NOT EXISTS tag (
+                    timestamp TIMESTAMPTZ NOT NULL,
+                    asset_id INTEGER REFERENCES asset(id),
+                    name TEXT NOT NULL,
+                    value DOUBLE PRECISION,
+                    origin VARCHAR(255)
+                  );
+                  CREATE TABLE IF NOT EXISTS tag_string (
+                    timestamp TIMESTAMPTZ NOT NULL,
+                    asset_id INTEGER REFERENCES asset(id),
+                    name TEXT NOT NULL,
+                    value TEXT,
+                    origin VARCHAR(255)
+                  );
+                  CREATE TABLE IF NOT EXISTS stop_reasons (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL UNIQUE,
+                    category VARCHAR(50)
+                  );
+                  INSERT INTO stop_reasons (name, category) VALUES
+                    ('Unspecified', 'Unknown'),
+                    ('Material shortage', 'External'),
+                    ('Tool change', 'Planned'),
+                    ('Operator break', 'Planned'),
+                    ('Maintenance', 'Planned'),
+                    ('Quality issue', 'Unplanned'),
+                    ('Setup/changeover', 'Planned'),
+                    ('Waiting for parts', 'External'),
+                    ('Equipment failure', 'Unplanned'),
+                    ('Other', 'Unknown')
+                  ON CONFLICT DO NOTHING;
+                  CREATE TABLE IF NOT EXISTS machine_stops (
+                    id SERIAL PRIMARY KEY,
+                    asset_id INTEGER,
+                    start_time TIMESTAMPTZ NOT NULL,
+                    end_time TIMESTAMPTZ,
+                    stop_reason_id INTEGER REFERENCES stop_reasons(id) DEFAULT 1,
+                    state_value INTEGER,
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                  );
+                query: INSERT INTO stop_reasons (name, category) VALUES ($1, $2) RETURNING id, name, category
+            - bloblang: 'root = if this.length() > 0 { this.index(0) } else { {"error": "insert failed"} }'
+        - check: this.method == "PUT"
+          processors:
+            - sql_raw:
+                args_mapping: root = [this.name, this.category, this.id]
+                driver: postgres
+                dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+                exec_only: false
+                query: UPDATE stop_reasons SET name = $1, category = $2 WHERE id = $3 RETURNING id, name, category
+            - bloblang: 'root = if this.length() > 0 { this.index(0) } else { {"error": "update failed"} }'
+        - check: this.method == "DELETE"
+          processors:
+            - sql_raw:
+                args_mapping: root = [this.id]
+                driver: postgres
+                dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+                exec_only: false
+                query: DELETE FROM stop_reasons WHERE id = $1 RETURNING id
+            - bloblang: 'root = if this.length() > 0 { {"deleted": this.index(0).id} } else { {"error": "delete failed"} }'
+
+output:
+  sync_response: {}

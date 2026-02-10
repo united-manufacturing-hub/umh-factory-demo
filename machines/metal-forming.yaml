@@ -1,0 +1,120 @@
+name: metal-forming
+display_name: "Metal Forming Press"
+
+dataModel:
+  name: metal_forming
+  version:
+    v1:
+      structure:
+        State:
+          _payloadshape: timeseries-string
+        CycleCount:
+          _payloadshape: timeseries-number
+        PressForce:
+          _payloadshape: timeseries-number
+        MaterialTemp:
+          _payloadshape: timeseries-number
+        HydraulicPressure:
+          _payloadshape: timeseries-number
+        MotorCurrent:
+          _payloadshape: timeseries-number
+        OilLevel:
+          _payloadshape: timeseries-number
+        Vibration:
+          _payloadshape: timeseries-number
+        ErrorCode:
+          _payloadshape: timeseries-number
+        ProductionRate:
+          _payloadshape: timeseries-number
+        ToolWear:
+          _payloadshape: timeseries-number
+
+dataContract:
+  name: _metal_forming_v1
+  model:
+    name: metal_forming
+    version: v1
+
+# Protocol converter template - exact UMH config format
+# {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
+protocolConverter:
+  connection:
+    nmap:
+      target: '{{ .IP }}'
+      port: '{{ .PORT }}'
+  dataflowcomponent_read:
+    benthos:
+      input:
+        opcua:
+          endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
+          nodeIDs:
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=17"
+          pollRate: 1000
+          subscribeEnabled: false
+      pipeline:
+        processors:
+          - tag_processor:
+              conditions:
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
+                  then: |
+                    msg.meta.tag_name = "State";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
+                  then: |
+                    msg.meta.tag_name = "CycleCount";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
+                  then: |
+                    msg.meta.tag_name = "PressForce";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=6"'
+                  then: |
+                    msg.meta.tag_name = "MaterialTemp";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=8"'
+                  then: |
+                    msg.meta.tag_name = "HydraulicPressure";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=9"'
+                  then: |
+                    msg.meta.tag_name = "MotorCurrent";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=10"'
+                  then: |
+                    msg.meta.tag_name = "OilLevel";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=11"'
+                  then: |
+                    msg.meta.tag_name = "Vibration";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=13"'
+                  then: |
+                    msg.meta.tag_name = "ErrorCode";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=14"'
+                  then: |
+                    msg.meta.tag_name = "ProductionRate";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=17"'
+                  then: |
+                    msg.meta.tag_name = "ToolWear";
+                    return msg;
+              defaults: |
+                msg.meta.location_path = "{{ .location_path }}";
+                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.historian = "true";
+                msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+                return msg;
+      buffer:
+        none: {}

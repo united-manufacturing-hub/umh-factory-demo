@@ -1,0 +1,873 @@
+#!/bin/bash
+# builder-generate.sh - Phase 1: Generate all config files in /workspace
+#
+# This script runs INSIDE the builder container where Python, jq,
+# imagemagick, and psql are pre-installed. It reads ENV vars set by
+# the host-side quick-start.sh for port mappings and options.
+#
+# Env vars expected:
+#   TEMPLATES_DIR  - path to downloaded repo root
+#   SCRIPTS_DIR    - path to downloaded repo scripts/
+#   PORT_NGINX, PORT_GRAFANA, PORT_PGBOUNCER, PORT_SIMULATOR, PORT_UMH, PORT_OPCUA_START
+#
+# Working directory: /workspace (bind-mounted from host)
+
+set -euo pipefail
+
+WORK_DIR="/workspace"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Port defaults (overridden by ENV from quick-start.sh)
+PORT_NGINX="${PORT_NGINX:-80}"
+PORT_GRAFANA="${PORT_GRAFANA:-8080}"
+PORT_PGBOUNCER="${PORT_PGBOUNCER:-5432}"
+PORT_SIMULATOR="${PORT_SIMULATOR:-8081}"
+PORT_UMH="${PORT_UMH:-8090}"
+PORT_OPCUA_START="${PORT_OPCUA_START:-4840}"
+OPCUA_COUNT=9
+OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
+
+DEFAULT_PORT_NGINX=80
+DEFAULT_PORT_GRAFANA=8080
+DEFAULT_PORT_PGBOUNCER=5432
+DEFAULT_PORT_SIMULATOR=8081
+DEFAULT_PORT_UMH=8090
+DEFAULT_PORT_OPCUA_START=4840
+
+echo -e "${BLUE}=== Builder Phase 1: Generate ===${NC}"
+echo ""
+
+# ============================================================
+# Load machine metadata from machines/*.yaml
+# ============================================================
+declare -A META_DISPLAY_NAME
+
+load_metadata() {
+    local machines_dir="$TEMPLATES_DIR/machines"
+    if [ ! -d "$machines_dir" ]; then
+        echo -e "${RED}Error: machines dir not found: $machines_dir${NC}"
+        exit 1
+    fi
+
+    for machine_file in "$machines_dir"/*.yaml; do
+        [ -f "$machine_file" ] || continue
+        local machine_name
+        machine_name=$(python3 -c "
+import sys
+from ruamel.yaml import YAML
+yaml = YAML()
+with open('$machine_file') as f:
+    d = yaml.load(f)
+print(d.get('name',''))
+print(d.get('display_name',''))
+")
+        local name display
+        IFS=$'\n' read -r name display <<< "$machine_name"
+
+        if [ -n "$name" ]; then
+            META_DISPLAY_NAME["$name"]="$display"
+        fi
+    done
+
+    echo -e "${GREEN}  ✓ Loaded metadata for ${#META_DISPLAY_NAME[@]} machine types${NC}"
+}
+
+machine_display_name() {
+    echo "${META_DISPLAY_NAME[$1]:-$1}"
+}
+
+echo "Loading machine metadata..."
+load_metadata
+
+# ============================================================
+# Step 1: Validate existing docker-compose.yaml
+# ============================================================
+echo -e "${BLUE}Step 1: Validating docker-compose.yaml...${NC}"
+
+if [ ! -f "$WORK_DIR/docker-compose.yaml" ]; then
+    echo -e "${RED}Error: docker-compose.yaml not found in $WORK_DIR${NC}"
+    exit 1
+fi
+
+# Check if umh or umh-core service exists
+UMH_SERVICE=""
+if grep -q "^\s*umh:" "$WORK_DIR/docker-compose.yaml"; then
+    UMH_SERVICE="umh"
+elif grep -q "^\s*umh-core:" "$WORK_DIR/docker-compose.yaml"; then
+    UMH_SERVICE="umh-core"
+else
+    echo -e "${RED}Error: 'umh' or 'umh-core' service not found in docker-compose.yaml${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}  ✓ docker-compose.yaml found with $UMH_SERVICE service${NC}"
+
+# ============================================================
+# Step 2: Extract configuration from docker-compose.yaml
+# ============================================================
+echo -e "${BLUE}Step 2: Extracting configuration from docker-compose.yaml...${NC}"
+
+LOCATION_0=$(grep -E '^\s*-\s*LOCATION_0=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*LOCATION_0=//' | tr -d ' "'\' | head -1)
+if [ -z "$LOCATION_0" ]; then
+    LOCATION_0="UMH"
+    echo -e "${YELLOW}  Warning: LOCATION_0 not found, using default: $LOCATION_0${NC}"
+else
+    echo -e "${GREEN}  ✓ LOCATION_0: $LOCATION_0${NC}"
+fi
+
+LOCATION_1=$(grep -E '^\s*-\s*LOCATION_1=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*LOCATION_1=//' | tr -d ' "'\' | head -1)
+
+AUTH_TOKEN=$(grep -E '^\s*-\s*AUTH_TOKEN=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*AUTH_TOKEN=//' | tr -d ' "'\' | head -1)
+if [ -z "$AUTH_TOKEN" ]; then
+    echo -e "${RED}  Error: AUTH_TOKEN not found in docker-compose.yaml${NC}"
+    exit 1
+else
+    echo -e "${GREEN}  ✓ AUTH_TOKEN: ${AUTH_TOKEN:0:8}...${NC}"
+fi
+
+RELEASE_CHANNEL=$(grep -E '^\s*-\s*RELEASE_CHANNEL=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*RELEASE_CHANNEL=//' | tr -d ' "'\' | head -1)
+if [ -z "$RELEASE_CHANNEL" ]; then
+    RELEASE_CHANNEL="stable"
+fi
+echo -e "${GREEN}  ✓ RELEASE_CHANNEL: $RELEASE_CHANNEL${NC}"
+
+API_URL=$(grep -E '^\s*-\s*API_URL=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*API_URL=//' | tr -d ' "'\' | head -1)
+if [ -z "$API_URL" ]; then
+    API_URL="https://management.umh.app/api"
+fi
+echo -e "${GREEN}  ✓ API_URL: $API_URL${NC}"
+
+# ============================================================
+# Step 3: Static demo factory configuration
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 3: Setting up demo factory layout...${NC}"
+echo ""
+
+declare -a LINE_NAMES
+declare -a LINE_MACHINES
+declare -a STANDALONE_MACHINES
+
+LINE_NAMES=("Line1" "Line2")
+LINE_MACHINES[0]="injection-molding,robot-pick-place,cnc-milling,robot-pick-place,packaging"
+LINE_MACHINES[1]="metal-forming,spot-welder,packaging"
+STANDALONE_MACHINES=("robot-welder")
+
+echo "Demo factory configuration (matches machine-simulator default):"
+echo ""
+echo "  Line 1: Line1 (5 machines)"
+echo "    Machines: injection-molding -> robot-pick-place -> cnc-milling -> robot-pick-place -> packaging"
+echo "  Line 2: Line2 (3 machines)"
+echo "    Machines: metal-forming -> spot-welder -> packaging"
+echo "  Standalone: robot-welder"
+
+TOTAL_MACHINES=9
+echo ""
+echo -e "${GREEN}Factory configuration: $TOTAL_MACHINES machines total${NC}"
+
+# ============================================================
+# Step 4: Merge additional services into docker-compose.yaml
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 4: Merging additional services into docker-compose.yaml...${NC}"
+
+SERVICES_TO_ADD=()
+for svc in grafana pgbouncer timescaledb machine-simulator nginx; do
+    if ! grep -q "^\s*$svc:" "$WORK_DIR/docker-compose.yaml"; then
+        SERVICES_TO_ADD+=("$svc")
+    else
+        echo -e "${YELLOW}  Service '$svc' already exists, skipping${NC}"
+    fi
+done
+
+if [ ${#SERVICES_TO_ADD[@]} -gt 0 ]; then
+    echo "  Adding services: ${SERVICES_TO_ADD[*]}"
+
+    # Create backup
+    cp "$WORK_DIR/docker-compose.yaml" "$WORK_DIR/docker-compose.yaml.backup"
+    echo -e "${BLUE}  Backup created: docker-compose.yaml.backup${NC}"
+
+    # Manual merge - append services section
+    echo "" >> "$WORK_DIR/docker-compose.yaml"
+    echo "# === Additional services added by builder ===" >> "$WORK_DIR/docker-compose.yaml"
+
+    sed -n '/^services:/,/^networks:/p' "$TEMPLATES_DIR/config/docker-compose.yaml" | \
+        grep -v "^services:" | grep -v "^networks:" >> "$WORK_DIR/docker-compose.yaml"
+
+    if ! grep -q "^networks:" "$WORK_DIR/docker-compose.yaml"; then
+        echo "" >> "$WORK_DIR/docker-compose.yaml"
+        sed -n '/^networks:/,/^volumes:/p' "$TEMPLATES_DIR/config/docker-compose.yaml" | \
+            grep -v "^volumes:" >> "$WORK_DIR/docker-compose.yaml"
+    fi
+
+    if ! grep -q "^volumes:" "$WORK_DIR/docker-compose.yaml"; then
+        echo "" >> "$WORK_DIR/docker-compose.yaml"
+        sed -n '/^volumes:/,$p' "$TEMPLATES_DIR/config/docker-compose.yaml" >> "$WORK_DIR/docker-compose.yaml"
+    fi
+
+    echo -e "${GREEN}  ✓ Services merged${NC}"
+else
+    echo -e "${GREEN}  ✓ All services already present${NC}"
+fi
+
+# ============================================================
+# Step 5: Replace named volume with local volume
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 5: Checking for named volume configuration...${NC}"
+
+if grep -E -- '- [a-zA-Z][a-zA-Z0-9_-]*:/data' "$WORK_DIR/docker-compose.yaml" | grep -qv '\./'; then
+    echo "  Found named volume, converting to local..."
+
+    if [ ! -f "$WORK_DIR/docker-compose.yaml.backup" ]; then
+        cp "$WORK_DIR/docker-compose.yaml" "$WORK_DIR/docker-compose.yaml.backup"
+    fi
+
+    sed -i 's/\(- \)[a-zA-Z][a-zA-Z0-9_-]*:\/data/\1.\/umh-core-data:\/data/g' "$WORK_DIR/docker-compose.yaml"
+
+    echo -e "${GREEN}  ✓ Replaced with local volume ./umh-core-data:/data${NC}"
+else
+    echo -e "${GREEN}  ✓ Already using local volume or no volume configured${NC}"
+fi
+
+# ============================================================
+# Step 6: Copy required runtime directories
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 6: Copying required runtime directories...${NC}"
+
+# Copy grafana-provisioning from config/
+if [ -d "$TEMPLATES_DIR/config/grafana-provisioning" ]; then
+    mkdir -p "$WORK_DIR/grafana-provisioning"
+    cp -r "$TEMPLATES_DIR/config/grafana-provisioning/"* "$WORK_DIR/grafana-provisioning/"
+    echo -e "${GREEN}  ✓ Copied: grafana-provisioning/${NC}"
+fi
+
+# Copy nginx config from config/
+if [ -f "$TEMPLATES_DIR/config/nginx.conf" ]; then
+    mkdir -p "$WORK_DIR/configs"
+    cp "$TEMPLATES_DIR/config/nginx.conf" "$WORK_DIR/configs/nginx.conf"
+    echo -e "${GREEN}  ✓ Copied: configs/nginx.conf${NC}"
+fi
+
+# Copy SQL files
+if [ -d "$TEMPLATES_DIR/sql" ]; then
+    mkdir -p "$WORK_DIR/sql"
+    cp "$TEMPLATES_DIR/sql/"*.sql "$WORK_DIR/sql/"
+    echo -e "${GREEN}  ✓ Copied: sql/${NC}"
+fi
+
+# Update dashboard provisioning (disable file-based, use API import)
+if [ -d "$WORK_DIR/grafana-provisioning/dashboards" ]; then
+    cp "$TEMPLATES_DIR/config/grafana-provisioning/dashboards/default.yaml" "$WORK_DIR/grafana-provisioning/dashboards/default.yaml"
+fi
+
+# Update nginx config for umh service name
+if [ -f "$WORK_DIR/configs/nginx.conf" ] && [ "$UMH_SERVICE" = "umh-core" ]; then
+    sed -i 's|http://umh:|http://umh-core:|g' "$WORK_DIR/configs/nginx.conf"
+    echo -e "${GREEN}  ✓ Updated nginx.conf to use service name: $UMH_SERVICE${NC}"
+fi
+
+# Update docker-compose.yaml webhook URLs
+if [ "$UMH_SERVICE" = "umh-core" ]; then
+    sed -i 's|http://umh:|http://umh-core:|g' "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ Updated docker-compose.yaml webhook URLs to use service name: $UMH_SERVICE${NC}"
+fi
+
+# ============================================================
+# Step 7: Create directories
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 7: Creating required directories...${NC}"
+
+mkdir -p "$WORK_DIR/umh-core-data/backups"
+mkdir -p "$WORK_DIR/umh-config/backups"
+mkdir -p "$WORK_DIR/grafana"
+mkdir -p "$WORK_DIR/grafana-data"
+mkdir -p "$WORK_DIR/timescaledb-data"
+mkdir -p "$WORK_DIR/simulator-data"
+mkdir -p "$WORK_DIR/dashboards"
+mkdir -p "$WORK_DIR/simulator-config"
+echo -e "${GREEN}  ✓ All directories created${NC}"
+
+# Copy reset-demo script
+if [ -f "$TEMPLATES_DIR/reset-demo" ]; then
+    cp "$TEMPLATES_DIR/reset-demo" "$WORK_DIR/reset-demo"
+    chmod +x "$WORK_DIR/reset-demo"
+    echo -e "${GREEN}  ✓ Copied: reset-demo${NC}"
+fi
+
+# Copy simulator config
+if [ -f "$TEMPLATES_DIR/config/simulator-config/default.yaml" ]; then
+    cp "$TEMPLATES_DIR/config/simulator-config/default.yaml" "$WORK_DIR/simulator-config/default.yaml"
+    MACHINE_COUNT=$(grep -c "^  - id:" "$WORK_DIR/simulator-config/default.yaml" || echo "0")
+    echo -e "${GREEN}  ✓ Simulator config copied (${MACHINE_COUNT} machines)${NC}"
+else
+    echo -e "${RED}  Error: Simulator config not found${NC}"
+    exit 1
+fi
+
+# ============================================================
+# Step 8: Setup Grafana branding
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 8: Setting up Grafana branding...${NC}"
+
+# Image conversion helpers (using local imagemagick, not Docker)
+convert_svg_to_png() {
+    local input="$1"
+    local output="$2"
+    convert "$input" -resize 512x512 -background none "$output" 2>/dev/null
+}
+
+convert_to_png() {
+    local input="$1"
+    local output="$2"
+    convert "$input" -resize 512x512 "$output" 2>/dev/null
+}
+
+embed_raster_in_svg() {
+    local input="$1"
+    local output="$2"
+
+    local dims
+    dims=$(identify -format "%wx%h" "$input" 2>/dev/null || echo "512x512")
+    local width="${dims%x*}"
+    local height="${dims#*x}"
+
+    if [ -z "$width" ] || [ -z "$height" ]; then
+        width=512
+        height=512
+    fi
+
+    local mime_type="image/png"
+    local input_lower
+    input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    case "$input_lower" in
+        *.jpg|*.jpeg) mime_type="image/jpeg" ;;
+        *.bmp) mime_type="image/bmp" ;;
+    esac
+
+    local base64_data
+    base64_data=$(base64 < "$input" | tr -d '\n')
+
+    cat > "$output" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="$width" height="$height" viewBox="0 0 $width $height">
+  <image width="$width" height="$height" xlink:href="data:$mime_type;base64,$base64_data"/>
+</svg>
+EOF
+}
+
+prepare_logo_images() {
+    local img_dir="$1"
+    local output_dir="$2"
+
+    if [ -f "$img_dir/logo.svg" ] && [ -f "$img_dir/logo.png" ]; then
+        cp "$img_dir/logo.svg" "$output_dir/logo.svg"
+        cp "$img_dir/logo.png" "$output_dir/logo.png"
+        echo "    Using existing logo.svg and logo.png pair"
+        return 0
+    fi
+
+    local source_image=""
+    for ext in svg png jpg jpeg bmp; do
+        source_image=$(find "$img_dir" -maxdepth 1 -type f -iname "*.$ext" 2>/dev/null | head -1)
+        [ -n "$source_image" ] && break
+    done
+
+    if [ -z "$source_image" ]; then
+        return 1
+    fi
+
+    local ext="${source_image##*.}"
+    ext=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+    local source_name
+    source_name=$(basename "$source_image")
+
+    echo "    Found source image: $source_name"
+
+    case "$ext" in
+        svg)
+            cp "$source_image" "$output_dir/logo.svg"
+            echo "    Converting SVG to PNG..."
+            if convert_svg_to_png "$source_image" "$output_dir/logo.png"; then
+                echo "    ✓ Created logo.png from SVG"
+            else
+                return 1
+            fi
+            ;;
+        png)
+            cp "$source_image" "$output_dir/logo.png"
+            echo "    Embedding PNG in SVG wrapper..."
+            embed_raster_in_svg "$source_image" "$output_dir/logo.svg"
+            echo "    ✓ Created logo.svg from PNG"
+            ;;
+        jpg|jpeg|bmp)
+            echo "    Converting $ext to PNG..."
+            if convert_to_png "$source_image" "$output_dir/logo.png"; then
+                echo "    ✓ Created logo.png from $ext"
+                echo "    Embedding in SVG wrapper..."
+                embed_raster_in_svg "$output_dir/logo.png" "$output_dir/logo.svg"
+                echo "    ✓ Created logo.svg"
+            else
+                return 1
+            fi
+            ;;
+    esac
+
+    return 0
+}
+
+echo "  Preparing logo images..."
+mkdir -p "$WORK_DIR/grafana"
+
+LOGO_PREPARED=false
+# Check factory root directory first
+if prepare_logo_images "$WORK_DIR" "$WORK_DIR/grafana"; then
+    echo -e "${GREEN}  ✓ Logo prepared from workspace root${NC}"
+    LOGO_PREPARED=true
+elif [ -d "$WORK_DIR/img" ] && prepare_logo_images "$WORK_DIR/img" "$WORK_DIR/grafana"; then
+    echo -e "${GREEN}  ✓ Logo prepared from workspace img/${NC}"
+    LOGO_PREPARED=true
+elif [ -d "$TEMPLATES_DIR/img" ] && prepare_logo_images "$TEMPLATES_DIR/img" "$WORK_DIR/grafana"; then
+    echo -e "${GREEN}  ✓ Logo prepared from templates${NC}"
+    LOGO_PREPARED=true
+else
+    echo -e "${YELLOW}  Using default UMH logo${NC}"
+    cp "$TEMPLATES_DIR/img/umh.svg" "$WORK_DIR/grafana/logo.svg"
+    cp "$TEMPLATES_DIR/img/umh.png" "$WORK_DIR/grafana/logo.png"
+    LOGO_PREPARED=true
+fi
+
+# Create Grafana Dockerfile with branding
+cat > "$WORK_DIR/grafana/Dockerfile" << EOF
+FROM management.umh.app/oci/grafana/grafana:12.3.0
+
+# Change Grafana title to "${LOCATION_0}"
+RUN find /usr/share/grafana/public/build/ -name '*.js' -exec sed -i 's|AppTitle="Grafana"|AppTitle="${LOCATION_0}"|g' {} \;
+
+# Change "Welcome to Grafana" to "Welcome to ${LOCATION_0}"
+RUN find /usr/share/grafana/public/build/ -name '*.js' -exec sed -i 's|Welcome to Grafana|Welcome to ${LOCATION_0}|g' {} \;
+
+# Copy custom logos and icons
+COPY logo.svg /usr/share/grafana/public/img/grafana_icon.svg
+COPY logo.svg /usr/share/grafana/public/img/g8_login_dark.svg
+COPY logo.svg /usr/share/grafana/public/img/g8_login_light.svg
+COPY logo.svg /usr/share/grafana/public/img/grafana_typelogo.svg
+COPY logo.svg /usr/share/grafana/public/img/grafana_com_auth_icon.svg
+COPY logo.svg /usr/share/grafana/public/img/icons/mono/grafana.svg
+COPY fav32.png /usr/share/grafana/public/img/fav32.png
+COPY apple-touch-icon.png /usr/share/grafana/public/img/apple-touch-icon.png
+
+# Copy to build directory
+COPY logo.svg /usr/share/grafana/public/build/img/grafana_icon.svg
+RUN find /usr/share/grafana/public/build/static/img -name 'grafana_icon*.svg' -exec cp /usr/share/grafana/public/build/img/grafana_icon.svg {} \;
+EOF
+
+# Generate favicon and touch-icon using local imagemagick
+echo "  Generating favicon and touch-icon..."
+if [ -f "$WORK_DIR/grafana/logo.png" ]; then
+    convert "$WORK_DIR/grafana/logo.png" -resize 32x32 "$WORK_DIR/grafana/fav32.png" 2>/dev/null \
+        || cp "$WORK_DIR/grafana/logo.png" "$WORK_DIR/grafana/fav32.png"
+    convert "$WORK_DIR/grafana/logo.png" -resize 180x180 "$WORK_DIR/grafana/apple-touch-icon.png" 2>/dev/null \
+        || cp "$WORK_DIR/grafana/logo.png" "$WORK_DIR/grafana/apple-touch-icon.png"
+else
+    convert "$WORK_DIR/grafana/logo.svg" -resize 32x32 "$WORK_DIR/grafana/fav32.png" 2>/dev/null || true
+    convert "$WORK_DIR/grafana/logo.svg" -resize 180x180 "$WORK_DIR/grafana/apple-touch-icon.png" 2>/dev/null || true
+fi
+
+# Ensure favicon files exist (create minimal placeholder if needed)
+if [ ! -f "$WORK_DIR/grafana/fav32.png" ]; then
+    printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82' > "$WORK_DIR/grafana/fav32.png"
+fi
+if [ ! -f "$WORK_DIR/grafana/apple-touch-icon.png" ]; then
+    cp "$WORK_DIR/grafana/fav32.png" "$WORK_DIR/grafana/apple-touch-icon.png"
+fi
+echo -e "${GREEN}  ✓ Grafana branding configured for: $LOCATION_0${NC}"
+
+# ============================================================
+# Step 8b: Generate Grafana dashboards
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 8b: Generating Grafana dashboards...${NC}"
+
+mkdir -p "$WORK_DIR/dashboards"
+rm -f "$WORK_DIR/dashboards/"*.json 2>/dev/null || true
+
+AREA="shopfloor"
+
+# --- Generate per-line OEE dashboards ---
+LINE_NUM=0
+for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
+    LINE_NUM=$((i + 1))
+    LINE_NAME="${LINE_NAMES[$i]}"
+    LINE_LOWER=$(echo "$LINE_NAME" | tr '[:upper:]' '[:lower:]')
+    LINE_DISPLAY="Line ${LINE_NUM}"
+
+    echo "  Generating dashboard for $LINE_DISPLAY ($LINE_NAME)..."
+
+    IFS=',' read -ra MACHINES <<< "${LINE_MACHINES[$i]}"
+
+    # Build state timeline targets JSON
+    TARGETS_JSON="["
+    REF_LETTERS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J")
+    for ((m=0; m<${#MACHINES[@]}; m++)); do
+        MACHINE="${MACHINES[$m]}"
+        POS=$((m + 1))
+        WORKCELL=$(printf "%s-L%d-%02d" "$MACHINE" "$LINE_NUM" "$POS")
+        DISPLAY="$(machine_display_name "$MACHINE") (Pos ${POS})"
+
+        if [ $m -gt 0 ]; then
+            TARGETS_JSON+=","
+        fi
+        REF="${REF_LETTERS[$m]}"
+        DISPLAY_ESC=$(echo "$DISPLAY" | sed 's/"/\\"/g')
+        TARGETS_JSON+="
+        {
+          \"datasource\": {\"type\": \"grafana-postgresql-datasource\", \"uid\": \"df9o2whw2o7wgb\"},
+          \"editorMode\": \"code\",
+          \"format\": \"time_series\",
+          \"rawQuery\": true,
+          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'State' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"refId\": \"${REF}\"
+        }"
+    done
+    TARGETS_JSON+="]"
+
+    # Read template, replace placeholders, inject state timeline targets
+    sed \
+        -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+        -e "s|__SITE__|${LOCATION_1}|g" \
+        -e "s|__AREA__|${AREA}|g" \
+        -e "s|__LINE__|${LINE_LOWER}|g" \
+        -e "s|__LINE_DISPLAY__|${LINE_DISPLAY}|g" \
+        "$TEMPLATES_DIR/templates/dashboards/line-oee-dashboard.json" \
+        > "$WORK_DIR/dashboards/${LINE_LOWER}-oee-dashboard.json.tmp"
+
+    echo "$TARGETS_JSON" > "$WORK_DIR/dashboards/.targets_tmp.json"
+    jq --slurpfile targets "$WORK_DIR/dashboards/.targets_tmp.json" \
+        '(.panels[] | select(.targets == "__STATE_TIMELINE_TARGETS__")).targets = $targets[0]' \
+        "$WORK_DIR/dashboards/${LINE_LOWER}-oee-dashboard.json.tmp" \
+        > "$WORK_DIR/dashboards/${LINE_LOWER}-oee-dashboard.json"
+    rm -f "$WORK_DIR/dashboards/${LINE_LOWER}-oee-dashboard.json.tmp"
+    rm -f "$WORK_DIR/dashboards/.targets_tmp.json"
+    echo -e "${GREEN}    ✓ ${LINE_LOWER}-oee-dashboard.json${NC}"
+
+    # --- Generate per-workcell machine dashboards ---
+    for ((m=0; m<${#MACHINES[@]}; m++)); do
+        MACHINE="${MACHINES[$m]}"
+        POS=$((m + 1))
+        WORKCELL=$(printf "%s-L%d-%02d" "$MACHINE" "$LINE_NUM" "$POS")
+        WC_DISPLAY="$(machine_display_name "$MACHINE") (Pos ${POS})"
+        WC_DISPLAY_ESCAPED="${WC_DISPLAY//&/\\&}"
+
+        sed \
+            -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+            -e "s|__SITE__|${LOCATION_1}|g" \
+            -e "s|__AREA__|${AREA}|g" \
+            -e "s|__LINE__|${LINE_LOWER}|g" \
+            -e "s|__LINE_DISPLAY__|${LINE_DISPLAY}|g" \
+            -e "s|__WORKCELL__|${WORKCELL}|g" \
+            -e "s|__WORKCELL_DISPLAY__|${WC_DISPLAY_ESCAPED}|g" \
+            "$TEMPLATES_DIR/templates/dashboards/machine-dashboard.json" \
+            > "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json"
+        echo -e "${GREEN}    ✓ ${LINE_LOWER}-${WORKCELL}-dashboard.json${NC}"
+    done
+done
+
+# --- Generate factory overview dashboard ---
+echo "  Generating factory overview dashboard..."
+
+FACTORY_TARGETS_JSON="["
+TARGET_IDX=0
+REF_LETTERS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P")
+for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
+    F_LINE_NUM=$((i + 1))
+    LINE_NAME="${LINE_NAMES[$i]}"
+    LINE_LOWER=$(echo "$LINE_NAME" | tr '[:upper:]' '[:lower:]')
+    LINE_DISPLAY="Line ${F_LINE_NUM}"
+    IFS=',' read -ra MACHINES <<< "${LINE_MACHINES[$i]}"
+    for ((m=0; m<${#MACHINES[@]}; m++)); do
+        MACHINE="${MACHINES[$m]}"
+        POS=$((m + 1))
+        WORKCELL=$(printf "%s-L%d-%02d" "$MACHINE" "$F_LINE_NUM" "$POS")
+        DISPLAY="${LINE_DISPLAY}: $(machine_display_name "$MACHINE") (Pos ${POS})"
+
+        if [ $TARGET_IDX -gt 0 ]; then
+            FACTORY_TARGETS_JSON+=","
+        fi
+        REF="${REF_LETTERS[$TARGET_IDX]}"
+        DISPLAY_ESC=$(echo "$DISPLAY" | sed 's/"/\\"/g')
+        FACTORY_TARGETS_JSON+="
+        {
+          \"datasource\": {\"type\": \"grafana-postgresql-datasource\", \"uid\": \"df9o2whw2o7wgb\"},
+          \"editorMode\": \"code\",
+          \"format\": \"time_series\",
+          \"rawQuery\": true,
+          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'State' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"refId\": \"${REF}\"
+        }"
+        TARGET_IDX=$((TARGET_IDX + 1))
+    done
+done
+FACTORY_TARGETS_JSON+="]"
+
+# Copy dashboards that don't need placeholders
+cp "$TEMPLATES_DIR/templates/dashboards/site-leader-board.json" "$WORK_DIR/dashboards/site-leader-board.json"
+echo -e "${GREEN}    ✓ site-leader-board.json${NC}"
+
+cp "$TEMPLATES_DIR/templates/dashboards/production-manager-view.json" "$WORK_DIR/dashboards/production-manager-view.json"
+echo -e "${GREEN}    ✓ production-manager-view.json${NC}"
+
+cp "$TEMPLATES_DIR/templates/dashboards/andon-board.json" "$WORK_DIR/dashboards/andon-board.json"
+echo -e "${GREEN}    ✓ andon-board.json${NC}"
+
+# --- Generate factory line setup dashboard ---
+echo "  Generating factory line setup dashboard..."
+
+SETUP_SVG="<div style='font-family: sans-serif; padding: 10px;'>"
+
+LINE_NUM=0
+for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
+    LINE_NUM=$((i + 1))
+    LINE_NAME="${LINE_NAMES[$i]}"
+    IFS=',' read -ra MACHINES <<< "${LINE_MACHINES[$i]}"
+
+    SETUP_SVG+="<div style='margin-bottom: 16px;'>"
+    SETUP_SVG+="<div style='font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #58A6FF;'>Line ${LINE_NUM}: ${LINE_NAME} (${#MACHINES[@]} machines)</div>"
+    SETUP_SVG+="<div style='display: flex; align-items: center; gap: 4px; flex-wrap: wrap;'>"
+
+    for ((m=0; m<${#MACHINES[@]}; m++)); do
+        MACHINE="${MACHINES[$m]}"
+        WC_DISPLAY="$(machine_display_name "$MACHINE")"
+
+        if [ $m -gt 0 ]; then
+            SETUP_SVG+="<div style='font-size: 20px; color: #47A0B5;'>&#x2192;</div>"
+        fi
+
+        SETUP_SVG+="<div style='border: 2px solid #47A0B5; border-radius: 8px; padding: 8px 14px; background: #21262D; text-align: center; min-width: 100px;'>"
+        SETUP_SVG+="<div style='font-size: 12px; font-weight: bold; color: #E6EDF3;'>${WC_DISPLAY}</div>"
+        SETUP_SVG+="<div style='font-size: 10px; color: #8B949E;'>Pos $((m+1))</div>"
+        SETUP_SVG+="</div>"
+    done
+
+    SETUP_SVG+="</div></div>"
+done
+
+if [ ${#STANDALONE_MACHINES[@]} -gt 0 ]; then
+    SETUP_SVG+="<div style='margin-bottom: 16px;'>"
+    SETUP_SVG+="<div style='font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #D29922;'>Standalone Machines</div>"
+    SETUP_SVG+="<div style='display: flex; align-items: center; gap: 8px; flex-wrap: wrap;'>"
+    for machine in "${STANDALONE_MACHINES[@]}"; do
+        WC_DISPLAY="$(machine_display_name "$machine")"
+        SETUP_SVG+="<div style='border: 2px solid #D29922; border-radius: 8px; padding: 8px 14px; background: #21262D; text-align: center; min-width: 100px;'>"
+        SETUP_SVG+="<div style='font-size: 12px; font-weight: bold; color: #E6EDF3;'>${WC_DISPLAY}</div>"
+        SETUP_SVG+="</div>"
+    done
+    SETUP_SVG+="</div></div>"
+fi
+
+SETUP_SVG+="</div>"
+
+ASSET_FILTER="get_asset_ids_stable('${LOCATION_0}', '${LOCATION_1}', '', '', '')"
+MACHINE_STATUS_SQL="WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT ${ASSET_FILTER}) AND ts.name = 'State' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'GoodParts') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'ScrapParts') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'CycleTime' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT ${ASSET_FILTER}) AND t.name IN ('GoodParts', 'ScrapParts') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT ${ASSET_FILTER}) ORDER BY a.name"
+
+sed \
+    -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+    "$TEMPLATES_DIR/templates/dashboards/factory-line-setup-dashboard.json" \
+    > "$WORK_DIR/dashboards/factory-line-setup-dashboard.json.tmp"
+
+echo "$FACTORY_TARGETS_JSON" > "$WORK_DIR/dashboards/.targets_tmp.json"
+jq --slurpfile targets "$WORK_DIR/dashboards/.targets_tmp.json" \
+    --arg svg "$SETUP_SVG" \
+    --arg sql "$MACHINE_STATUS_SQL" \
+    '(.panels[] | select(.id == 1)).options.content = $svg |
+     (.panels[] | select(.id == 2) | .targets[] | select(.rawSql == "__MACHINE_STATUS_SQL__")).rawSql = $sql |
+     (.panels[] | select(.targets == "__SETUP_STATE_TIMELINE_TARGETS__")).targets = $targets[0]' \
+    "$WORK_DIR/dashboards/factory-line-setup-dashboard.json.tmp" \
+    > "$WORK_DIR/dashboards/factory-line-setup-dashboard.json"
+rm -f "$WORK_DIR/dashboards/factory-line-setup-dashboard.json.tmp"
+rm -f "$WORK_DIR/dashboards/.targets_tmp.json"
+echo -e "${GREEN}    ✓ factory-line-setup-dashboard.json${NC}"
+
+# ============================================================
+# Step 9c: Apply port remappings to docker-compose.yaml
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 9c: Applying port remappings to docker-compose.yaml...${NC}"
+
+if [ "$PORT_NGINX" != "$DEFAULT_PORT_NGINX" ]; then
+    sed -i "s|\"80:80\"|\"${PORT_NGINX}:80\"|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ Nginx: $DEFAULT_PORT_NGINX -> $PORT_NGINX${NC}"
+fi
+if [ "$PORT_GRAFANA" != "$DEFAULT_PORT_GRAFANA" ]; then
+    sed -i "s|\"8080:3000\"|\"${PORT_GRAFANA}:3000\"|g" "$WORK_DIR/docker-compose.yaml"
+    sed -i "s|8080:3000|${PORT_GRAFANA}:3000|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ Grafana: $DEFAULT_PORT_GRAFANA -> $PORT_GRAFANA${NC}"
+fi
+if [ "$PORT_PGBOUNCER" != "$DEFAULT_PORT_PGBOUNCER" ]; then
+    sed -i "s|\"5432:5432\"|\"${PORT_PGBOUNCER}:5432\"|g" "$WORK_DIR/docker-compose.yaml"
+    sed -i "s|5432:5432|${PORT_PGBOUNCER}:5432|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ PostgreSQL: $DEFAULT_PORT_PGBOUNCER -> $PORT_PGBOUNCER${NC}"
+fi
+if [ "$PORT_SIMULATOR" != "$DEFAULT_PORT_SIMULATOR" ]; then
+    sed -i "s|\"8081:8081\"|\"${PORT_SIMULATOR}:8081\"|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ Machine Simulator: $DEFAULT_PORT_SIMULATOR -> $PORT_SIMULATOR${NC}"
+fi
+if [ "$PORT_UMH" != "$DEFAULT_PORT_UMH" ]; then
+    sed -i "s|\"8090:8090\"|\"${PORT_UMH}:8090\"|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ UMH Core: $DEFAULT_PORT_UMH -> $PORT_UMH${NC}"
+fi
+if [ "$PORT_OPCUA_START" != "$DEFAULT_PORT_OPCUA_START" ]; then
+    sed -i "s|\"4840-4848:4840-4848\"|\"${PORT_OPCUA_START}-${OPCUA_END}:4840-4848\"|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ OPC-UA: $DEFAULT_PORT_OPCUA_START-$((DEFAULT_PORT_OPCUA_START + OPCUA_COUNT - 1)) -> $PORT_OPCUA_START-$OPCUA_END${NC}"
+fi
+
+echo -e "${GREEN}  ✓ Port remappings applied${NC}"
+
+# Determine API base URL for form panels
+API_BASE_URL="http://localhost:${PORT_NGINX}"
+
+# Generate stop-reason and operator dashboards (need API_BASE_URL)
+echo ""
+echo -e "${BLUE}Step 9d: Generating API-dependent dashboards...${NC}"
+for dashboard in stop-reason-admin.json operator-dashboard.json; do
+    if [ -f "$TEMPLATES_DIR/templates/dashboards/$dashboard" ]; then
+        sed \
+            -e "s|__API_BASE_URL__|${API_BASE_URL}|g" \
+            -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+            -e "s|__SITE__|${LOCATION_1}|g" \
+            -e "s|__AREA__|shopfloor|g" \
+            -e "s|__LINE__||g" \
+            "$TEMPLATES_DIR/templates/dashboards/$dashboard" \
+            > "$WORK_DIR/dashboards/$dashboard"
+        echo -e "${GREEN}  ✓ $dashboard${NC}"
+    fi
+done
+
+echo -e "${GREEN}  ✓ All dashboards generated${NC}"
+
+# ============================================================
+# Step 13: Generate factory setup file and new config
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 13: Generating new config...${NC}"
+
+FACTORY_SETUP_FILE="$WORK_DIR/factory-setup.yaml"
+
+echo "  Creating factory setup file..."
+cat > "$FACTORY_SETUP_FILE" << EOF
+# Factory configuration generated by builder
+enterprise: "${LOCATION_0:-Enterprise}"
+site: "${LOCATION_1:-Site}"
+simulator_host: "machine-simulator"
+
+EOF
+
+if [ ${#LINE_NAMES[@]} -gt 0 ]; then
+    echo "lines:" >> "$FACTORY_SETUP_FILE"
+    for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
+        echo "  - name: \"${LINE_NAMES[$i]}\"" >> "$FACTORY_SETUP_FILE"
+        echo "    enabled: true" >> "$FACTORY_SETUP_FILE"
+        echo "    machines:" >> "$FACTORY_SETUP_FILE"
+        IFS=',' read -ra MACHINES <<< "${LINE_MACHINES[$i]}"
+        for machine in "${MACHINES[@]}"; do
+            echo "      - $machine" >> "$FACTORY_SETUP_FILE"
+        done
+        echo "    buffer_size: 10" >> "$FACTORY_SETUP_FILE"
+    done
+    echo "" >> "$FACTORY_SETUP_FILE"
+fi
+
+if [ ${#STANDALONE_MACHINES[@]} -gt 0 ]; then
+    echo "standalone:" >> "$FACTORY_SETUP_FILE"
+    for machine in "${STANDALONE_MACHINES[@]}"; do
+        echo "  - $machine" >> "$FACTORY_SETUP_FILE"
+    done
+fi
+
+echo -e "${GREEN}  ✓ Factory setup file created${NC}"
+
+# Generate config using local Python (pre-installed in builder)
+mkdir -p "$WORK_DIR/umh-config"
+echo "  Generating UMH config from factory setup..."
+
+python3 "$SCRIPTS_DIR/generate-config.py" \
+    --from-file "$FACTORY_SETUP_FILE" \
+    --output-dir "$WORK_DIR/umh-config" \
+    --templates-dir "$TEMPLATES_DIR/templates" \
+    --machines-dir "$TEMPLATES_DIR/machines"
+
+if [ ! -f "$WORK_DIR/umh-config/config.yaml" ]; then
+    echo -e "${RED}  Error: Config generation failed${NC}"
+    exit 1
+fi
+echo -e "${GREEN}  ✓ UMH-core config generated${NC}"
+
+# Validate generated config
+echo "  Validating generated config..."
+if python3 "$SCRIPTS_DIR/validate-config.py" "$WORK_DIR/umh-config/config.yaml"; then
+    echo -e "${GREEN}  ✓ Config validation passed${NC}"
+else
+    echo -e "${RED}  Config validation FAILED${NC}"
+    exit 1
+fi
+
+# ============================================================
+# Step 14: Verify agent section
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 14: Verifying agent section in config...${NC}"
+
+if grep -q "^agent:" "$WORK_DIR/umh-config/config.yaml"; then
+    echo -e "${GREEN}  ✓ Agent section present in config${NC}"
+else
+    echo -e "${RED}  Error: Agent section missing from config!${NC}"
+    exit 1
+fi
+
+# ============================================================
+# Step 15: Copy config to umh-core-data
+# ============================================================
+echo ""
+echo -e "${BLUE}Step 15: Deploying config to umh-core-data...${NC}"
+
+cp "$WORK_DIR/umh-config/config.yaml" "$WORK_DIR/umh-core-data/config.yaml"
+echo -e "${GREEN}  ✓ Config copied to: umh-core-data/config.yaml${NC}"
+
+# ============================================================
+# Summary
+# ============================================================
+echo ""
+echo -e "${GREEN}=== Phase 1 (Generate) Complete ===${NC}"
+echo ""
+echo "Summary:"
+echo "  - Enterprise:  ${LOCATION_0:-Enterprise}"
+echo "  - Site:        ${LOCATION_1:-Site}"
+echo "  - Machines:    $TOTAL_MACHINES"
+echo "  - Ports:"
+echo "    Nginx:             ${PORT_NGINX}"
+echo "    Grafana:           ${PORT_GRAFANA}"
+echo "    PostgreSQL:        ${PORT_PGBOUNCER}"
+echo "    Machine Simulator: ${PORT_SIMULATOR}"
+echo "    UMH Core:          ${PORT_UMH}"
+echo "    OPC-UA:            ${PORT_OPCUA_START}-${OPCUA_END}"
+echo ""
+echo "Files generated in /workspace:"
+echo "  - docker-compose.yaml (merged)"
+echo "  - grafana/Dockerfile (branding)"
+echo "  - dashboards/ (all dashboard JSON)"
+echo "  - umh-core-data/config.yaml (UMH config)"
+echo "  - grafana-provisioning/ (datasource config)"
+echo "  - configs/ (nginx)"
+echo "  - sql/ (schema init)"
+echo "  - simulator-config/ (machine definitions)"
+echo ""

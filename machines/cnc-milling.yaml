@@ -1,0 +1,155 @@
+name: cnc-milling
+display_name: "CNC Milling Machine"
+
+dataModel:
+  name: cnc_milling
+  version:
+    v1:
+      structure:
+        State:
+          _payloadshape: timeseries-string
+        CycleCount:
+          _payloadshape: timeseries-number
+        CycleTime:
+          _payloadshape: timeseries-number
+        CycleProgress:
+          _payloadshape: timeseries-number
+        GoodParts:
+          _payloadshape: timeseries-number
+        ScrapParts:
+          _payloadshape: timeseries-number
+        SpindleSpeed:
+          _payloadshape: timeseries-number
+        SpindleLoad:
+          _payloadshape: timeseries-number
+        FeedRate:
+          _payloadshape: timeseries-number
+        PositionX:
+          _payloadshape: timeseries-number
+        PositionY:
+          _payloadshape: timeseries-number
+        PositionZ:
+          _payloadshape: timeseries-number
+        ToolNumber:
+          _payloadshape: timeseries-number
+        ToolWear:
+          _payloadshape: timeseries-number
+        CoolantFlow:
+          _payloadshape: timeseries-number
+        CoolantTemp:
+          _payloadshape: timeseries-number
+        CurrentOrderId:
+          _payloadshape: timeseries-string
+        CurrentPartNumber:
+          _payloadshape: timeseries-string
+        ProgramName:
+          _payloadshape: timeseries-string
+        ErrorCode:
+          _payloadshape: timeseries-number
+        ErrorMessage:
+          _payloadshape: timeseries-string
+
+dataContract:
+  name: _cnc_milling_v1
+  model:
+    name: cnc_milling
+    version: v1
+
+# Protocol converter template - exact UMH config format
+# {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
+protocolConverter:
+  connection:
+    nmap:
+      target: '{{ .IP }}'
+      port: '{{ .PORT }}'
+  dataflowcomponent_read:
+    benthos:
+      input:
+        opcua:
+          endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
+          nodeIDs:
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=17"
+            - "ns=1;i=20"
+          pollRate: 1000
+          subscribeEnabled: false
+      pipeline:
+        processors:
+          - tag_processor:
+              conditions:
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
+                  then: |
+                    msg.meta.tag_name = "State";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
+                  then: |
+                    msg.meta.tag_name = "CycleCount";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
+                  then: |
+                    msg.meta.tag_name = "SpindleSpeed";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=6"'
+                  then: |
+                    msg.meta.tag_name = "SpindleLoad";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=7"'
+                  then: |
+                    msg.meta.tag_name = "FeedRate";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=8"'
+                  then: |
+                    msg.meta.tag_name = "PositionX";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=9"'
+                  then: |
+                    msg.meta.tag_name = "PositionY";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=10"'
+                  then: |
+                    msg.meta.tag_name = "PositionZ";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=11"'
+                  then: |
+                    msg.meta.tag_name = "ToolNumber";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=12"'
+                  then: |
+                    msg.meta.tag_name = "ToolWear";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=13"'
+                  then: |
+                    msg.meta.tag_name = "CoolantFlow";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=14"'
+                  then: |
+                    msg.meta.tag_name = "CoolantTemp";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=17"'
+                  then: |
+                    msg.meta.tag_name = "GoodParts";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=20"'
+                  then: |
+                    msg.meta.tag_name = "ErrorCode";
+                    return msg;
+              defaults: |
+                msg.meta.location_path = "{{ .location_path }}";
+                msg.meta.data_contract = "_cnc_milling_v1";
+                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.historian = "true";
+                msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+                return msg;
+      buffer:
+        none: {}

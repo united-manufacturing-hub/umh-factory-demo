@@ -1,0 +1,133 @@
+# Order Completion Bridge Dataflow
+# Monitors GoodParts/ScrapParts tags and updates production_orders.quantity_completed
+# Marks orders as COMPLETED when quantity_completed >= quantity
+
+input:
+  uns:
+    consumer_group: ordercompletionbridgev1
+    umh_topic: ^umh\.v1.*$
+
+pipeline:
+  processors:
+    - bloblang: |-
+        # Only process GoodParts tag with historian=true
+        let tag_name = meta("tag_name").or("")
+        let historian = meta("historian").or("false")
+        root = if $tag_name == "GoodParts" && $historian == "true" {
+          root
+        } else {
+          deleted()
+        }
+      label: filter_good_parts_tag
+    - bloblang: root = this.catch(deleted())
+      label: validate_json
+    - bloblang: |-
+        root.good_parts = this.value.number().catch(0)
+        root.timestamp = if this.timestamp_ms != null {
+          (this.timestamp_ms / 1000).ts_format(tz: "UTC")
+        } else {
+          now().ts_format(tz: "UTC")
+        }
+      label: extract_parts
+    - bloblang: |-
+        # Extract location from UNS topic for asset lookup
+        let topic = meta("umh_topic")
+        let matches = $topic.re_find_all_object("^umh\\.v1\\.(?P<enterprise>[\\w-]+)(?:\\.(?P<site>[\\w-]*))?(?:\\.(?P<area>[\\w-]*))?(?:\\.(?P<line>[\\w-]*))?(?:\\.(?P<workcell>[\\w-]*))?(?:\\.(?P<origin_id>[\\w-]*))?\\._(?P<contract>[\\w-]+)")
+        let m = if $matches.length() > 0 { $matches.index(0) } else { {} }
+        meta "enterprise" = $m.enterprise.or("")
+        meta "site" = $m.site.or("")
+        meta "area" = $m.area.or("")
+        meta "line" = $m.line.or("")
+        meta "workcell" = $m.workcell.or("")
+        meta "origin_id" = $m.origin_id.or("")
+        root = this
+      label: extract_location
+    # Lookup asset_id from cache first
+    - branch:
+        processors:
+          - try:
+              - cache:
+                  key: ${! meta("umh_topic") }
+                  operator: get
+                  resource: order_asset_id_cache
+          - catch:
+              - mapping: root = "CACHE_MISS"
+        request_map: root = ""
+        result_map: root.asset_id = if content() != "CACHE_MISS" && content() != "" && content() != "null" { content().number() } else { null }
+    # If cache miss, lookup asset in database
+    - branch:
+        processors:
+          - sql_raw:
+              driver: postgres
+              dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+              query: |
+                SELECT id FROM public.asset
+                WHERE enterprise = '${! meta("enterprise") }'
+                  AND site = '${! meta("site").or("")}'
+                  AND area = '${! meta("area").or("")}'
+                  AND line = '${! meta("line").or("")}'
+                  AND workcell = '${! meta("workcell").or("")}'
+                  AND origin_id = '${! meta("origin_id").or("")}'
+                LIMIT 1;
+              unsafe_dynamic_query: true
+        request_map: root = if this.asset_id == null { "" } else { deleted() }
+        result_map: root.asset_id = if this.length() > 0 { this.index(0).get("id") } else { null }
+    # Update cache with asset_id
+    - branch:
+        processors:
+          - cache:
+              key: ${! meta("umh_topic") }
+              operator: set
+              resource: order_asset_id_cache
+              value: ${! content() }
+        request_map: root = if this.asset_id != null { this.asset_id.string() } else { deleted() }
+        result_map: root = root
+    # Skip if no asset found
+    - bloblang: root = if this.asset_id == null { deleted() } else { this }
+      label: filter_no_asset
+    # Dedupe to reduce database writes (only update every 5 seconds per asset)
+    - dedupe:
+        cache: order_dedupe_cache
+        key: ${! json("asset_id").string() }
+
+output:
+  sql_raw:
+    driver: postgres
+    dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+    query: |
+      WITH active_order AS (
+        SELECT id, quantity
+        FROM production_orders
+        WHERE asset_id = ${! json("asset_id") }
+          AND status IN ('IN_PROGRESS', 'QUEUED')
+        ORDER BY priority ASC, created_at ASC
+        LIMIT 1
+      ),
+      updated AS (
+        UPDATE production_orders po
+        SET quantity_completed = ${! json("good_parts") },
+            status = CASE
+              WHEN ${! json("good_parts") } >= po.quantity THEN 'COMPLETED'
+              WHEN ${! json("good_parts") } > 0 AND po.status = 'QUEUED' THEN 'IN_PROGRESS'
+              ELSE po.status
+            END,
+            completed_at = CASE
+              WHEN ${! json("good_parts") } >= po.quantity THEN '${! json("timestamp") }'::timestamptz
+              ELSE po.completed_at
+            END
+        FROM active_order ao
+        WHERE po.id = ao.id
+        RETURNING po.id
+      )
+      SELECT COUNT(*) FROM updated;
+    unsafe_dynamic_query: true
+
+cache_resources:
+  - label: order_asset_id_cache
+    memory:
+      compaction_interval: 60s
+      default_ttl: 24h
+  - label: order_dedupe_cache
+    memory:
+      compaction_interval: 60s
+      default_ttl: 5s

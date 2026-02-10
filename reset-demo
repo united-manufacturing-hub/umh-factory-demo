@@ -1,0 +1,62 @@
+#!/bin/bash
+# reset-demo - Reset a demo folder to start fresh
+#
+# This script:
+# 1. Saves the original docker-compose.yaml (from backup)
+# 2. Deletes everything else in the folder
+# 3. Restores docker-compose.yaml
+#
+# Usage: Copy this script to your demo folder and run it
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORK_DIR="$SCRIPT_DIR"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+echo -e "${BLUE}=== Reset Demo Folder ===${NC}"
+echo ""
+
+# Check for docker-compose.yaml.backup
+if [ ! -f "$WORK_DIR/docker-compose.yaml.backup" ]; then
+    echo -e "${RED}Error: docker-compose.yaml.backup not found${NC}"
+    echo "This script requires docker-compose.yaml.backup to restore from."
+    exit 1
+fi
+
+echo -e "${GREEN}Found: docker-compose.yaml.backup${NC}"
+echo ""
+
+# Stop any running containers
+if [ -f "$WORK_DIR/docker-compose.yaml" ]; then
+    echo -e "${BLUE}Stopping containers...${NC}"
+    docker compose -f "$WORK_DIR/docker-compose.yaml" down --remove-orphans 2>/dev/null || true
+    echo ""
+fi
+
+# Save the backup temporarily
+echo -e "${BLUE}Saving docker-compose.yaml.backup...${NC}"
+cp "$WORK_DIR/docker-compose.yaml.backup" /tmp/docker-compose.yaml.restore
+
+# Delete everything except this script and the backup in /tmp
+echo -e "${BLUE}Deleting all files and folders...${NC}"
+find "$WORK_DIR" -mindepth 1 -maxdepth 1 ! -name "$(basename "$0")" -exec rm -rf {} \;
+
+# Restore docker-compose.yaml from backup
+echo -e "${BLUE}Restoring docker-compose.yaml...${NC}"
+mv /tmp/docker-compose.yaml.restore "$WORK_DIR/docker-compose.yaml"
+
+echo ""
+echo -e "${GREEN}=== Reset Complete ===${NC}"
+echo ""
+echo "The folder now contains only:"
+ls -la "$WORK_DIR"
+echo ""
+echo "Next steps:"
+echo "  Re-run quick-start.sh to set up the demo again."

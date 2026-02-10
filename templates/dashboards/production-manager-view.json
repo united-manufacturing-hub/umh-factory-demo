@@ -1,0 +1,797 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "panels": [],
+      "title": "Line ${line} OEE Overview",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "orange", "value": 60 },
+              { "color": "yellow", "value": 75 },
+              { "color": "green", "value": 85 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH state_data AS (\n  SELECT\n    COUNT(*) as total_states,\n    COUNT(*) FILTER (WHERE t.value = 'RUNNING') as running_count\n  FROM tag_string t\n  WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n    AND t.name = 'State'\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n),\nparts_data AS (\n  SELECT\n    COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta,\n    COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta\n  FROM (\n    SELECT asset_id, origin,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp <= NOW()::timestamptz) as end_good,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_good,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp <= NOW()::timestamptz) as end_scrap,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_scrap\n    FROM tag\n    WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n      AND name IN ('GoodParts', 'ScrapParts')\n    GROUP BY asset_id, origin\n  ) sub\n)\nSELECT ROUND(((\n  (CASE WHEN s.total_states > 0 THEN s.running_count * 100.0 / s.total_states ELSE 0 END / 100.0) *\n  LEAST(COALESCE(CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN\n    (p.good_delta + p.scrap_delta) * 100.0 / NULLIF(s.running_count * 1.0 / NULLIF(s.total_states, 0) * EXTRACT(EPOCH FROM (NOW()::timestamp - (NOW() - INTERVAL '${time_period}')::timestamp)) / 60.0, 0)\n  ELSE 0 END, 0), 100) / 100.0 *\n  COALESCE(CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN p.good_delta * 100.0 / (p.good_delta + p.scrap_delta) ELSE 100 END, 100) / 100.0\n) * 100)::numeric, 1) as \"OEE\"\nFROM state_data s, parts_data p",
+          "refId": "A"
+        }
+      ],
+      "title": "Line OEE",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "orange", "value": 70 },
+              { "color": "yellow", "value": 85 },
+              { "color": "green", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 6, "y": 1 },
+      "id": 2,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE t.value = 'RUNNING') * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1) as \"Availability\"\nFROM tag_string t\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND t.name = 'State'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()",
+          "refId": "A"
+        }
+      ],
+      "title": "Availability",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "orange", "value": 90 },
+              { "color": "yellow", "value": 95 },
+              { "color": "green", "value": 98 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 6, "w": 4, "x": 10, "y": 1 },
+      "id": 3,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND((CASE WHEN (good_delta + scrap_delta) > 0 THEN good_delta * 100.0 / (good_delta + scrap_delta) ELSE 100 END)::numeric, 1) as \"Quality\"\nFROM (\n  SELECT\n    COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta,\n    COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta\n  FROM (\n    SELECT asset_id, origin,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp <= NOW()::timestamptz) as end_good,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_good,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp <= NOW()::timestamptz) as end_scrap,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_scrap\n    FROM tag\n    WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n      AND name IN ('GoodParts', 'ScrapParts')\n    GROUP BY asset_id, origin\n  ) sub\n) sub",
+          "refId": "A"
+        }
+      ],
+      "title": "Quality",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 3, "w": 5, "x": 14, "y": 1 },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH per_origin AS (\n  SELECT asset_id, origin,\n    MAX(value) FILTER (WHERE timestamp <= NOW()::timestamptz) as end_v,\n    MAX(value) FILTER (WHERE timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_v\n  FROM tag\n  WHERE name = 'GoodParts'\n    AND asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  GROUP BY asset_id, origin\n)\nSELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as \"Good Parts\"\nFROM per_origin",
+          "refId": "A"
+        }
+      ],
+      "title": "Good Parts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "red", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 3, "w": 5, "x": 19, "y": 1 },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH per_origin AS (\n  SELECT asset_id, origin,\n    MAX(value) FILTER (WHERE timestamp <= NOW()::timestamptz) as end_v,\n    MAX(value) FILTER (WHERE timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_v\n  FROM tag\n  WHERE name = 'ScrapParts'\n    AND asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  GROUP BY asset_id, origin\n)\nSELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as \"Scrap Parts\"\nFROM per_origin",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrap Parts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 3, "w": 5, "x": 14, "y": 4 },
+      "id": 6,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT AVG(t.value) / 1000.0 as \"Avg Cycle Time\"\nFROM tag t\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND t.name = 'CycleTime'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  AND t.value > 0 AND t.value < 300000",
+          "refId": "A"
+        }
+      ],
+      "title": "Avg Cycle Time",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "orange", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 3, "w": 5, "x": 19, "y": 4 },
+      "id": 7,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) as \"Stop Count\"\nFROM machine_stops ms\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()",
+          "refId": "A"
+        }
+      ],
+      "title": "Stop Count",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+      "id": 101,
+      "panels": [],
+      "title": "Current Machine States",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" } }, "type": "value" },
+            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
+            { "options": { "STOPPED": { "color": "red", "index": 2, "text": "STOPPED" } }, "type": "value" },
+            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINTENANCE" } }, "type": "value" },
+            { "options": { "FAULT": { "color": "dark-red", "index": 4, "text": "FAULT" } }, "type": "value" },
+            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "gray", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 8 },
+      "id": 8,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^state$/", "values": false },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  workcell as metric,\n  state,\n  duration_seconds\nFROM v_machine_current_state\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line}'\nORDER BY workcell",
+          "refId": "A"
+        }
+      ],
+      "title": "Machine States",
+      "transformations": [
+        {
+          "id": "rowsToFields",
+          "options": {
+            "mappings": [
+              { "fieldName": "metric", "handlerKey": "field.name" },
+              { "fieldName": "state", "handlerKey": "field.value" }
+            ]
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 102,
+      "panels": [],
+      "title": "Stop Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1,
+            "scaleDistribution": { "type": "linear" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "id": 9,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.8,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": { "calcs": [], "displayMode": "hidden", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH stop_data AS (\n  SELECT\n    COALESCE(sr.name, 'Unspecified') as reason,\n    sr.category,\n    COUNT(*) as stop_count,\n    SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0) as total_duration_mins\n  FROM machine_stops ms\n  LEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id\n  WHERE ms.asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n    AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  GROUP BY sr.name, sr.category\n),\ntotals AS (\n  SELECT SUM(stop_count) as total_stops FROM stop_data\n)\nSELECT\n  reason || ' (' || category || ')' as \"Reason\",\n  stop_count as \"Count\",\n  ROUND(total_duration_mins::numeric, 0) as \"Duration (min)\"\nFROM stop_data, totals\nORDER BY stop_count DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Stop Reasons Pareto",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Count",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "id": 10,
+      "options": {
+        "bucketCount": 20,
+        "bucketOffset": 0,
+        "bucketSize": 5,
+        "combine": false,
+        "legend": { "calcs": ["count", "mean"], "displayMode": "table", "placement": "bottom", "showLegend": true }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0 as \"Duration (min)\"\nFROM machine_stops ms\nWHERE ms.asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY \"Duration (min)\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Stop Duration Distribution",
+      "type": "histogram"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 103,
+      "panels": [],
+      "title": "Quality Trends",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "max": 15,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 5 }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "id": 11,
+      "options": {
+        "legend": { "calcs": ["mean", "max", "min"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "WITH time_buckets AS (\n  SELECT\n    time_bucket('1 hour', t.timestamp) as bucket,\n    a.workcell,\n    SUM(CASE WHEN t.name = 'GoodParts' THEN t.value ELSE 0 END) as good_max,\n    SUM(CASE WHEN t.name = 'ScrapParts' THEN t.value ELSE 0 END) as scrap_max\n  FROM tag t\n  JOIN asset a ON a.id = t.asset_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line}'\n    AND a.workcell != ''\n    AND t.name IN ('GoodParts', 'ScrapParts')\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  GROUP BY bucket, a.workcell\n)\nSELECT\n  bucket as time,\n  workcell as metric,\n  CASE\n    WHEN (good_max + scrap_max) > 0 THEN ROUND((scrap_max * 100.0 / (good_max + scrap_max))::numeric, 2)\n    ELSE 0\n  END as value\nFROM time_buckets\nORDER BY bucket",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrap Rate Over Time by Machine",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 104,
+      "panels": [],
+      "title": "Machine State Timeline",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineWidth": 1,
+            "spanNulls": false
+          },
+          "mappings": [
+            { "options": { "FAULT": { "color": "dark-red", "index": 0, "text": "Fault" } }, "type": "value" },
+            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "Idle" } }, "type": "value" },
+            { "options": { "RUNNING": { "color": "green", "index": 2, "text": "Running" } }, "type": "value" },
+            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "Maintenance" } }, "type": "value" },
+            { "options": { "STOPPED": { "color": "red", "index": 4, "text": "Stopped" } }, "type": "value" },
+            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "Setup" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "gray", "value": 0 }]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+      "id": 12,
+      "options": {
+        "alignValue": "left",
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "mergeValues": false,
+        "rowHeight": 0.8,
+        "showValue": "auto",
+        "tooltip": { "hideZeros": false, "mode": "single", "sort": "none" }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  t.timestamp as time,\n  t.value as value,\n  a.workcell as metric\nFROM tag_string t\nJOIN asset a ON a.id = t.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND a.workcell != ''\n  AND t.name = 'State'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY t.timestamp",
+          "refId": "A"
+        }
+      ],
+      "title": "Machine State Timeline",
+      "type": "state-timeline"
+    }
+  ],
+  "preload": false,
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": ["production-manager", "oee", "line", "stops"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "label": "Data Source",
+        "name": "DS_POSTGRESQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": { "selected": false, "text": "UMH-factory", "value": "UMH-factory" },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Enterprise",
+        "name": "enterprise",
+        "options": [],
+        "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": false, "text": "Paris", "value": "Paris" },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Site",
+        "name": "site",
+        "options": [],
+        "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": false, "text": "line1", "value": "line1" },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Line",
+        "name": "line",
+        "options": [],
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "1 day", "value": "1 day" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Time Period",
+        "name": "time_period",
+        "options": [
+          { "selected": true, "text": "1 day", "value": "1 day" },
+          { "selected": false, "text": "7 days", "value": "7 days" },
+          { "selected": false, "text": "1 month", "value": "1 month" }
+        ],
+        "query": "1 day, 7 days, 1 month",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Production Manager View",
+  "uid": "production-manager-view",
+  "version": 1,
+  "weekStart": ""
+}

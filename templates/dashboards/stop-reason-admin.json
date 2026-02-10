@@ -1,0 +1,301 @@
+{
+  "id": null,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": null,
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id as \"ID\", name as \"Name\", category as \"Category\" FROM stop_reasons ORDER BY id",
+          "refId": "A"
+        }
+      ],
+      "title": "Stop Reasons",
+      "type": "table"
+    },
+    {
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": null,
+      "options": {
+        "buttonGroup": {
+          "orientation": "center",
+          "size": "md"
+        },
+        "elements": [
+          {
+            "id": "name",
+            "title": "Reason Name",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "id": "category",
+            "options": [
+              {
+                "label": "Planned",
+                "value": "Planned"
+              },
+              {
+                "label": "Unplanned",
+                "value": "Unplanned"
+              },
+              {
+                "label": "External",
+                "value": "External"
+              },
+              {
+                "label": "Unknown",
+                "value": "Unknown"
+              }
+            ],
+            "title": "Category",
+            "type": "select",
+            "value": "Planned"
+          }
+        ],
+        "layout": {
+          "variant": "single"
+        },
+        "resetAction": {
+          "mode": "initial"
+        },
+        "submit": {
+          "contentType": "application/json",
+          "getPayload": "return { name: context.panel.elements.find(e => e.id === \"name\").value, category: context.panel.elements.find(e => e.id === \"category\").value };",
+          "method": "POST",
+          "payloadMode": "custom",
+          "text": "Add Reason",
+          "url": "http://localhost:80/api/v1/stop-reasons"
+        },
+        "update": {
+          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Reason added\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to add reason\"]); }",
+          "confirm": false,
+          "contentType": "application/json",
+          "getPayload": "return { name: context.panel.elements.find(e => e.id === \"name\").value, category: context.panel.elements.find(e => e.id === \"category\").value };",
+          "method": "POST",
+          "payloadMode": "custom",
+          "url": "http://localhost:80/api/v1/stop-reasons"
+        }
+      },
+      "title": "Add New Reason",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "id": null,
+      "options": {
+        "buttonGroup": {
+          "orientation": "center",
+          "size": "md"
+        },
+        "elements": [
+          {
+            "id": "id",
+            "title": "Reason ID",
+            "type": "number",
+            "value": 0
+          },
+          {
+            "id": "name",
+            "title": "New Name",
+            "type": "string",
+            "value": ""
+          },
+          {
+            "id": "category",
+            "options": [
+              {
+                "label": "Planned",
+                "value": "Planned"
+              },
+              {
+                "label": "Unplanned",
+                "value": "Unplanned"
+              },
+              {
+                "label": "External",
+                "value": "External"
+              },
+              {
+                "label": "Unknown",
+                "value": "Unknown"
+              }
+            ],
+            "title": "Category",
+            "type": "select",
+            "value": "Planned"
+          }
+        ],
+        "layout": {
+          "variant": "single"
+        },
+        "resetAction": {
+          "mode": "initial"
+        },
+        "submit": {
+          "contentType": "application/json",
+          "getPayload": "return { id: Number(context.panel.elements.find(e => e.id === \"id\").value), name: context.panel.elements.find(e => e.id === \"name\").value, category: context.panel.elements.find(e => e.id === \"category\").value };",
+          "method": "PUT",
+          "payloadMode": "custom",
+          "text": "Update Reason",
+          "url": "http://localhost:80/api/v1/stop-reasons"
+        },
+        "update": {
+          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Reason updated\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to update\"]); }",
+          "confirm": false,
+          "contentType": "application/json",
+          "getPayload": "return { id: Number(context.panel.elements.find(e => e.id === \"id\").value), name: context.panel.elements.find(e => e.id === \"name\").value, category: context.panel.elements.find(e => e.id === \"category\").value };",
+          "method": "PUT",
+          "payloadMode": "custom",
+          "url": "http://localhost:80/api/v1/stop-reasons"
+        }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id, name FROM stop_reasons ORDER BY id",
+          "refId": "A"
+        }
+      ],
+      "title": "Edit Reason",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "description": "Warning: Cannot delete if reason is in use by machine_stops",
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
+      "id": null,
+      "options": {
+        "buttonGroup": {
+          "orientation": "center",
+          "size": "md"
+        },
+        "confirmModal": {
+          "body": "Are you sure you want to delete this stop reason?",
+          "cancel": "Cancel",
+          "confirm": "Delete",
+          "title": "Confirm Delete"
+        },
+        "elements": [
+          {
+            "id": "id",
+            "title": "Reason ID to Delete",
+            "type": "number",
+            "value": 0
+          }
+        ],
+        "layout": {
+          "variant": "single"
+        },
+        "resetAction": {
+          "mode": "initial"
+        },
+        "submit": {
+          "contentType": "application/json",
+          "getPayload": "return { id: Number(context.panel.elements.find(e => e.id === \"id\").value) };",
+          "method": "DELETE",
+          "payloadMode": "custom",
+          "text": "Delete Reason",
+          "url": "http://localhost:80/api/v1/stop-reasons",
+          "variant": "destructive"
+        },
+        "update": {
+          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Reason deleted\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to delete\"]); }",
+          "confirm": true,
+          "contentType": "application/json",
+          "getPayload": "return { id: Number(context.panel.elements.find(e => e.id === \"id\").value) };",
+          "method": "DELETE",
+          "payloadMode": "custom",
+          "url": "http://localhost:80/api/v1/stop-reasons"
+        }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT id, name FROM stop_reasons WHERE id > 1 ORDER BY id",
+          "refId": "A"
+        }
+      ],
+      "title": "Delete Reason",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
+      "id": null,
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right"
+        }
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT sr.name as reason, COUNT(*) as count FROM machine_stops ms JOIN stop_reasons sr ON ms.stop_reason_id = sr.id WHERE ms.start_time > NOW() - INTERVAL '7 days' GROUP BY sr.name ORDER BY count DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Stops by Reason (Last 7 days)",
+      "type": "piechart"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": [
+    "admin",
+    "stops"
+  ],
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Stop Reason Admin",
+  "uid": "cfa6d2eb-5393-4bcd-b488-fbd9389e74b1",
+  "version": 1
+}

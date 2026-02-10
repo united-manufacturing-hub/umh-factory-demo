@@ -1,0 +1,159 @@
+name: injection-molding
+display_name: "Injection Molding Machine"
+
+dataModel:
+  name: injection_molding
+  version:
+    v1:
+      structure:
+        State:
+          _payloadshape: timeseries-string
+        CycleCount:
+          _payloadshape: timeseries-number
+        CycleTime:
+          _payloadshape: timeseries-number
+        CycleProgress:
+          _payloadshape: timeseries-number
+        GoodParts:
+          _payloadshape: timeseries-number
+        ScrapParts:
+          _payloadshape: timeseries-number
+        BarrelTemperature:
+          _payloadshape: timeseries-number
+        MoldTemperature:
+          _payloadshape: timeseries-number
+        InjectionPressure:
+          _payloadshape: timeseries-number
+        HoldingPressure:
+          _payloadshape: timeseries-number
+        ScrewPosition:
+          _payloadshape: timeseries-number
+        ScrewSpeed:
+          _payloadshape: timeseries-number
+        ClampForce:
+          _payloadshape: timeseries-number
+        CoolingTime:
+          _payloadshape: timeseries-number
+        ShotWeight:
+          _payloadshape: timeseries-number
+        CushionPosition:
+          _payloadshape: timeseries-number
+        CurrentOrderId:
+          _payloadshape: timeseries-string
+        CurrentPartNumber:
+          _payloadshape: timeseries-string
+        CurrentPartId:
+          _payloadshape: timeseries-string
+        MoldOpen:
+          _payloadshape: timeseries-number
+        EjectorPosition:
+          _payloadshape: timeseries-number
+        ErrorCode:
+          _payloadshape: timeseries-number
+        ErrorMessage:
+          _payloadshape: timeseries-string
+
+dataContract:
+  name: _injection_molding_v1
+  model:
+    name: injection_molding
+    version: v1
+
+# Protocol converter template - exact UMH config format
+# {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
+protocolConverter:
+  connection:
+    nmap:
+      target: '{{ .IP }}'
+      port: '{{ .PORT }}'
+  dataflowcomponent_read:
+    benthos:
+      input:
+        opcua:
+          endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
+          nodeIDs:
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=15"
+            - "ns=1;i=16"
+            - "ns=1;i=17"
+            - "ns=1;i=18"
+            - "ns=1;i=19"
+            - "ns=1;i=21"
+          pollRate: 1000
+          subscribeEnabled: false
+      pipeline:
+        processors:
+          - tag_processor:
+              conditions:
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
+                  then: |
+                    msg.meta.tag_name = "State";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
+                  then: |
+                    msg.meta.tag_name = "CycleCount";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
+                  then: |
+                    msg.meta.tag_name = "BarrelTemperature";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=10"'
+                  then: |
+                    msg.meta.tag_name = "MoldTemperature";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=11"'
+                  then: |
+                    msg.meta.tag_name = "InjectionPressure";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=12"'
+                  then: |
+                    msg.meta.tag_name = "HoldingPressure";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=13"'
+                  then: |
+                    msg.meta.tag_name = "ScrewPosition";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=14"'
+                  then: |
+                    msg.meta.tag_name = "ScrewSpeed";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=15"'
+                  then: |
+                    msg.meta.tag_name = "ClampForce";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=16"'
+                  then: |
+                    msg.meta.tag_name = "CoolingTime";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=17"'
+                  then: |
+                    msg.meta.tag_name = "ShotWeight";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=18"'
+                  then: |
+                    msg.meta.tag_name = "CushionPosition";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=19"'
+                  then: |
+                    msg.meta.tag_name = "CycleTime";
+                    return msg;
+                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=21"'
+                  then: |
+                    msg.meta.tag_name = "ErrorCode";
+                    return msg;
+              defaults: |
+                msg.meta.location_path = "{{ .location_path }}";
+                msg.meta.data_contract = "_injection_molding_v1";
+                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.historian = "true";
+                msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+                return msg;
+      buffer:
+        none: {}

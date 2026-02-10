@@ -1,0 +1,664 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH time_range AS (SELECT $__timeFrom()::timestamptz as t_start, $__timeTo()::timestamptz as t_end), shift_periods AS (SELECT GREATEST(s.start_time, tr.t_start) as period_start, LEAST(s.end_time, tr.t_end) as period_end FROM shifts s, time_range tr WHERE s.start_time < tr.t_end AND s.end_time > tr.t_start) SELECT CASE WHEN COUNT(*) > 0 THEN SUM(EXTRACT(EPOCH FROM (period_end - period_start)) / 60) ELSE NULL END as planned_minutes FROM shift_periods",
+          "refId": "A"
+        }
+      ],
+      "title": "Planned Time",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 14,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH time_range AS (SELECT $__timeFrom()::timestamptz as t_start, $__timeTo()::timestamptz as t_end), shift_periods AS (SELECT GREATEST(s.start_time, tr.t_start) as period_start, LEAST(s.end_time, tr.t_end) as period_end FROM shifts s, time_range tr WHERE s.start_time < tr.t_end AND s.end_time > tr.t_start), state_changes AS (SELECT timestamp, value, LEAD(timestamp) OVER (ORDER BY timestamp) as next_ts FROM tag WHERE name = 'State' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'))) SELECT CASE WHEN (SELECT COUNT(*) FROM shift_periods) > 0 THEN COALESCE(SUM(EXTRACT(EPOCH FROM (LEAST(COALESCE(sc.next_ts, sp.period_end), sp.period_end) - GREATEST(sc.timestamp, sp.period_start))) / 60), 0) ELSE NULL END as running_minutes FROM state_changes sc, shift_periods sp WHERE sc.value = 2 AND sc.timestamp < sp.period_end AND COALESCE(sc.next_ts, sp.period_end) > sp.period_start",
+          "refId": "A"
+        }
+      ],
+      "title": "Runtime",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH per_origin AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'GoodParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin) SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as good_parts FROM per_origin",
+          "refId": "A"
+        }
+      ],
+      "title": "Good Parts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH per_origin AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'ScrapParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin) SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as scrap_parts FROM per_origin",
+          "refId": "A"
+        }
+      ],
+      "title": "Scrap Parts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 16,
+        "y": 0
+      },
+      "id": 15,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH good_deltas AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'GoodParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin), scrap_deltas AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'ScrapParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin) SELECT COALESCE((SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FROM good_deltas), 0) + COALESCE((SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FROM scrap_deltas), 0) as total_parts",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Parts",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineWidth": 0,
+            "spanNulls": false
+          },
+          "mappings": [
+            {
+              "options": {
+                "Idle": {
+                  "color": "blue",
+                  "index": 0
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "Setup": {
+                  "color": "yellow",
+                  "index": 1
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "Running": {
+                  "color": "green",
+                  "index": 2
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "PlannedStop": {
+                  "color": "orange",
+                  "index": 3
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "UnplannedStop": {
+                  "color": "red",
+                  "index": 4
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "id": null,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "auto",
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp AS time, CASE WHEN value = 0 THEN 'Idle' WHEN value = 1 THEN 'Setup' WHEN value = 2 THEN 'Running' WHEN value = 3 THEN 'PlannedStop' WHEN value = 4 THEN 'UnplannedStop' ELSE 'Unknown' END as \"State\" FROM tag WHERE name = 'State' AND $__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) ORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Machine State Over Time",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 140
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp AS time, value as \"InjectionPressure\" FROM tag WHERE name = 'InjectionPressure' AND $__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'))",
+          "refId": "A"
+        }
+      ],
+      "title": "__MACHINE_DISPLAY__ Injection Pressure (bar)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "df9o2whw2o7wgb"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 45
+              },
+              {
+                "color": "red",
+                "value": 55
+              }
+            ]
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT timestamp AS time, value as \"MoldTemperature\" FROM tag WHERE name = 'MoldTemperature' AND $__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'))",
+          "refId": "A"
+        }
+      ],
+      "title": "__MACHINE_DISPLAY__ Mold Temperature (°C)",
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "5s",
+  "schemaVersion": 42,
+  "tags": [
+    "production",
+    "line1"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "__MACHINE_DISPLAY__ Dashboard",
+  "uid": "__WORKCELL__-dashboard",
+  "version": 1,
+  "weekStart": ""
+}

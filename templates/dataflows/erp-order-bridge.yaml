@@ -1,0 +1,183 @@
+# ERP Order Bridge Dataflow
+# Consumes production orders from UNS and writes to PostgreSQL
+
+input:
+  uns:
+    consumer_group: erporderbridgev1
+    umh_topic: ^umh\.v1(?:\.[^.]+){0,8}\._erp\.orders$
+
+pipeline:
+  processors:
+    - bloblang: |-
+        let topic = meta("umh_topic")
+        let is_valid = $topic.contains("_erp.orders")
+        root = match {
+          $is_valid => root,
+          _ => deleted()
+        }
+      label: filter_topics
+    - bloblang: root = this.catch(deleted())
+      label: validate_json
+    - bloblang: |-
+        root.timestamp = if this.timestamp_ms != null {
+          (this.timestamp_ms / 1000).ts_format(tz: "UTC")
+        } else {
+          now().ts_format(tz: "UTC")
+        }
+        root.order_id = this.orderId
+        root.customer = this.customer
+        root.part_number = this.partNumber
+        root.part_description = this.partDescription
+        root.quantity = this.quantity
+        root.quantity_completed = this.quantityCompleted
+        root.quantity_scrap = this.quantityScrap
+        root.priority = this.priority
+        root.status = this.status
+        root.due_date = this.dueDate
+        root.started_at = this.startedAt
+        root.ended_at = this.endedAt
+        root.target_line = this.target_line
+      label: transform_order
+    - bloblang: |-
+        let topic = meta("umh_topic")
+        let matches = $topic.re_find_all_object("^umh\\.v1\\.(?P<enterprise>[\\w-]+)(?:\\.(?P<site>[\\w-]*))?(?:\\.(?P<area>[\\w-]*))?(?:\\.(?P<line>[\\w-]*))?(?:\\.(?P<workcell>[\\w-]*))?(?:\\.(?P<origin_id>[\\w-]*))?\\._(?P<contract>[\\w-]+)")
+        let m = if $matches.length() > 0 { $matches.index(0) } else { {} }
+        meta "enterprise" = $m.enterprise.or("")
+        meta "site" = $m.site.or("")
+        # Default area to shopfloor, extract line from order payload if available
+        meta "area" = if $m.area.or("") != "" { $m.area } else { "shopfloor" }
+        # Use target_line/targetLine from payload if topic doesn't have line info
+        let payload_line = this.target_line.or(this.targetLine).or("")
+        let line_from_topic = $m.line.or("")
+        meta "line" = if $line_from_topic != "" { $line_from_topic } else { $payload_line.lowercase() }
+        meta "workcell" = $m.workcell.or("")
+        meta "origin_id" = $m.origin_id.or("")
+        root = this
+      label: extract_location
+    - branch:
+        processors:
+          - try:
+              - cache:
+                  # Include line in cache key since orders for different lines need different asset_ids
+                  key: ${! meta("umh_topic") + "_" + meta("line") }
+                  operator: get
+                  resource: erp_asset_id_cache
+          - catch:
+              - mapping: root = "CACHE_MISS"
+        request_map: root = ""
+        result_map: root.asset_id = if content() != "CACHE_MISS" && content() != "" && content() != "null" { content().number() } else { null }
+    - branch:
+        processors:
+          - sql_raw:
+              driver: postgres
+              dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+              query: |
+                WITH existing AS (
+                  SELECT id FROM public.asset
+                  WHERE enterprise = '${! meta("enterprise") }'
+                    AND site = '${! meta("site").or("")}'
+                    AND area = '${! meta("area").or("")}'
+                    AND line = '${! meta("line").or("")}'
+                    AND workcell = '${! meta("workcell").or("")}'
+                    AND origin_id = '${! meta("origin_id").or("")}'
+                ),
+                inserted AS (
+                  INSERT INTO public.asset (enterprise, site, area, line, workcell, origin_id)
+                  SELECT '${! meta("enterprise") }', '${! meta("site").or("")}', '${! meta("area").or("")}', '${! meta("line").or("")}', '${! meta("workcell").or("")}', '${! meta("origin_id").or("")}'
+                  WHERE NOT EXISTS (SELECT 1 FROM existing)
+                  RETURNING id
+                )
+                SELECT id FROM inserted
+                UNION ALL
+                SELECT id FROM existing
+                LIMIT 1;
+              unsafe_dynamic_query: true
+        request_map: root = if this.asset_id == null { "" } else { deleted() }
+        result_map: root.asset_id = this.index(0).get("id")
+    - branch:
+        processors:
+          - cache:
+              # Include line in cache key since orders for different lines need different asset_ids
+              key: ${! meta("umh_topic") + "_" + meta("line") }
+              operator: set
+              resource: erp_asset_id_cache
+              value: ${! content() }
+        request_map: root = if this.asset_id != null { this.asset_id.string() } else { deleted() }
+        result_map: root = root
+    - dedupe:
+        cache: erp_dedupe_cache
+        key: ${! json("asset_id").string() + "_" + json("order_id") + "_" + json("status") }
+
+output:
+  sql_raw:
+    driver: postgres
+    dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+    init_statement: |
+      CREATE TABLE IF NOT EXISTS production_orders (
+        id SERIAL PRIMARY KEY,
+        timestamp TIMESTAMPTZ NOT NULL,
+        asset_id INTEGER REFERENCES asset(id),
+        order_id VARCHAR(255) NOT NULL,
+        customer VARCHAR(255),
+        part_number VARCHAR(255),
+        part_description TEXT,
+        quantity INTEGER,
+        quantity_completed INTEGER,
+        quantity_scrap INTEGER,
+        priority INTEGER,
+        status VARCHAR(50),
+        due_date TIMESTAMPTZ,
+        started_at TIMESTAMPTZ,
+        ended_at TIMESTAMPTZ,
+        UNIQUE (asset_id, order_id)
+      );
+      -- Add ended_at column if it doesn't exist (migration for existing tables)
+      DO $$ BEGIN
+        ALTER TABLE production_orders ADD COLUMN IF NOT EXISTS ended_at TIMESTAMPTZ;
+      EXCEPTION WHEN duplicate_column THEN NULL;
+      END $$;
+    query: |
+      INSERT INTO production_orders (timestamp, asset_id, order_id, customer, part_number, part_description, quantity, quantity_completed, quantity_scrap, priority, status, due_date, started_at, ended_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      ON CONFLICT (asset_id, order_id) DO UPDATE SET
+        timestamp = EXCLUDED.timestamp,
+        quantity_completed = GREATEST(production_orders.quantity_completed, EXCLUDED.quantity_completed),
+        quantity_scrap = GREATEST(production_orders.quantity_scrap, EXCLUDED.quantity_scrap),
+        status = CASE
+          WHEN EXCLUDED.status = 'COMPLETED' THEN 'COMPLETED'
+          WHEN EXCLUDED.quantity_completed >= EXCLUDED.quantity AND EXCLUDED.quantity > 0 THEN 'COMPLETED'
+          WHEN production_orders.status = 'COMPLETED' THEN 'COMPLETED'
+          WHEN EXCLUDED.status = 'IN_PROGRESS' THEN 'IN_PROGRESS'
+          WHEN production_orders.quantity_completed > 0 THEN 'IN_PROGRESS'
+          ELSE EXCLUDED.status
+        END,
+        started_at = COALESCE(production_orders.started_at, EXCLUDED.started_at),
+        ended_at = COALESCE(EXCLUDED.ended_at, production_orders.ended_at)
+    args_mapping: |
+      root = [
+        this.timestamp,
+        this.asset_id,
+        this.order_id,
+        this.customer,
+        this.part_number,
+        this.part_description,
+        this.quantity,
+        this.quantity_completed,
+        this.quantity_scrap,
+        this.priority,
+        this.status,
+        this.due_date,
+        this.started_at,
+        this.ended_at
+      ]
+    unsafe_dynamic_query: true
+
+cache_resources:
+  - label: erp_asset_id_cache
+    memory:
+      compaction_interval: 60s
+      default_ttl: 24h
+  - label: erp_dedupe_cache
+    memory:
+      compaction_interval: 60s
+      default_ttl: 5s

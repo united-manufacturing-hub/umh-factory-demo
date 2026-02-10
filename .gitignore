@@ -1,0 +1,5 @@
+.DS_Store
+umh-core-data/
+test-output/
+__pycache__/
+*.pyc

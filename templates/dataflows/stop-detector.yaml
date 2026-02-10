@@ -1,0 +1,255 @@
+# Stop Detector Dataflow
+# Monitors machine State tag and detects stops (state != 2)
+# Creates/closes stop records in machine_stops table
+
+input:
+  uns:
+    consumer_group: stopdetectorv1
+    umh_topic: ^umh\.v1.*$
+
+pipeline:
+  processors:
+    - bloblang: |-
+        # Only process State tag with historian=true
+        let tag_name = meta("tag_name").or("")
+        let historian = meta("historian").or("false")
+        root = if $tag_name == "State" && $historian == "true" {
+          root
+        } else {
+          deleted()
+        }
+      label: filter_state_tag
+    - bloblang: root = this.catch(deleted())
+      label: validate_json
+    - bloblang: |-
+        # Map string state values to numeric, or pass through if already numeric
+        root.current_state = match this.value {
+          "RUNNING" => 2,
+          "IDLE" => 0,
+          "STOPPED" => 1,
+          "FAULT" => 3,
+          "MAINTENANCE" => 4,
+          _ => this.value.number().catch(0)
+        }
+        root.timestamp = if this.timestamp_ms != null {
+          (this.timestamp_ms / 1000).ts_format(tz: "UTC")
+        } else {
+          now().ts_format(tz: "UTC")
+        }
+      label: extract_state
+    - bloblang: |-
+        # Extract location from UNS topic for asset lookup
+        let topic = meta("umh_topic")
+        let matches = $topic.re_find_all_object("^umh\\.v1\\.(?P<enterprise>[\\w-]+)(?:\\.(?P<site>[\\w-]*))?(?:\\.(?P<area>[\\w-]*))?(?:\\.(?P<line>[\\w-]*))?(?:\\.(?P<workcell>[\\w-]*))?(?:\\.(?P<origin_id>[\\w-]*))?\\._(?P<contract>[\\w-]+)")
+        let m = if $matches.length() > 0 { $matches.index(0) } else { {} }
+        meta "enterprise" = $m.enterprise.or("")
+        meta "site" = $m.site.or("")
+        meta "area" = $m.area.or("")
+        meta "line" = $m.line.or("")
+        meta "workcell" = $m.workcell.or("")
+        meta "origin_id" = $m.origin_id.or("")
+        root = this
+      label: extract_location
+    # Lookup asset_id from cache first
+    - branch:
+        processors:
+          - try:
+              - cache:
+                  key: ${! meta("umh_topic") }
+                  operator: get
+                  resource: stop_asset_id_cache
+          - catch:
+              - mapping: root = "CACHE_MISS"
+        request_map: root = ""
+        result_map: root.asset_id = if content() != "CACHE_MISS" && content() != "" && content() != "null" { content().number() } else { null }
+    # If cache miss, lookup/create asset in database
+    - branch:
+        processors:
+          - sql_raw:
+              driver: postgres
+              dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+              query: |
+                WITH existing AS (
+                  SELECT id FROM public.asset
+                  WHERE enterprise = '${! meta("enterprise") }'
+                    AND site = '${! meta("site").or("")}'
+                    AND area = '${! meta("area").or("")}'
+                    AND line = '${! meta("line").or("")}'
+                    AND workcell = '${! meta("workcell").or("")}'
+                    AND origin_id = '${! meta("origin_id").or("")}'
+                ),
+                inserted AS (
+                  INSERT INTO public.asset (enterprise, site, area, line, workcell, origin_id)
+                  SELECT '${! meta("enterprise") }', '${! meta("site").or("")}', '${! meta("area").or("")}', '${! meta("line").or("")}', '${! meta("workcell").or("")}', '${! meta("origin_id").or("")}'
+                  WHERE NOT EXISTS (SELECT 1 FROM existing)
+                  RETURNING id
+                )
+                SELECT id FROM inserted
+                UNION ALL
+                SELECT id FROM existing
+                LIMIT 1;
+              unsafe_dynamic_query: true
+        request_map: root = if this.asset_id == null { "" } else { deleted() }
+        result_map: root.asset_id = this.index(0).get("id")
+    # Update cache with asset_id
+    - branch:
+        processors:
+          - cache:
+              key: ${! meta("umh_topic") }
+              operator: set
+              resource: stop_asset_id_cache
+              value: ${! content() }
+        request_map: root = if this.asset_id != null { this.asset_id.string() } else { deleted() }
+        result_map: root = root
+    # Get previous state from cache (keyed per asset)
+    - branch:
+        processors:
+          - try:
+              - cache:
+                  key: previous_state_${! json("asset_id").string() }
+                  operator: get
+                  resource: state_cache
+          - catch:
+              - mapping: root = "CACHE_MISS"
+        request_map: root = ""
+        result_map: root.previous_state = if content() != "CACHE_MISS" && content() != "" && content() != "null" { content().number() } else { 2 }
+    # Save current state to cache for next comparison
+    - branch:
+        processors:
+          - cache:
+              key: previous_state_${! json("asset_id").string() }
+              operator: set
+              resource: state_cache
+              value: ${! json("current_state").string() }
+        request_map: root = json("current_state").string()
+        result_map: root = root
+    - bloblang: |-
+        root.action = match {
+          this.previous_state == 2 && this.current_state != 2 => "start_stop",
+          this.previous_state != 2 && this.current_state == 2 => "end_stop",
+          _ => "none"
+        }
+        root.current_state = this.current_state
+        root.timestamp = this.timestamp
+        root.asset_id = this.asset_id
+      label: determine_action
+    - bloblang: root = if this.action == "none" { deleted() } else { this }
+      label: filter_no_action
+
+output:
+  switch:
+    cases:
+      - check: this.action == "start_stop"
+        output:
+          sql_raw:
+            driver: postgres
+            dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+            init_statement: |
+              CREATE TABLE IF NOT EXISTS asset (
+                id SERIAL PRIMARY KEY,
+                enterprise VARCHAR(255) NOT NULL,
+                site VARCHAR(255) DEFAULT '',
+                area VARCHAR(255) DEFAULT '',
+                line VARCHAR(255) DEFAULT '',
+                workcell VARCHAR(255) DEFAULT '',
+                origin_id VARCHAR(255) DEFAULT '',
+                UNIQUE (enterprise, site, area, line, workcell, origin_id)
+              );
+              CREATE TABLE IF NOT EXISTS tag (
+                timestamp TIMESTAMPTZ NOT NULL,
+                asset_id INTEGER REFERENCES asset(id),
+                name TEXT NOT NULL,
+                value DOUBLE PRECISION,
+                origin VARCHAR(255)
+              );
+              CREATE TABLE IF NOT EXISTS tag_string (
+                timestamp TIMESTAMPTZ NOT NULL,
+                asset_id INTEGER REFERENCES asset(id),
+                name TEXT NOT NULL,
+                value TEXT,
+                origin VARCHAR(255)
+              );
+              CREATE TABLE IF NOT EXISTS stop_reasons (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                category VARCHAR(50)
+              );
+              INSERT INTO stop_reasons (name, category) VALUES
+                ('Unspecified', 'Unknown'),
+                ('Material shortage', 'External'),
+                ('Tool change', 'Planned'),
+                ('Operator break', 'Planned'),
+                ('Maintenance', 'Planned'),
+                ('Quality issue', 'Unplanned'),
+                ('Setup/changeover', 'Planned'),
+                ('Waiting for parts', 'External'),
+                ('Equipment failure', 'Unplanned'),
+                ('Other', 'Unknown')
+              ON CONFLICT DO NOTHING;
+              CREATE TABLE IF NOT EXISTS machine_stops (
+                id SERIAL PRIMARY KEY,
+                asset_id INTEGER,
+                start_time TIMESTAMPTZ NOT NULL,
+                end_time TIMESTAMPTZ,
+                stop_reason_id INTEGER REFERENCES stop_reasons(id) DEFAULT 1,
+                state_value INTEGER,
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+              );
+            query: INSERT INTO machine_stops (asset_id, start_time, state_value, stop_reason_id) VALUES (${! json("asset_id") }, '${! json("timestamp") }', ${! json("current_state") }, 1)
+            unsafe_dynamic_query: true
+      - check: this.action == "end_stop"
+        output:
+          sql_raw:
+            driver: postgres
+            dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+            init_statement: |
+              CREATE TABLE IF NOT EXISTS asset (
+                id SERIAL PRIMARY KEY,
+                enterprise VARCHAR(255) NOT NULL,
+                site VARCHAR(255) DEFAULT '',
+                area VARCHAR(255) DEFAULT '',
+                line VARCHAR(255) DEFAULT '',
+                workcell VARCHAR(255) DEFAULT '',
+                origin_id VARCHAR(255) DEFAULT '',
+                UNIQUE (enterprise, site, area, line, workcell, origin_id)
+              );
+              CREATE TABLE IF NOT EXISTS tag (
+                timestamp TIMESTAMPTZ NOT NULL,
+                asset_id INTEGER REFERENCES asset(id),
+                name TEXT NOT NULL,
+                value DOUBLE PRECISION,
+                origin VARCHAR(255)
+              );
+              CREATE TABLE IF NOT EXISTS tag_string (
+                timestamp TIMESTAMPTZ NOT NULL,
+                asset_id INTEGER REFERENCES asset(id),
+                name TEXT NOT NULL,
+                value TEXT,
+                origin VARCHAR(255)
+              );
+              CREATE TABLE IF NOT EXISTS stop_reasons (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                category VARCHAR(50)
+              );
+              CREATE TABLE IF NOT EXISTS machine_stops (
+                id SERIAL PRIMARY KEY,
+                asset_id INTEGER,
+                start_time TIMESTAMPTZ NOT NULL,
+                end_time TIMESTAMPTZ,
+                stop_reason_id INTEGER REFERENCES stop_reasons(id) DEFAULT 1,
+                state_value INTEGER,
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+              );
+            query: UPDATE machine_stops SET end_time = '${! json("timestamp") }', updated_at = NOW() WHERE asset_id = ${! json("asset_id") } AND end_time IS NULL
+            unsafe_dynamic_query: true
+
+cache_resources:
+  - label: state_cache
+    memory:
+      compaction_interval: 60s
+      default_ttl: 24h
+  - label: stop_asset_id_cache
+    memory:
+      compaction_interval: 60s
+      default_ttl: 24h
