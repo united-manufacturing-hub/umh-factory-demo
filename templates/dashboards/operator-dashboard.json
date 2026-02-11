@@ -549,7 +549,7 @@
             "labelWidth": 12,
             "optionsSource": "Query",
             "queryField": { "label": "name", "value": "id" },
-            "queryOptions": { "source": "A", "value": "name" },
+            "queryOptions": { "source": "A", "value": "id" },
             "title": "Reason",
             "type": "select",
             "uid": "f6df7f9d-dac8-48e4-8da2-32c9c338ba53"
