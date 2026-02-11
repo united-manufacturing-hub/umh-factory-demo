@@ -193,23 +193,38 @@ if [ ${#SERVICES_TO_ADD[@]} -gt 0 ]; then
     cp "$WORK_DIR/docker-compose.yaml" "$WORK_DIR/docker-compose.yaml.backup"
     echo -e "${BLUE}  Backup created: docker-compose.yaml.backup${NC}"
 
-    # Manual merge - append services section
-    echo "" >> "$WORK_DIR/docker-compose.yaml"
-    echo "# === Additional services added by builder ===" >> "$WORK_DIR/docker-compose.yaml"
+    # YAML-aware merge using Python
+    python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
 
-    sed -n '/^services:/,/^networks:/p' "$TEMPLATES_DIR/config/docker-compose.yaml" | \
-        grep -v "^services:" | grep -v "^networks:" >> "$WORK_DIR/docker-compose.yaml"
+with open('$WORK_DIR/docker-compose.yaml') as f:
+    user = yaml.load(f)
+with open('$TEMPLATES_DIR/config/docker-compose.yaml') as f:
+    template = yaml.load(f)
 
-    if ! grep -q "^networks:" "$WORK_DIR/docker-compose.yaml"; then
-        echo "" >> "$WORK_DIR/docker-compose.yaml"
-        sed -n '/^networks:/,/^volumes:/p' "$TEMPLATES_DIR/config/docker-compose.yaml" | \
-            grep -v "^volumes:" >> "$WORK_DIR/docker-compose.yaml"
-    fi
+# Merge services
+if 'services' not in user:
+    user['services'] = {}
+for svc, cfg in template.get('services', {}).items():
+    if svc not in user['services']:
+        user['services'][svc] = cfg
 
-    if ! grep -q "^volumes:" "$WORK_DIR/docker-compose.yaml"; then
-        echo "" >> "$WORK_DIR/docker-compose.yaml"
-        sed -n '/^volumes:/,$p' "$TEMPLATES_DIR/config/docker-compose.yaml" >> "$WORK_DIR/docker-compose.yaml"
-    fi
+# Merge networks
+for net, cfg in template.get('networks', {}).items():
+    if 'networks' not in user:
+        user['networks'] = {}
+    if net not in user['networks']:
+        user['networks'][net] = cfg
+
+# Remove top-level named volumes (replaced by local bind mounts)
+if 'volumes' in user:
+    del user['volumes']
+
+with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
+    yaml.dump(user, f)
+"
 
     echo -e "${GREEN}  ✓ Services merged${NC}"
 else
