@@ -415,25 +415,45 @@ echo -e "${GREEN}  ✓ Builder connected to network: $COMPOSE_NETWORK${NC}"
 echo "$(date -Iseconds 2>/dev/null || date)" > ".builder/compose-started"
 echo -e "${GREEN}  ✓ Signaled compose-started${NC}"
 
-# ─── Poll for Phase 2 completion ─────────────────────────────────
+# ─── Stream Phase 2 progress ──────────────────────────────────────
 echo ""
-echo -e "${BLUE}Waiting for Phase 2 (post-init) to complete...${NC}"
-echo "  (SQL schema, dashboard import, historical data...)"
+echo -e "${BLUE}Running Phase 2 (post-init): SQL schema, dashboards, historical data...${NC}"
+echo ""
 
-TIMEOUT=600
+# Stream builder logs in background (from current point onward)
+LAST_LOG_LINE=$(docker logs "$BUILDER_NAME" 2>&1 | wc -l)
+docker logs -f "$BUILDER_NAME" 2>&1 | tail -n +"$((LAST_LOG_LINE + 1))" &
+LOG_PID=$!
+
+TIMEOUT=1800
 ELAPSED=0
 while [ ! -f ".builder/post-init-done" ]; do
     sleep 2
     ELAPSED=$((ELAPSED + 2))
+
+    # Check if builder container is still running
+    if ! docker ps --format '{{.Names}}' | grep -q "^${BUILDER_NAME}$"; then
+        kill "$LOG_PID" 2>/dev/null || true
+        wait "$LOG_PID" 2>/dev/null || true
+        echo ""
+        echo -e "${RED}Error: Builder container exited unexpectedly${NC}"
+        echo "Check logs: docker logs $BUILDER_NAME"
+        exit 1
+    fi
+
     if [ $ELAPSED -ge $TIMEOUT ]; then
+        kill "$LOG_PID" 2>/dev/null || true
+        wait "$LOG_PID" 2>/dev/null || true
+        echo ""
         echo -e "${RED}Error: Phase 2 timed out after ${TIMEOUT}s${NC}"
         echo "Check builder logs: docker logs $BUILDER_NAME"
         exit 1
     fi
-    if [ $((ELAPSED % 10)) -eq 0 ]; then
-        echo -n "."
-    fi
 done
+
+# Stop log streaming
+kill "$LOG_PID" 2>/dev/null || true
+wait "$LOG_PID" 2>/dev/null || true
 echo ""
 echo -e "${GREEN}  ✓ Phase 2 complete${NC}"
 

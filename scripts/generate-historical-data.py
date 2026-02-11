@@ -684,7 +684,7 @@ def generate_production_orders(
             "status": "COMPLETED",
             "due_date": order_end + timedelta(hours=random.randint(1, 24)),
             "started_at": order_start,
-            "ended_at": order_end,
+            "completed_at": order_end,
         })
 
         remaining_good -= order_qty
@@ -711,7 +711,7 @@ def insert_production_orders(conn, orders: List[Dict], batch_size: int = 100) ->
                 o["timestamp"], o["asset_id"], o["order_id"], o["customer"],
                 o["part_number"], o["part_description"], o["quantity"],
                 o["quantity_completed"], o["quantity_scrap"], o["priority"],
-                o["status"], o["due_date"], o["started_at"], o["ended_at"]
+                o["status"], o["due_date"], o["started_at"], o["completed_at"]
             )
             for o in batch
         ]
@@ -721,14 +721,14 @@ def insert_production_orders(conn, orders: List[Dict], batch_size: int = 100) ->
             INSERT INTO production_orders
                 (timestamp, asset_id, order_id, customer, part_number, part_description,
                  quantity, quantity_completed, quantity_scrap, priority, status,
-                 due_date, started_at, ended_at)
+                 due_date, started_at, completed_at)
             VALUES %s
             ON CONFLICT (asset_id, order_id) DO UPDATE SET
                 quantity_completed = EXCLUDED.quantity_completed,
                 quantity_scrap = EXCLUDED.quantity_scrap,
                 status = EXCLUDED.status,
                 started_at = EXCLUDED.started_at,
-                ended_at = EXCLUDED.ended_at
+                completed_at = EXCLUDED.completed_at
             """,
             values,
         )
