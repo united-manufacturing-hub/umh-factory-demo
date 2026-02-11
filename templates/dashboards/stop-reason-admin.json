@@ -81,7 +81,7 @@
           "method": "POST",
           "payloadMode": "custom",
           "text": "Add Reason",
-          "url": "http://localhost:80/api/v1/stop-reasons"
+          "url": "__API_BASE_URL__/api/v1/stop-reasons"
         },
         "update": {
           "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Reason added\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to add reason\"]); }",
@@ -90,7 +90,7 @@
           "getPayload": "return { name: context.panel.elements.find(e => e.id === \"name\").value, category: context.panel.elements.find(e => e.id === \"category\").value };",
           "method": "POST",
           "payloadMode": "custom",
-          "url": "http://localhost:80/api/v1/stop-reasons"
+          "url": "__API_BASE_URL__/api/v1/stop-reasons"
         }
       },
       "title": "Add New Reason",
@@ -163,7 +163,7 @@
           "method": "PUT",
           "payloadMode": "custom",
           "text": "Update Reason",
-          "url": "http://localhost:80/api/v1/stop-reasons"
+          "url": "__API_BASE_URL__/api/v1/stop-reasons"
         },
         "update": {
           "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Reason updated\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to update\"]); }",
@@ -172,7 +172,7 @@
           "getPayload": "return { id: Number(context.panel.elements.find(e => e.id === \"id\").value), name: context.panel.elements.find(e => e.id === \"name\").value, category: context.panel.elements.find(e => e.id === \"category\").value };",
           "method": "PUT",
           "payloadMode": "custom",
-          "url": "http://localhost:80/api/v1/stop-reasons"
+          "url": "__API_BASE_URL__/api/v1/stop-reasons"
         }
       },
       "targets": [
@@ -230,7 +230,7 @@
           "method": "DELETE",
           "payloadMode": "custom",
           "text": "Delete Reason",
-          "url": "http://localhost:80/api/v1/stop-reasons",
+          "url": "__API_BASE_URL__/api/v1/stop-reasons",
           "variant": "destructive"
         },
         "update": {
@@ -240,7 +240,7 @@
           "getPayload": "return { id: Number(context.panel.elements.find(e => e.id === \"id\").value) };",
           "method": "DELETE",
           "payloadMode": "custom",
-          "url": "http://localhost:80/api/v1/stop-reasons"
+          "url": "__API_BASE_URL__/api/v1/stop-reasons"
         }
       },
       "targets": [

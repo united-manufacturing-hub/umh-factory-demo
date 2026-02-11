@@ -5,6 +5,7 @@
 #   curl -fsSL https://github.com/.../releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh
 #   bash quick-start.sh --dev               # Use dev branch instead of release tag
 #   bash quick-start.sh --branch=staging    # Use a specific branch
+#   bash quick-start.sh --repo=user/repo    # Use a different template repo
 #
 # Prerequisites:
 #   - Docker Engine + Docker Compose v2
@@ -17,17 +18,20 @@ set -euo pipefail
 
 # ─── Parse arguments ─────────────────────────────────────────────
 USE_BRANCH=""
+USE_REPO=""
 for arg in "$@"; do
     case "$arg" in
         --dev)  USE_BRANCH="dev" ;;
         --branch=*) USE_BRANCH="${arg#--branch=}" ;;
+        --repo=*) USE_REPO="${arg#--repo=}" ;;
     esac
 done
 
 # ─── Configuration ───────────────────────────────────────────────
 VERSION="${VERSION:-1.0.0}"
 BUILDER_IMAGE="${BUILDER_IMAGE:-dh2k/demo-builder:v${VERSION}}"
-BUILDER_NAME="umh-builder"
+PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+BUILDER_NAME="${PROJECT_NAME}-umh-builder"
 WORK_DIR="$(pwd)"
 
 # ─── Colors ──────────────────────────────────────────────────────
@@ -92,6 +96,35 @@ fi
 
 echo -e "${GREEN}  ✓ Docker and Docker Compose v2 available${NC}"
 echo -e "${GREEN}  ✓ docker-compose.yaml found${NC}"
+
+# ─── Detect host IP ──────────────────────────────────────────────
+echo ""
+echo -e "${BLUE}Detecting host IP address...${NC}"
+
+DETECTED_IP=""
+# Try common methods to detect the primary IP
+if command -v ip &>/dev/null; then
+    DETECTED_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
+elif command -v ifconfig &>/dev/null; then
+    DETECTED_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1)
+fi
+
+# Fallback: try hostname
+if [ -z "$DETECTED_IP" ]; then
+    DETECTED_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "")
+fi
+
+if [ -z "$DETECTED_IP" ]; then
+    DETECTED_IP="localhost"
+fi
+
+echo "  Detected IP: $DETECTED_IP"
+echo ""
+echo "  Dashboards will use this IP for API calls (e.g., form panels)."
+echo "  Use 'localhost' only if accessing Grafana from this same machine."
+read -p "  Host IP or hostname [$DETECTED_IP]: " USER_HOST_IP
+HOST_IP="${USER_HOST_IP:-$DETECTED_IP}"
+echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
 
 # ─── Port scanning and selection ─────────────────────────────────
 echo ""
@@ -266,6 +299,44 @@ if [[ "$GENERATE_HISTORY" =~ ^[Yy] ]]; then
     echo -e "${GREEN}  ✓ Will generate $HISTORY_DAYS days of history${NC}"
 fi
 
+# ─── Check for container name conflicts ───────────────────────────
+echo ""
+echo -e "${BLUE}Checking for container name conflicts...${NC}"
+
+COMPOSE_SERVICES="grafana pgbouncer timescaledb machine-simulator nginx"
+CONFLICTS_FOUND=false
+for svc in $COMPOSE_SERVICES; do
+    FULL_NAME="${PROJECT_NAME}-${svc}-1"
+    if docker ps -a --format '{{.Names}}' | grep -qx "$FULL_NAME"; then
+        echo -e "${YELLOW}  Container '$FULL_NAME' already exists${NC}"
+        CONFLICTS_FOUND=true
+    fi
+done
+
+if docker ps -a --format '{{.Names}}' | grep -qx "$BUILDER_NAME"; then
+    echo -e "${YELLOW}  Builder container '$BUILDER_NAME' already exists${NC}"
+    CONFLICTS_FOUND=true
+fi
+
+if $CONFLICTS_FOUND; then
+    echo ""
+    echo -e "${YELLOW}Existing containers found from a previous run.${NC}"
+    read -p "Remove them and continue? [Y/n]: " REMOVE_EXISTING
+    if [[ -z "$REMOVE_EXISTING" || "$REMOVE_EXISTING" =~ ^[Yy] ]]; then
+        for svc in $COMPOSE_SERVICES; do
+            FULL_NAME="${PROJECT_NAME}-${svc}-1"
+            docker rm -f "$FULL_NAME" 2>/dev/null || true
+        done
+        docker rm -f "$BUILDER_NAME" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ Existing containers removed${NC}"
+    else
+        echo -e "${RED}Aborting to avoid conflicts.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}  ✓ No conflicts${NC}"
+fi
+
 # ─── Pull and run builder container ──────────────────────────────
 echo ""
 echo -e "${BLUE}Pulling builder image...${NC}"
@@ -283,7 +354,9 @@ docker run -d \
     -e PHASE=all \
     -e "VERSION=${VERSION}" \
     -e "BRANCH=${USE_BRANCH}" \
+    ${USE_REPO:+-e "REPO=${USE_REPO}"} \
     -e "HISTORY_DAYS=${HISTORY_DAYS}" \
+    -e "HOST_IP=${HOST_IP}" \
     -e "PORT_NGINX=${PORT_NGINX}" \
     -e "PORT_GRAFANA=${PORT_GRAFANA}" \
     -e "PORT_PGBOUNCER=${PORT_PGBOUNCER}" \
@@ -384,12 +457,12 @@ echo ""
 echo -e "${GREEN}=== Setup Complete ===${NC}"
 echo ""
 echo "Access points:"
-echo "  Grafana:           http://localhost:${PORT_GRAFANA}  (admin/admin)"
-echo "  Machine Simulator: http://localhost:${PORT_SIMULATOR}"
-echo "  UMH Core:          http://localhost:${PORT_UMH}"
-echo "  PostgreSQL:        localhost:${PORT_PGBOUNCER}  (postgres/postgres)"
-echo "  Nginx:             http://localhost:${PORT_NGINX}"
-echo "  OPC-UA:            localhost:${PORT_OPCUA_START}-${OPCUA_END}"
+echo "  Grafana:           http://${HOST_IP}:${PORT_GRAFANA}  (admin/admin)"
+echo "  Machine Simulator: http://${HOST_IP}:${PORT_SIMULATOR}"
+echo "  UMH Core:          http://${HOST_IP}:${PORT_UMH}"
+echo "  PostgreSQL:        ${HOST_IP}:${PORT_PGBOUNCER}  (postgres/postgres)"
+echo "  Nginx:             http://${HOST_IP}:${PORT_NGINX}"
+echo "  OPC-UA:            ${HOST_IP}:${PORT_OPCUA_START}-${OPCUA_END}"
 
 if [ ${#CONFLICTS[@]} -gt 0 ]; then
     echo ""

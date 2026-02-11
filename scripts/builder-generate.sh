@@ -734,7 +734,8 @@ fi
 echo -e "${GREEN}  ✓ Port remappings applied${NC}"
 
 # Determine API base URL for form panels
-API_BASE_URL="http://localhost:${PORT_NGINX}"
+HOST_IP="${HOST_IP:-localhost}"
+API_BASE_URL="http://${HOST_IP}:${PORT_NGINX}"
 
 # Generate stop-reason and operator dashboards (need API_BASE_URL)
 echo ""

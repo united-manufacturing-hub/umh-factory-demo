@@ -110,7 +110,6 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: nginx-rp
     ports:
       - "80:80"
     volumes:
