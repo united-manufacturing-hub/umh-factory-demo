@@ -35,7 +35,7 @@ pipeline:
         root.status = this.status
         root.due_date = this.dueDate
         root.started_at = this.startedAt
-        root.ended_at = this.endedAt
+        root.completed_at = this.endedAt
         root.target_line = this.target_line
       label: transform_order
     - bloblang: |-
@@ -128,16 +128,16 @@ output:
         status VARCHAR(50),
         due_date TIMESTAMPTZ,
         started_at TIMESTAMPTZ,
-        ended_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ,
         UNIQUE (asset_id, order_id)
       );
-      -- Add ended_at column if it doesn't exist (migration for existing tables)
+      -- Add completed_at column if it doesn't exist (migration for existing tables)
       DO $$ BEGIN
-        ALTER TABLE production_orders ADD COLUMN IF NOT EXISTS ended_at TIMESTAMPTZ;
+        ALTER TABLE production_orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
       EXCEPTION WHEN duplicate_column THEN NULL;
       END $$;
     query: |
-      INSERT INTO production_orders (timestamp, asset_id, order_id, customer, part_number, part_description, quantity, quantity_completed, quantity_scrap, priority, status, due_date, started_at, ended_at)
+      INSERT INTO production_orders (timestamp, asset_id, order_id, customer, part_number, part_description, quantity, quantity_completed, quantity_scrap, priority, status, due_date, started_at, completed_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       ON CONFLICT (asset_id, order_id) DO UPDATE SET
         timestamp = EXCLUDED.timestamp,
@@ -152,7 +152,7 @@ output:
           ELSE EXCLUDED.status
         END,
         started_at = COALESCE(production_orders.started_at, EXCLUDED.started_at),
-        ended_at = COALESCE(EXCLUDED.ended_at, production_orders.ended_at)
+        completed_at = COALESCE(EXCLUDED.completed_at, production_orders.completed_at)
     args_mapping: |
       root = [
         this.timestamp,
@@ -168,7 +168,7 @@ output:
         this.status,
         this.due_date,
         this.started_at,
-        this.ended_at
+        this.completed_at
       ]
     unsafe_dynamic_query: true
 

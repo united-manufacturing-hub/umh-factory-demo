@@ -24,7 +24,15 @@ services:
 ### 2. Run the setup
 
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-simulator/releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/dev/quick-start.sh -o quick-start.sh && bash quick-start.sh
+```
+Using dev branch:
+```bash
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/dev/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
+```
+Using a custom github repo for the template
+```bash
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/dev/quick-start.sh -o quick-start.sh && bash quick-start.sh --repo=myRepo/umh-factory-demo
 ```
 
 ### 3. Access
@@ -71,8 +79,8 @@ To start over:
 
 ```bash
 ./reset-demo
-bash quick-start.sh
 ```
+Then run the curl command again
 
 ## Factory Configuration
 

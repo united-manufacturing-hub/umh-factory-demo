@@ -13,7 +13,7 @@ services:
     ports:
       - 8080:3000
     environment:
-      - GF_INSTALL_PLUGINS=volkovlabs-form-panel
+      - GF_INSTALL_PLUGINS=volkovlabs-form-panel, marcusolsson-dynamictext-panel
     volumes:
       - ./grafana-data:/var/lib/grafana
       - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources

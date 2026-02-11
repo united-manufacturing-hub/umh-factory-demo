@@ -480,7 +480,7 @@
       "gridPos": { "h": 4, "w": 24, "x": 0, "y": 12 },
       "id": 20,
       "options": {
-        "afterRender": "const assetId = context.grafana.replaceVariables('${asset_id}');\nconst buttons = context.element.querySelectorAll('button[data-state]');\nbuttons.forEach(btn => {\n  btn.addEventListener('click', function() {\n    const state = this.dataset.state;\n    if (!confirm('Set machine state to ' + state + '?')) return;\n    const payload = { asset_id: Number(assetId), state: state, timestamp: new Date().toISOString() };\n    fetch('/api/v1/machine-state', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify(payload)\n    })\n    .then(r => {\n      if (r.ok) {\n        context.grafana.notifySuccess(['Success', 'State changed to ' + state]);\n        context.grafana.refresh();\n      } else {\n        context.grafana.notifyError(['Error', 'Failed to update state']);\n      }\n    })\n    .catch(e => context.grafana.notifyError(['Error', e.message]));\n  });\n});",
+        "afterRender": "const buttons = context.element.querySelectorAll('button[data-state]');\nbuttons.forEach(btn => {\n  btn.style.opacity = '0.6';\n  btn.style.cursor = 'default';\n  btn.title = 'Machine state control (display only)';\n});",
         "content": "<div style=\"display: flex; justify-content: center; align-items: center; gap: 16px; height: 100%; flex-wrap: wrap; padding: 8px;\">\n  <button data-state=\"RUNNING\" style=\"background-color: #73BF69; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">▶ RUNNING</button>\n  <button data-state=\"IDLE\" style=\"background-color: #FADE2A; color: black; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⏸ IDLE</button>\n  <button data-state=\"SETUP\" style=\"background-color: #FF9830; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⚙ SETUP</button>\n  <button data-state=\"PLANNED STOP\" style=\"background-color: #5794F2; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">📅 PLANNED</button>\n  <button data-state=\"UNPLANNED STOP\" style=\"background-color: #F2495C; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⚠ UNPLANNED</button>\n</div>",
         "defaultContent": "Loading...",
         "editors": ["afterRender"],
@@ -583,7 +583,7 @@
           "method": "POST",
           "payloadMode": "custom",
           "text": "Submit",
-          "url": "/api/v1/stop-reason",
+          "url": "__API_BASE_URL__/api/v1/stop-reason",
           "variant": "primary"
         },
         "sync": true,
@@ -595,7 +595,7 @@
           "method": "POST",
           "payload": {},
           "payloadMode": "custom",
-          "url": "/api/v1/stop-reason"
+          "url": "__API_BASE_URL__/api/v1/stop-reason"
         },
         "updateEnabled": "auto"
       },
