@@ -33,12 +33,20 @@ fi
 echo -e "${GREEN}Found: docker-compose.yaml.backup${NC}"
 echo ""
 
-# Stop any running containers
+# Stop and remove all containers (compose services + builder)
 if [ -f "$WORK_DIR/docker-compose.yaml" ]; then
-    echo -e "${BLUE}Stopping containers...${NC}"
-    docker compose -f "$WORK_DIR/docker-compose.yaml" down --remove-orphans 2>/dev/null || true
-    echo ""
+    echo -e "${BLUE}Stopping compose services and removing volumes...${NC}"
+    docker compose -f "$WORK_DIR/docker-compose.yaml" down --volumes --remove-orphans 2>/dev/null || true
 fi
+
+# Remove builder container if present
+DIR_NAME=$(basename "$WORK_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+BUILDER_NAME="${DIR_NAME}-umh-builder"
+if docker ps -a --format '{{.Names}}' | grep -q "^${BUILDER_NAME}$"; then
+    echo -e "${BLUE}Removing builder container: ${BUILDER_NAME}${NC}"
+    docker rm -f "$BUILDER_NAME" 2>/dev/null || true
+fi
+echo ""
 
 # Save the backup temporarily
 echo -e "${BLUE}Saving docker-compose.yaml.backup...${NC}"

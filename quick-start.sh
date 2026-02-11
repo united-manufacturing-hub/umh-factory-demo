@@ -404,17 +404,9 @@ echo -e "${GREEN}  ✓ Services started${NC}"
 echo ""
 echo -e "${BLUE}Connecting builder to compose network...${NC}"
 
-# Detect compose network name: use docker compose to find the actual container, then inspect it
-PGBOUNCER_CONTAINER=$(docker compose ps -q pgbouncer 2>/dev/null || true)
-if [ -n "$PGBOUNCER_CONTAINER" ]; then
-    COMPOSE_NETWORK=$(docker inspect "$PGBOUNCER_CONTAINER" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{"\n"}}{{end}}' 2>/dev/null | grep -v internal | head -1 || true)
-fi
-
-if [ -z "${COMPOSE_NETWORK:-}" ]; then
-    # Fallback: derive from directory name
-    DIR_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
-    COMPOSE_NETWORK="${DIR_NAME}_default"
-fi
+# Derive compose network from project name (docker compose convention)
+COMPOSE_PROJECT=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+COMPOSE_NETWORK="${COMPOSE_PROJECT}_default"
 
 docker network connect "$COMPOSE_NETWORK" "$BUILDER_NAME" 2>/dev/null || true
 echo -e "${GREEN}  ✓ Builder connected to network: $COMPOSE_NETWORK${NC}"
