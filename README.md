@@ -1,5 +1,7 @@
 # UMH Simulator
 
+[![GitHub](https://img.shields.io/badge/GitHub-umh--factory--demo-blue)](https://github.com/united-manufacturing-hub/umh-factory-demo)
+
 Factory demo environment for the United Manufacturing Hub (UMH). Sets up a complete stack with OPC-UA machine simulation, data collection, dashboards, and analytics.
 
 ## Quick Start
@@ -94,3 +96,40 @@ The default demo includes 9 machines across 2 production lines + 1 standalone:
 
 - [Architecture](docs/ARCHITECTURE.md) - Directory structure and builder flow
 - [Contributing](docs/CONTRIBUTING.md) - How to add a new machine template
+
+## Developer Tools
+
+### Export Dashboard (Experimental)
+
+`dashboardRework/export-dashboard.sh` exports a live Grafana dashboard and converts it back to a template by reversing the substitutions that `builder-generate.sh` applies.
+
+**Setup:**
+1. Create a Grafana API token at http://localhost:8080/org/apikeys
+2. Save it in `dashboardRework/token.yaml`:
+   ```
+   GRAFANA_TOKEN=glsa_xxxxx
+   ```
+
+**Usage:**
+```bash
+cd dashboardRework
+
+# Export a simple dashboard (operator, stop-reason-admin, etc.)
+./export-dashboard.sh --compose ../../yourfactory/docker-compose.yaml operator-dashboard
+
+# Export a per-line dashboard
+./export-dashboard.sh --compose ../../yourfactory/docker-compose.yaml \
+    --line line1 --line-display "Line 1" \
+    line1-oee-dashboard
+
+# Export a per-machine dashboard
+./export-dashboard.sh --compose ../../yourfactory/docker-compose.yaml \
+    --line line1 --line-display "Line 1" \
+    --workcell injection-molding-L1-01 \
+    --workcell-display "Injection Molding (Pos 1)" \
+    injection-molding-L1-01-dashboard
+```
+
+The script automatically verifies round-trip conversion (template -> concrete -> template) and warns if any values couldn't be cleanly reversed.
+
+Run `./export-dashboard.sh --help` for all options.

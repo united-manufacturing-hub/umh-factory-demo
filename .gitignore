@@ -3,3 +3,5 @@ umh-core-data/
 test-output/
 __pycache__/
 *.pyc
+dashboardRework/*.yaml
+dashboardRework/*.json
