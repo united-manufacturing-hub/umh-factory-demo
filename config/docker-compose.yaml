@@ -66,11 +66,12 @@ services:
       - timescaledb-network
 
   machine-simulator:
-    image: dh2k/machine-simulator:v1.6.0
+    image: dh2k/machine-simulator:v1.7.0
     restart: unless-stopped
     ports:
       - "8081:8081" # Web UI/API
       - "4840-4848:4840-4848" # OPC-UA ports for all machines (9 in default config)
+      - "502:502" # Modbus TCP
     volumes:
       - ./simulator-data:/app/data
       - ./simulator-config:/app/configs:ro
@@ -81,6 +82,7 @@ services:
       - MES_WEBHOOK_ENDPOINT=http://umh-core:8093/api/v1/operations
       - OPCUA_HOSTNAME=machine-simulator
       - LOG_LEVEL=${SIMULATOR_LOG_LEVEL:-info}
+      - MODBUS_ENABLED=true
       - OPCUA_CONNECTION_LOGGING=${OPCUA_CONNECTION_LOGGING:-false}
       # v1.6.0 - Order Progress (every 5 seconds)
       - ERP_ORDER_PROGRESS_MS=5000

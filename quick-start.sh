@@ -170,6 +170,7 @@ DEFAULT_PORT_PGBOUNCER=5432
 DEFAULT_PORT_SIMULATOR=8081
 DEFAULT_PORT_UMH=8090
 DEFAULT_PORT_OPCUA_START=4840
+DEFAULT_PORT_MODBUS=502
 OPCUA_COUNT=9
 
 PORT_NGINX=$(find_available_port $DEFAULT_PORT_NGINX)
@@ -177,6 +178,7 @@ PORT_GRAFANA=$(find_available_port $DEFAULT_PORT_GRAFANA)
 PORT_PGBOUNCER=$(find_available_port $DEFAULT_PORT_PGBOUNCER)
 PORT_SIMULATOR=$(find_available_port $DEFAULT_PORT_SIMULATOR)
 PORT_UMH=$(find_available_port $DEFAULT_PORT_UMH)
+PORT_MODBUS=$(find_available_port $DEFAULT_PORT_MODBUS)
 PORT_OPCUA_START=$(find_available_port_range $DEFAULT_PORT_OPCUA_START $OPCUA_COUNT)
 OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
 
@@ -194,6 +196,8 @@ CONFLICTS=()
     CONFLICTS+=("UMH Core:          $DEFAULT_PORT_UMH -> $PORT_UMH")
 [ "$PORT_OPCUA_START" != "$DEFAULT_PORT_OPCUA_START" ] && \
     CONFLICTS+=("OPC-UA:            $DEFAULT_PORT_OPCUA_START-$((DEFAULT_PORT_OPCUA_START + OPCUA_COUNT - 1)) -> $PORT_OPCUA_START-$OPCUA_END")
+[ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ] && \
+    CONFLICTS+=("Modbus TCP:        $DEFAULT_PORT_MODBUS -> $PORT_MODBUS")
 
 if [ ${#CONFLICTS[@]} -gt 0 ]; then
     echo ""
@@ -276,6 +280,17 @@ if [ ${#CONFLICTS[@]} -gt 0 ]; then
                     PORT_OPCUA_START=$USER_PORT
                     OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
                     break
+                fi
+            done
+        fi
+        if [ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ]; then
+            while true; do
+                read -p "  Port for Modbus TCP (default $DEFAULT_PORT_MODBUS in use, suggested: $PORT_MODBUS): " USER_PORT
+                USER_PORT=${USER_PORT:-$PORT_MODBUS}
+                if port_in_use "$USER_PORT"; then
+                    echo -e "${YELLOW}    Port $USER_PORT is also in use${NC}"
+                else
+                    PORT_MODBUS=$USER_PORT; break
                 fi
             done
         fi
@@ -363,6 +378,7 @@ docker run -d \
     -e "PORT_SIMULATOR=${PORT_SIMULATOR}" \
     -e "PORT_UMH=${PORT_UMH}" \
     -e "PORT_OPCUA_START=${PORT_OPCUA_START}" \
+    -e "PORT_MODBUS=${PORT_MODBUS}" \
     "$BUILDER_IMAGE"
 
 echo -e "${GREEN}  ✓ Builder started${NC}"
@@ -478,6 +494,7 @@ echo "  UMH Core:          http://${HOST_IP}:${PORT_UMH}"
 echo "  PostgreSQL:        ${HOST_IP}:${PORT_PGBOUNCER}  (postgres/postgres)"
 echo "  Nginx:             http://${HOST_IP}:${PORT_NGINX}"
 echo "  OPC-UA:            ${HOST_IP}:${PORT_OPCUA_START}-${OPCUA_END}"
+echo "  Modbus TCP:        ${HOST_IP}:${PORT_MODBUS}"
 
 if [ ${#CONFLICTS[@]} -gt 0 ]; then
     echo ""

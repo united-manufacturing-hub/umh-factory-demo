@@ -8,7 +8,7 @@
 # Env vars expected:
 #   TEMPLATES_DIR  - path to downloaded repo root
 #   SCRIPTS_DIR    - path to downloaded repo scripts/
-#   PORT_NGINX, PORT_GRAFANA, PORT_PGBOUNCER, PORT_SIMULATOR, PORT_UMH, PORT_OPCUA_START
+#   PORT_NGINX, PORT_GRAFANA, PORT_PGBOUNCER, PORT_SIMULATOR, PORT_UMH, PORT_OPCUA_START, PORT_MODBUS
 #
 # Working directory: /workspace (bind-mounted from host)
 
@@ -30,6 +30,7 @@ PORT_PGBOUNCER="${PORT_PGBOUNCER:-5432}"
 PORT_SIMULATOR="${PORT_SIMULATOR:-8081}"
 PORT_UMH="${PORT_UMH:-8090}"
 PORT_OPCUA_START="${PORT_OPCUA_START:-4840}"
+PORT_MODBUS="${PORT_MODBUS:-502}"
 OPCUA_COUNT=9
 OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
 
@@ -39,6 +40,7 @@ DEFAULT_PORT_PGBOUNCER=5432
 DEFAULT_PORT_SIMULATOR=8081
 DEFAULT_PORT_UMH=8090
 DEFAULT_PORT_OPCUA_START=4840
+DEFAULT_PORT_MODBUS=502
 
 echo -e "${BLUE}=== Builder Phase 1: Generate ===${NC}"
 echo ""
@@ -745,6 +747,10 @@ if [ "$PORT_OPCUA_START" != "$DEFAULT_PORT_OPCUA_START" ]; then
     sed -i "s|\"4840-4848:4840-4848\"|\"${PORT_OPCUA_START}-${OPCUA_END}:4840-4848\"|g" "$WORK_DIR/docker-compose.yaml"
     echo -e "${GREEN}  ✓ OPC-UA: $DEFAULT_PORT_OPCUA_START-$((DEFAULT_PORT_OPCUA_START + OPCUA_COUNT - 1)) -> $PORT_OPCUA_START-$OPCUA_END${NC}"
 fi
+if [ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ]; then
+    sed -i "s|\"502:502\"|\"${PORT_MODBUS}:502\"|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ Modbus TCP: $DEFAULT_PORT_MODBUS -> $PORT_MODBUS${NC}"
+fi
 
 echo -e "${GREEN}  ✓ Port remappings applied${NC}"
 
@@ -876,6 +882,7 @@ echo "    PostgreSQL:        ${PORT_PGBOUNCER}"
 echo "    Machine Simulator: ${PORT_SIMULATOR}"
 echo "    UMH Core:          ${PORT_UMH}"
 echo "    OPC-UA:            ${PORT_OPCUA_START}-${OPCUA_END}"
+echo "    Modbus TCP:        ${PORT_MODBUS}"
 echo ""
 echo "Files generated in /workspace:"
 echo "  - docker-compose.yaml (merged)"
