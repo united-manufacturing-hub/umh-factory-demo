@@ -36,9 +36,34 @@ dataContract:
     version: v1
 ```
 
-## Step 3: Define the protocol converter
+## Step 3: Define address mappings and the protocol converter
 
-The `protocolConverter` section uses the exact UMH config format. List all OPC-UA nodeIDs explicitly and map each one to a tag name via `tag_processor` conditions:
+Define an `addressMappings` array that maps each OPC-UA node address to a tag name. This data is passed as instance variables at build time and rendered into the template via Go `{{ range }}`:
+
+```yaml
+addressMappings:
+  - Address: "ns=1;i=3"
+    TagName: State
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _laser_cutter_v1
+  - Address: "ns=1;i=4"
+    TagName: CycleCount
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _laser_cutter_v1
+  - Address: "ns=1;i=5"
+    TagName: LaserPower
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _laser_cutter_v1
+  # ... one entry per OPC-UA node
+```
+
+The `protocolConverter` section uses the exact UMH config format. List all OPC-UA nodeIDs explicitly. The `tag_processor` uses a `defaults` block with a `switch` statement that iterates over `AddressMappings`:
 
 ```yaml
 protocolConverter:
@@ -61,32 +86,36 @@ protocolConverter:
       pipeline:
         processors:
           - tag_processor:
-              conditions:
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
-                  then: |
-                    msg.meta.tag_name = "State";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
-                  then: |
-                    msg.meta.tag_name = "CycleCount";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
-                  then: |
-                    msg.meta.tag_name = "LaserPower";
-                    return msg;
-                # ... one condition per node ID
-              defaults: |
+              defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
                 msg.meta.data_contract = "_laser_cutter_v1";
-                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
                 return msg;
       buffer:
         none: {}
 ```
 
-The `{{ .IP }}`, `{{ .PORT }}`, and `{{ .location_path }}` are UMH runtime template variables — they are NOT build-time placeholders.
+The `{{ .IP }}`, `{{ .PORT }}`, and `{{ .location_path }}` are UMH runtime template variables — they are NOT build-time placeholders. The `{{ range .AddressMappings }}` iterates over the address mappings passed as instance variables.
 
 ### Key fields
 
@@ -96,7 +125,8 @@ The `{{ .IP }}`, `{{ .PORT }}`, and `{{ .location_path }}` are UMH runtime templ
 | `display_name` | Shown in dashboards and logs |
 | `dataModel` | Defines tag structure and payload shapes |
 | `dataContract` | Links contract name to model version |
-| `protocolConverter` | OPC-UA connection, nodeIDs, and tag mapping |
+| `addressMappings` | Maps OPC-UA addresses to tag names, units, and paths |
+| `protocolConverter` | OPC-UA connection, nodeIDs, and tag processing template |
 
 ## Step 4: Add to factory setup
 
@@ -137,5 +167,6 @@ When `generate-config.py` runs:
 2. For each machine in the factory setup, it collects `dataModel` and `dataContract` into the config
 3. It uses each machine's `protocolConverter` section directly as the template (no substitution needed)
 4. It creates protocol converter instances with port assignments and location hierarchy
+5. If a machine defines `addressMappings`, these are passed into the instance's `variables` as `AddressMappings` so the template can render them via `{{ range .AddressMappings }}`
 
 No code changes required. Push the machine YAML to GitHub and the builder picks it up.

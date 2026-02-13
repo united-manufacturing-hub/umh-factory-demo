@@ -59,13 +59,99 @@ dataContract:
     name: injection_molding
     version: v1
 
+addressMappings:
+  - Address: "ns=1;i=3"
+    TagName: State
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=4"
+    TagName: CycleCount
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=5"
+    TagName: BarrelTemperature
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=10"
+    TagName: MoldTemperature
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=11"
+    TagName: InjectionPressure
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=12"
+    TagName: HoldingPressure
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=13"
+    TagName: ScrewPosition
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=14"
+    TagName: ScrewSpeed
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=15"
+    TagName: ClampForce
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=16"
+    TagName: CoolingTime
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=17"
+    TagName: ShotWeight
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=18"
+    TagName: CushionPosition
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=19"
+    TagName: CycleTime
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=21"
+    TagName: ErrorCode
+    Unit: raw
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
 protocolConverter:
   connection:
     nmap:
-      target: '{{ .IP }}'
-      port: '{{ .PORT }}'
+      target: "{{ .IP }}"
+      port: "{{ .PORT }}"
   dataflowcomponent_read:
     benthos:
       input:
@@ -91,69 +177,31 @@ protocolConverter:
       pipeline:
         processors:
           - tag_processor:
-              conditions:
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
-                  then: |
-                    msg.meta.tag_name = "State";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
-                  then: |
-                    msg.meta.tag_name = "CycleCount";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
-                  then: |
-                    msg.meta.tag_name = "BarrelTemperature";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=10"'
-                  then: |
-                    msg.meta.tag_name = "MoldTemperature";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=11"'
-                  then: |
-                    msg.meta.tag_name = "InjectionPressure";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=12"'
-                  then: |
-                    msg.meta.tag_name = "HoldingPressure";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=13"'
-                  then: |
-                    msg.meta.tag_name = "ScrewPosition";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=14"'
-                  then: |
-                    msg.meta.tag_name = "ScrewSpeed";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=15"'
-                  then: |
-                    msg.meta.tag_name = "ClampForce";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=16"'
-                  then: |
-                    msg.meta.tag_name = "CoolingTime";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=17"'
-                  then: |
-                    msg.meta.tag_name = "ShotWeight";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=18"'
-                  then: |
-                    msg.meta.tag_name = "CushionPosition";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=19"'
-                  then: |
-                    msg.meta.tag_name = "CycleTime";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=21"'
-                  then: |
-                    msg.meta.tag_name = "ErrorCode";
-                    return msg;
-              defaults: |
+              defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
                 msg.meta.data_contract = "_injection_molding_v1";
-                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                // Auto-generated from CSV table
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
                 return msg;
       buffer:
         none: {}

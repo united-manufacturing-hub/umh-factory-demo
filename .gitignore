@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 dashboardRework/*.yaml
 dashboardRework/*.json
+temp/

@@ -90,16 +90,16 @@ def build_dataflow_entry(df_file, enterprise, site):
     }
 
 
-def build_instance(template_name, instance_name, host, port, location):
+def build_instance(template_name, instance_name, host, port, location, address_mappings=None):
     """Build a protocolConverter instance entry."""
+    variables = {'IP': host, 'PORT': str(port)}
+    if address_mappings:
+        variables['AddressMappings'] = address_mappings
     return {
         'name': instance_name,
         'desiredState': 'active',
         'protocolConverterServiceConfig': {
-            'variables': {
-                'IP': host,
-                'PORT': str(port),
-            },
+            'variables': variables,
             'location': location,
             'templateRef': template_name,
         },
@@ -245,7 +245,8 @@ def generate_config(factory_setup, machines, templates_dir, output_dir):
             effective_name = tname  # root instance: name == templateRef
         else:
             effective_name = iname
-        pc_instances.append(build_instance(tname, effective_name, h, p, loc))
+        address_mappings = machines[tname].get('addressMappings')
+        pc_instances.append(build_instance(tname, effective_name, h, p, loc, address_mappings))
     config['protocolConverter'] = pc_instances
 
     # --- Agent section ---
