@@ -32,7 +32,7 @@ curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases
 
 **Dev (latest prerelease):**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.1-dev.1/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.1-dev.2/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
 ```
 
 **Specific version:**
@@ -144,6 +144,13 @@ The script automatically verifies round-trip conversion (template -> concrete ->
 Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
+
+## v1.0.1-dev.2 (2026-02-14)
+
+### Features
+- changed version handling in script and docker container.
+
+**Full Changelog**: [`v1.0.1-dev.1...v1.0.1-dev.2`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.0.1-dev.1...v1.0.1-dev.2)
 
 ## v1.0.1-dev.1 (2026-02-14)
 
