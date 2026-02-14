@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history for changelog and version detection
+
+      - name: Get latest tag
+        id: latest_tag
+        run: |
+          TAG=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          echo "tag=${TAG:-v0.0.0}" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: ${TAG:-v0.0.0}"
+
+      - name: Determine version bump from commits
+        id: bump
+        run: |
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+
+          # Get commits since last tag
+          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            COMMITS=$(git log "${LATEST_TAG}..HEAD" --pretty=format:"%s")
+          else
+            COMMITS=$(git log --pretty=format:"%s")
+          fi
+
+          # Exit if no new commits
+          if [ -z "$COMMITS" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Determine bump type from conventional commits
+          BUMP="patch"
+          if echo "$COMMITS" | grep -qiE "^feat(\(.+\))?!:|BREAKING CHANGE"; then
+            BUMP="major"
+          elif echo "$COMMITS" | grep -qiE "^feat(\(.+\))?:"; then
+            BUMP="minor"
+          fi
+
+          # Parse current version
+          CURRENT="${LATEST_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "bump=${BUMP}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Bump: $BUMP -> v${NEW_VERSION}"
+
+      - name: Generate changelog
+        if: steps.bump.outputs.skip != 'true'
+        id: changelog
+        run: |
+          LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+          NEW_VERSION="v${{ steps.bump.outputs.version }}"
+
+          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            RANGE="${LATEST_TAG}..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+
+          # Build categorized changelog
+          BREAKING=""
+          FEATURES=""
+          FIXES=""
+          OTHER=""
+
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            if echo "$line" | grep -qiE "^feat(\(.+\))?!:|BREAKING CHANGE"; then
+              MSG=$(echo "$line" | sed -E 's/^[a-z]+(\(.+\))?!?: //')
+              BREAKING="${BREAKING}- ${MSG}\n"
+            elif echo "$line" | grep -qiE "^feat(\(.+\))?:"; then
+              MSG=$(echo "$line" | sed -E 's/^feat(\(.+\))?: //')
+              FEATURES="${FEATURES}- ${MSG}\n"
+            elif echo "$line" | grep -qiE "^fix(\(.+\))?:"; then
+              MSG=$(echo "$line" | sed -E 's/^fix(\(.+\))?: //')
+              FIXES="${FIXES}- ${MSG}\n"
+            else
+              # Include non-conventional commits under Other
+              OTHER="${OTHER}- ${line}\n"
+            fi
+          done <<< "$(git log "$RANGE" --pretty=format:"%s")"
+
+          # Assemble release notes
+          NOTES=""
+          if [ -n "$BREAKING" ]; then
+            NOTES="${NOTES}### Breaking Changes\n${BREAKING}\n"
+          fi
+          if [ -n "$FEATURES" ]; then
+            NOTES="${NOTES}### Features\n${FEATURES}\n"
+          fi
+          if [ -n "$FIXES" ]; then
+            NOTES="${NOTES}### Fixes\n${FIXES}\n"
+          fi
+          if [ -n "$OTHER" ]; then
+            NOTES="${NOTES}### Other\n${OTHER}\n"
+          fi
+
+          NOTES="${NOTES}**Full Changelog**: [\`${LATEST_TAG}...${NEW_VERSION}\`](https://github.com/${{ github.repository }}/compare/${LATEST_TAG}...${NEW_VERSION})"
+
+          # Write to file (multi-line safe)
+          echo -e "$NOTES" > /tmp/release-notes.md
+
+          # Also write changelog entry for README
+          {
+            echo "## ${NEW_VERSION} ($(date +%Y-%m-%d))"
+            echo ""
+            echo -e "$NOTES"
+            echo ""
+          } > /tmp/changelog-entry.md
+
+      - name: Update CHANGELOG in README
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          NEW_VERSION="v${{ steps.bump.outputs.version }}"
+
+          if grep -q "^## Changelog" README.md; then
+            # Insert new entry after the "## Changelog" heading
+            ENTRY=$(cat /tmp/changelog-entry.md)
+            awk -v entry="$ENTRY" '
+              /^## Changelog/ { print; print ""; print entry; next }
+              { print }
+            ' README.md > README.tmp && mv README.tmp README.md
+          else
+            # Append a Changelog section at the end
+            {
+              echo ""
+              echo "## Changelog"
+              echo ""
+              cat /tmp/changelog-entry.md
+            } >> README.md
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs: update changelog for ${NEW_VERSION}" || true
+          git push
+
+      - name: Create tag and release
+        if: steps.bump.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="v${{ steps.bump.outputs.version }}"
+
+          git tag "$NEW_VERSION"
+          git push origin "$NEW_VERSION"
+
+          gh release create "$NEW_VERSION" \
+            --title "$NEW_VERSION" \
+            --notes-file /tmp/release-notes.md \
+            --generate-notes=false
