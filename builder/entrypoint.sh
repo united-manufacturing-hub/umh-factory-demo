@@ -1,10 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-}"
 BRANCH="${BRANCH:-}"
 REPO="${REPO:-united-manufacturing-hub/umh-factory-demo}"
 TMP="/tmp/templates-src"
+
+# Auto-resolve latest release if no version specified and no branch override
+if [ -z "$VERSION" ] && [ -z "$BRANCH" ]; then
+    echo "No version specified, fetching latest release..."
+    VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+        | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+    VERSION="${VERSION#v}"
+    echo "Resolved latest version: v${VERSION}"
+fi
 
 mkdir -p "$TMP"
 if [ -n "$BRANCH" ]; then
