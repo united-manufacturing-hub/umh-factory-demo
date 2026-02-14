@@ -2,10 +2,11 @@
 # quick-start.sh - Single-command UMH demo setup
 #
 # Usage:
-#   curl -fsSL https://github.com/.../releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh
+#   curl -fsSL https://github.com/.../releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh
 #   bash quick-start.sh --dev               # Use dev branch instead of release tag
 #   bash quick-start.sh --branch=staging    # Use a specific branch
 #   bash quick-start.sh --repo=user/repo    # Use a different template repo
+#   bash quick-start.sh --version=1.0.0     # Use a specific version
 #
 # Prerequisites:
 #   - Docker Engine + Docker Compose v2
@@ -19,16 +20,19 @@ set -euo pipefail
 # ─── Parse arguments ─────────────────────────────────────────────
 USE_BRANCH=""
 USE_REPO=""
+CLI_VERSION=""
 for arg in "$@"; do
     case "$arg" in
         --dev)  USE_BRANCH="dev" ;;
         --branch=*) USE_BRANCH="${arg#--branch=}" ;;
         --repo=*) USE_REPO="${arg#--repo=}" ;;
+        --version=*) CLI_VERSION="${arg#--version=}" ;;
     esac
 done
 
 # ─── Configuration ───────────────────────────────────────────────
-VERSION="${VERSION:-1.0.0}"
+# Precedence: --version flag > VERSION env var > hardcoded default
+VERSION="${CLI_VERSION:-${VERSION:-1.0.0}}"
 BUILDER_IMAGE="${BUILDER_IMAGE:-dh2k/demo-builder:v${VERSION}}"
 PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
 BUILDER_NAME="${PROJECT_NAME}-umh-builder"

@@ -25,16 +25,24 @@ services:
 
 ### 2. Run the setup
 
+**Stable (latest release):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/dev/quick-start.sh -o quick-start.sh && bash quick-start.sh
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh
 ```
-Using dev branch:
+
+**Dev (latest prerelease):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/dev/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.1-dev.1/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
 ```
-Using a custom github repo for the template
+
+**Specific version:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/dev/quick-start.sh -o quick-start.sh && bash quick-start.sh --repo=myRepo/umh-factory-demo
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh --version=1.0.0
+```
+
+**Custom repo:**
+```bash
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh --repo=myRepo/umh-factory-demo
 ```
 
 ### 3. Access
@@ -68,11 +76,12 @@ your-factory/
 
 Place a logo file (any format: PNG, JPG, SVG) in your directory before running `quick-start.sh`. The builder automatically converts it for Grafana.
 
-## Environment Variables
+## Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VERSION` | 1.0.0 | Template version to download |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--version=X.Y.Z` | — | Template version to download (highest priority) |
+| `VERSION` env var | 1.0.0 | Template version to download |
 | `BUILDER_IMAGE` | dh2k/demo-builder:v1.0.0 | Builder Docker image |
 
 ## Reset

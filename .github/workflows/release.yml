@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [master]
+    branches: [dev, staging]
 
 permissions:
   contents: write
@@ -13,12 +13,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # full history for changelog and version detection
+          fetch-depth: 0
+
+      - name: Determine branch type
+        id: branch
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "name=${BRANCH}" >> "$GITHUB_OUTPUT"
+          if [ "$BRANCH" = "staging" ]; then
+            echo "is_stable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_stable=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Branch: $BRANCH"
 
       - name: Get latest tag
         id: latest_tag
         run: |
-          TAG=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          IS_STABLE="${{ steps.branch.outputs.is_stable }}"
+
+          if [ "$IS_STABLE" = "true" ]; then
+            # For staging: latest stable tag (no prerelease suffix)
+            TAG=$(git tag -l 'v*' --sort=-v:refname | grep -vE '\-dev\.' | head -1)
+          else
+            # For dev: latest dev tag, fall back to latest stable tag
+            TAG=$(git tag -l 'v*-dev.*' --sort=-v:refname | head -1)
+            if [ -z "$TAG" ]; then
+              TAG=$(git tag -l 'v*' --sort=-v:refname | grep -vE '\-dev\.' | head -1)
+            fi
+          fi
+
           echo "tag=${TAG:-v0.0.0}" >> "$GITHUB_OUTPUT"
           echo "Latest tag: ${TAG:-v0.0.0}"
 
@@ -26,6 +50,7 @@ jobs:
         id: bump
         run: |
           LATEST_TAG="${{ steps.latest_tag.outputs.tag }}"
+          IS_STABLE="${{ steps.branch.outputs.is_stable }}"
 
           # Get commits since last tag
           if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
@@ -48,17 +73,42 @@ jobs:
             BUMP="minor"
           fi
 
-          # Parse current version
-          CURRENT="${LATEST_TAG#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          # Get the base version (strip any -dev.N suffix)
+          BASE="${LATEST_TAG#v}"
+          BASE="${BASE%%-dev.*}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$BASE"
 
-          case "$BUMP" in
-            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-            patch) PATCH=$((PATCH + 1)) ;;
-          esac
+          # Only bump if latest tag was stable (not dev), or if this is a stable release
+          # For dev: if latest was a dev tag, reuse its base version and just increment dev number
+          LATEST_IS_DEV=false
+          if echo "$LATEST_TAG" | grep -qE '\-dev\.'; then
+            LATEST_IS_DEV=true
+          fi
 
-          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          if [ "$LATEST_IS_DEV" = "false" ]; then
+            case "$BUMP" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
+          fi
+
+          BASE_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+          if [ "$IS_STABLE" = "true" ]; then
+            NEW_VERSION="${BASE_VERSION}"
+          else
+            # Find the next dev number for this base version
+            EXISTING_DEV=$(git tag -l "v${BASE_VERSION}-dev.*" --sort=-v:refname | head -1)
+            if [ -n "$EXISTING_DEV" ]; then
+              DEV_NUM=$(echo "$EXISTING_DEV" | grep -oE 'dev\.[0-9]+' | grep -oE '[0-9]+')
+              DEV_NUM=$((DEV_NUM + 1))
+            else
+              DEV_NUM=1
+            fi
+            NEW_VERSION="${BASE_VERSION}-dev.${DEV_NUM}"
+          fi
+
           echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "bump=${BUMP}" >> "$GITHUB_OUTPUT"
           echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -95,7 +145,6 @@ jobs:
               MSG=$(echo "$line" | sed -E 's/^fix(\(.+\))?: //')
               FIXES="${FIXES}- ${MSG}\n"
             else
-              # Include non-conventional commits under Other
               OTHER="${OTHER}- ${line}\n"
             fi
           done <<< "$(git log "$RANGE" --pretty=format:"%s")"
@@ -117,10 +166,8 @@ jobs:
 
           NOTES="${NOTES}**Full Changelog**: [\`${LATEST_TAG}...${NEW_VERSION}\`](https://github.com/${{ github.repository }}/compare/${LATEST_TAG}...${NEW_VERSION})"
 
-          # Write to file (multi-line safe)
           echo -e "$NOTES" > /tmp/release-notes.md
 
-          # Also write changelog entry for README
           {
             echo "## ${NEW_VERSION} ($(date +%Y-%m-%d))"
             echo ""
@@ -128,20 +175,43 @@ jobs:
             echo ""
           } > /tmp/changelog-entry.md
 
+      - name: Update quick-start.sh VERSION default
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          NEW_VERSION="${{ steps.bump.outputs.version }}"
+          sed -i "s/^VERSION=\"\${VERSION:-[^\"]*}\"/VERSION=\"\${VERSION:-${NEW_VERSION}}\"/" quick-start.sh
+
+      - name: Update README curl URLs
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          NEW_VERSION="v${{ steps.bump.outputs.version }}"
+          REPO="${{ github.repository }}"
+          IS_STABLE="${{ steps.branch.outputs.is_stable }}"
+
+          if [ "$IS_STABLE" = "true" ]; then
+            # Stable: use /releases/latest/download/ URL
+            STABLE_URL="https://github.com/${REPO}/releases/latest/download/quick-start.sh"
+            # Replace the first curl URL (stable download)
+            sed -i "s|curl -fsSL https://github.com/${REPO}/releases/[^ ]* -o quick-start.sh|curl -fsSL ${STABLE_URL} -o quick-start.sh|" README.md
+          else
+            # Dev: update the dev curl URL with the specific version
+            DEV_URL="https://github.com/${REPO}/releases/download/${NEW_VERSION}/quick-start.sh"
+            # Replace the dev curl URL line
+            sed -i "/--dev$/s|curl -fsSL https://github.com/${REPO}/releases/[^ ]* -o quick-start.sh|curl -fsSL ${DEV_URL} -o quick-start.sh|" README.md
+          fi
+
       - name: Update CHANGELOG in README
         if: steps.bump.outputs.skip != 'true'
         run: |
           NEW_VERSION="v${{ steps.bump.outputs.version }}"
 
           if grep -q "^## Changelog" README.md; then
-            # Insert new entry after the "## Changelog" heading
             ENTRY=$(cat /tmp/changelog-entry.md)
             awk -v entry="$ENTRY" '
               /^## Changelog/ { print; print ""; print entry; next }
               { print }
             ' README.md > README.tmp && mv README.tmp README.md
           else
-            # Append a Changelog section at the end
             {
               echo ""
               echo "## Changelog"
@@ -150,10 +220,15 @@ jobs:
             } >> README.md
           fi
 
+      - name: Commit and push changes
+        if: steps.bump.outputs.skip != 'true'
+        run: |
+          NEW_VERSION="v${{ steps.bump.outputs.version }}"
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m "docs: update changelog for ${NEW_VERSION}" || true
+          git add quick-start.sh README.md
+          git commit -m "release: ${NEW_VERSION}" || true
           git push
 
       - name: Create tag and release
@@ -162,11 +237,24 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NEW_VERSION="v${{ steps.bump.outputs.version }}"
+          IS_STABLE="${{ steps.branch.outputs.is_stable }}"
 
           git tag "$NEW_VERSION"
           git push origin "$NEW_VERSION"
 
+          PRERELEASE_FLAG=""
+          LATEST_FLAG=""
+          if [ "$IS_STABLE" = "true" ]; then
+            LATEST_FLAG="--latest"
+          else
+            PRERELEASE_FLAG="--prerelease"
+            LATEST_FLAG="--latest=false"
+          fi
+
           gh release create "$NEW_VERSION" \
             --title "$NEW_VERSION" \
             --notes-file /tmp/release-notes.md \
-            --generate-notes=false
+            --generate-notes=false \
+            $PRERELEASE_FLAG \
+            $LATEST_FLAG \
+            quick-start.sh
