@@ -175,36 +175,17 @@ jobs:
             echo ""
           } > /tmp/changelog-entry.md
 
-      - name: Update quick-start.sh VERSION default
-        if: steps.bump.outputs.skip != 'true'
-        run: |
-          NEW_VERSION="${{ steps.bump.outputs.version }}"
-          sed -i "s/^VERSION=\"\${VERSION:-[^\"]*}\"/VERSION=\"\${VERSION:-${NEW_VERSION}}\"/" quick-start.sh
-
-      - name: Update README curl URLs
-        if: steps.bump.outputs.skip != 'true'
+      - name: Update README (staging only)
+        if: steps.bump.outputs.skip != 'true' && steps.branch.outputs.is_stable == 'true'
         run: |
           NEW_VERSION="v${{ steps.bump.outputs.version }}"
           REPO="${{ github.repository }}"
-          IS_STABLE="${{ steps.branch.outputs.is_stable }}"
 
-          if [ "$IS_STABLE" = "true" ]; then
-            # Stable: use /releases/latest/download/ URL
-            STABLE_URL="https://github.com/${REPO}/releases/latest/download/quick-start.sh"
-            # Replace the first curl URL (stable download)
-            sed -i "s|curl -fsSL https://github.com/${REPO}/releases/[^ ]* -o quick-start.sh|curl -fsSL ${STABLE_URL} -o quick-start.sh|" README.md
-          else
-            # Dev: update the dev curl URL with the specific version
-            DEV_URL="https://github.com/${REPO}/releases/download/${NEW_VERSION}/quick-start.sh"
-            # Replace the dev curl URL line
-            sed -i "/--dev$/s|curl -fsSL https://github.com/${REPO}/releases/[^ ]* -o quick-start.sh|curl -fsSL ${DEV_URL} -o quick-start.sh|" README.md
-          fi
+          # Update curl URLs
+          STABLE_URL="https://github.com/${REPO}/releases/latest/download/quick-start.sh"
+          sed -i "s|curl -fsSL https://github.com/${REPO}/releases/[^ ]* -o quick-start.sh|curl -fsSL ${STABLE_URL} -o quick-start.sh|" README.md
 
-      - name: Update CHANGELOG in README
-        if: steps.bump.outputs.skip != 'true'
-        run: |
-          NEW_VERSION="v${{ steps.bump.outputs.version }}"
-
+          # Update changelog
           if grep -q "^## Changelog" README.md; then
             ENTRY=$(cat /tmp/changelog-entry.md)
             awk -v entry="$ENTRY" '
@@ -220,14 +201,14 @@ jobs:
             } >> README.md
           fi
 
-      - name: Commit and push changes
-        if: steps.bump.outputs.skip != 'true'
+      - name: Commit and push changes (staging only)
+        if: steps.bump.outputs.skip != 'true' && steps.branch.outputs.is_stable == 'true'
         run: |
           NEW_VERSION="v${{ steps.bump.outputs.version }}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add quick-start.sh README.md
+          git add README.md
           git commit -m "release: ${NEW_VERSION}" || true
           git push
 
