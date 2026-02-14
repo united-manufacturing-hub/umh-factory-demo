@@ -145,7 +145,7 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
-## v1.0.1 (2026-02-14)
+## v1.0.1-dev.1 (2026-02-14)
 
 ### Other
 - added build script for both branches. updated readme.
@@ -161,5 +161,5 @@ Run `./export-dashboard.sh --help` for all options.
 - fixed script merging.
 - Added container name check, repo override flag.
 
-**Full Changelog**: [`v1.0.0...v1.0.1`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.0.0...v1.0.1)
+**Full Changelog**: [`v1.0.0...v1.0.1-dev.1`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.0.0...v1.0.1-dev.1)
 
