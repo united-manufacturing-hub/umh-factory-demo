@@ -32,12 +32,12 @@ curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases
 
 **Dev (latest prerelease):**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.1-dev.1/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
 ```
 
 **Specific version:**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh --version=1.0.0
+curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh --version=1.0.0
 ```
 
 **Custom repo:**
@@ -142,3 +142,24 @@ cd dashboardRework
 The script automatically verifies round-trip conversion (template -> concrete -> template) and warns if any values couldn't be cleanly reversed.
 
 Run `./export-dashboard.sh --help` for all options.
+
+## Changelog
+
+## v1.0.1 (2026-02-14)
+
+### Other
+- added build script for both branches. updated readme.
+- added release script
+- bumped simulator version. added support for modbus
+- added support for csv import of data points.
+- added dashboard exporter script. updated readme.
+- fixed query id error for stop-reason api
+- api fixes. updated docs.
+- changed spot-welder template. small fixes in the post-init script
+- pipefail fix
+- fixed pgbouncer id error.
+- fixed script merging.
+- Added container name check, repo override flag.
+
+**Full Changelog**: [`v1.0.0...v1.0.1`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.0.0...v1.0.1)
+
