@@ -31,9 +31,9 @@ for arg in "$@"; do
 done
 
 # ─── Configuration ───────────────────────────────────────────────
-# Precedence: --version flag > VERSION env var > hardcoded default
-VERSION="${CLI_VERSION:-${VERSION:-1.0.0}}"
-BUILDER_IMAGE="${BUILDER_IMAGE:-dh2k/demo-builder:v${VERSION}}"
+# Resolve template version: --version flag > VERSION env var > auto-detect latest in builder
+TEMPLATE_VERSION="${CLI_VERSION:-${VERSION:-}}"
+BUILDER_IMAGE="${BUILDER_IMAGE:-dh2k/demo-builder:v1.0.0}"
 PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
 BUILDER_NAME="${PROJECT_NAME}-umh-builder"
 WORK_DIR="$(pwd)"
@@ -371,7 +371,7 @@ docker run -d \
     --name "$BUILDER_NAME" \
     -v "$(pwd):/workspace" \
     -e PHASE=all \
-    -e "VERSION=${VERSION}" \
+    ${TEMPLATE_VERSION:+-e "VERSION=${TEMPLATE_VERSION}"} \
     -e "BRANCH=${USE_BRANCH}" \
     ${USE_REPO:+-e "REPO=${USE_REPO}"} \
     -e "HISTORY_DAYS=${HISTORY_DAYS}" \
