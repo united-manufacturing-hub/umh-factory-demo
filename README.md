@@ -145,6 +145,17 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.1.0 (2026-02-14)
+
+### Features
+- trigger stable release
+- changed version handling in script and docker container.
+
+### Other
+- release: v1.0.1-dev.1
+
+**Full Changelog**: [`v1.0.1...v1.1.0`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.0.1...v1.1.0)
+
 ## v1.0.1-dev.1 (2026-02-14)
 
 ### Other
