@@ -76,11 +76,10 @@ services:
       - ./simulator-data:/app/data
       - ./simulator-config:/app/config:ro
     environment:
-      - SIMULATOR_PROFILE=${SIMULATOR_PROFILE:-}
       - OPCUA_HOSTNAME=machine-simulator
       - LOG_LEVEL=${SIMULATOR_LOG_LEVEL:-info}
       - OPCUA_CONNECTION_LOGGING=${OPCUA_CONNECTION_LOGGING:-false}
-      # Per-line env vars set dynamically by builder (SIMULATOR_LINE_*)
+      # SIMULATOR_PROFILE or SIMULATOR_LINE_* env vars injected by builder
     healthcheck:
       test:
         [

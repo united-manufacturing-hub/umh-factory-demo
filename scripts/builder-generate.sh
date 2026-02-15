@@ -833,13 +833,8 @@ fi
 
 echo -e "${GREEN}  ✓ Port remappings applied${NC}"
 
-# Inject simulator profile if set
-if [ -n "$SIMULATOR_PROFILE" ]; then
-    sed -i "s|SIMULATOR_PROFILE=\${SIMULATOR_PROFILE:-}|SIMULATOR_PROFILE=${SIMULATOR_PROFILE}|g" "$WORK_DIR/docker-compose.yaml"
-    echo -e "${GREEN}  ✓ Simulator profile set: $SIMULATOR_PROFILE${NC}"
-fi
-
-# Inject SELECTED_LINES as environment variable for the simulator
+# Inject simulator line env vars into docker-compose.yaml
+# The simulator expects SIMULATOR_LINE_<TEMPLATE_UPPER>=<count> or SIMULATOR_PROFILE=<name>
 python3 -c "
 from ruamel.yaml import YAML
 yaml = YAML()
@@ -848,12 +843,31 @@ with open('$WORK_DIR/docker-compose.yaml') as f:
     compose = yaml.load(f)
 sim = compose['services']['machine-simulator']
 env = sim.get('environment', [])
-env.append('SELECTED_LINES=${SELECTED_LINES}')
+
+profile = '$SIMULATOR_PROFILE'
+selected = '$SELECTED_LINES'
+
+if profile:
+    # Replace the placeholder with actual profile name
+    env = [e for e in env if not (isinstance(e, str) and 'SIMULATOR_PROFILE' in e)]
+    env.append('SIMULATOR_PROFILE=' + profile)
+else:
+    # Remove the empty SIMULATOR_PROFILE line
+    env = [e for e in env if not (isinstance(e, str) and 'SIMULATOR_PROFILE' in e)]
+    # Convert SELECTED_LINES to SIMULATOR_LINE_* env vars
+    # Format: template-name:count,template-name:count
+    for entry in selected.split(','):
+        parts = entry.split(':')
+        template = parts[0]
+        count = parts[1] if len(parts) > 1 else '1'
+        env_name = 'SIMULATOR_LINE_' + template.upper().replace('-', '_')
+        env.append(env_name + '=' + count)
+
 sim['environment'] = env
 with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
     yaml.dump(compose, f)
 "
-echo -e "${GREEN}  ✓ Simulator line selection injected${NC}"
+echo -e "${GREEN}  ✓ Simulator line env vars injected${NC}"
 
 # Determine API base URL for form panels
 HOST_IP="${HOST_IP:-localhost}"
