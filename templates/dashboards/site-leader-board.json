@@ -202,7 +202,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(\n  EXTRACT(DAY FROM (NOW() - MAX(ts.timestamp)))::integer,\n  999\n) as \"Safety Days\"\nFROM tag_string ts\nJOIN asset a ON a.id = ts.asset_id\nWHERE ts.name = 'State'\n  AND ts.value = 'FAULT'\n  AND a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line}' = 'All' OR a.line = '${line}')",
+          "rawSql": "SELECT COALESCE(\n  EXTRACT(DAY FROM (NOW() - MAX(ts.timestamp)))::integer,\n  999\n) as \"Safety Days\"\nFROM tag_string ts\nJOIN asset a ON a.id = ts.asset_id\nWHERE ts.name = 'state'\n  AND ts.value = 'FAULT'\n  AND a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line}' = 'All' OR a.line = '${line}')",
           "refId": "A"
         }
       ],

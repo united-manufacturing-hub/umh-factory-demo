@@ -48,6 +48,7 @@ echo ""
 # Load machine metadata from machines/*.yaml
 # ============================================================
 declare -A META_DISPLAY_NAME
+declare -A META_TYPE_TAGS  # machine-name -> "tag1|unit1;;tag2|unit2;;..."
 
 load_metadata() {
     local machines_dir="$TEMPLATES_DIR/machines"
@@ -58,8 +59,8 @@ load_metadata() {
 
     for machine_file in "$machines_dir"/*.yaml; do
         [ -f "$machine_file" ] || continue
-        local machine_name
-        machine_name=$(python3 -c "
+        local machine_info
+        machine_info=$(python3 -c "
 import sys
 from ruamel.yaml import YAML
 yaml = YAML()
@@ -67,12 +68,24 @@ with open('$machine_file') as f:
     d = yaml.load(f)
 print(d.get('name',''))
 print(d.get('display_name',''))
+# Extract type-specific tags (exclude base tags)
+base_tags = {'state', 'cycle_count', 'good_count', 'scrap_count', 'cycle_time_ms', 'blocked_by_buffer'}
+tags = []
+for m in d.get('addressMappings', []):
+    tag_name = m.get('TagName', '')
+    unit = m.get('Unit', 'raw')
+    if tag_name and tag_name not in base_tags:
+        tags.append(f'{tag_name}|{unit}')
+print(';;'.join(tags))
 ")
-        local name display
-        IFS=$'\n' read -r name display <<< "$machine_name"
+        local name display type_tags
+        IFS=$'\n' read -r name display type_tags <<< "$machine_info"
 
         if [ -n "$name" ]; then
             META_DISPLAY_NAME["$name"]="$display"
+            if [ -n "$type_tags" ]; then
+                META_TYPE_TAGS["$name"]="$type_tags"
+            fi
         fi
     done
 
@@ -634,7 +647,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
           \"editorMode\": \"code\",
           \"format\": \"time_series\",
           \"rawQuery\": true,
-          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'State' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'state' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
           \"refId\": \"${REF}\"
         }"
     done
@@ -667,6 +680,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
         WC_DISPLAY="$(machine_display_name "$MACHINE") (Pos ${POS})"
         WC_DISPLAY_ESCAPED="${WC_DISPLAY//&/\\&}"
 
+        # Apply standard sed replacements
         sed \
             -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
             -e "s|__SITE__|${LOCATION_1}|g" \
@@ -674,9 +688,118 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
             -e "s|__LINE__|${LINE_LOWER}|g" \
             -e "s|__LINE_DISPLAY__|${LINE_DISPLAY}|g" \
             -e "s|__WORKCELL__|${WORKCELL}|g" \
-            -e "s|__WORKCELL_DISPLAY__|${WC_DISPLAY_ESCAPED}|g" \
+            -e "s|__MACHINE_DISPLAY__|${WC_DISPLAY_ESCAPED}|g" \
             "$TEMPLATES_DIR/templates/dashboards/machine-dashboard.json" \
+            > "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json.tmp"
+
+        # Generate type-specific panels from machine metadata
+        TYPE_TAGS="${META_TYPE_TAGS[$MACHINE]:-}"
+        if [ -n "$TYPE_TAGS" ]; then
+            PANELS_JSON=$(python3 -c "
+import json, sys
+tags_str = '''${TYPE_TAGS}'''
+enterprise = '${LOCATION_0}'
+site = '${LOCATION_1}'
+area = '${AREA}'
+line = '${LINE_LOWER}'
+workcell = '${WORKCELL}'
+wc_display = '${WC_DISPLAY}'
+
+panels = []
+tag_entries = [t for t in tags_str.split(';;') if t]
+for idx, entry in enumerate(tag_entries):
+    parts = entry.split('|', 1)
+    tag_name = parts[0]
+    unit = parts[1] if len(parts) > 1 else 'raw'
+
+    # Generate display name: press_force_kn -> Press Force (kN)
+    # Extract unit hint from tag name suffix
+    name_parts = tag_name.split('_')
+    # Check if last part is a unit suffix
+    unit_suffixes = {'kn': 'kN', 'bar': 'bar', 'c': chr(176)+'C', 'mm': 'mm', 'pct': '%',
+                     's': 's', 'a': 'A', 'db': 'dB', 'kwh': 'kWh', 'rpm': 'RPM',
+                     'hz': 'Hz', 'v': 'V', 'w': 'W', 'pa': 'Pa', 'lpm': 'L/min',
+                     'ms': 'ms', 'um': chr(181)+'m', 'deg': chr(176), 'mpa': 'MPa',
+                     'mp': 'MP', 'lux': 'lux', 'ml': 'mL'}
+    display_unit = unit if unit != 'raw' else ''
+    title_words = [w.capitalize() for w in name_parts]
+    # Remove unit suffix from title if last word matches
+    if name_parts[-1].lower() in unit_suffixes:
+        display_unit = unit_suffixes[name_parts[-1].lower()]
+        title_words = title_words[:-1]
+    # Also handle two-word unit suffixes like mm_s
+    if len(name_parts) >= 2:
+        combo = name_parts[-2].lower() + '_' + name_parts[-1].lower()
+        if combo in ('mm_s',):
+            display_unit = 'mm/s'
+            title_words = title_words[:-2]
+        elif combo in ('cm2_s',):
+            display_unit = 'cm'+chr(178)+'/s'
+            title_words = title_words[:-2]
+
+    title = ' '.join(title_words)
+    if display_unit:
+        title += f' ({display_unit})'
+
+    col = idx % 2
+    row = idx // 2
+    x = col * 12
+    y = 10 + row * 8
+
+    sql = f\"SELECT timestamp AS time, value as \\\"{tag_name}\\\" FROM tag WHERE name = '{tag_name}' AND \$__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('{enterprise}', '{site}', '{area}', '{line}', '{workcell}'))\"
+
+    panel = {
+        'datasource': {'type': 'grafana-postgresql-datasource', 'uid': 'df9o2whw2o7wgb'},
+        'fieldConfig': {
+            'defaults': {
+                'color': {'mode': 'palette-classic'},
+                'custom': {
+                    'axisBorderShow': False, 'axisCenteredZero': False,
+                    'axisColorMode': 'text', 'axisLabel': '', 'axisPlacement': 'auto',
+                    'barAlignment': 0, 'barWidthFactor': 0.6, 'drawStyle': 'line',
+                    'fillOpacity': 0, 'gradientMode': 'none',
+                    'hideFrom': {'legend': False, 'tooltip': False, 'viz': False},
+                    'insertNulls': False, 'lineInterpolation': 'linear', 'lineWidth': 1,
+                    'pointSize': 5, 'scaleDistribution': {'type': 'linear'},
+                    'showPoints': 'auto', 'showValues': False, 'spanNulls': False,
+                    'stacking': {'group': 'A', 'mode': 'none'},
+                    'thresholdsStyle': {'mode': 'off'}
+                },
+                'mappings': [],
+                'thresholds': {'mode': 'absolute', 'steps': [{'color': 'green', 'value': 0}]}
+            },
+            'overrides': []
+        },
+        'gridPos': {'h': 8, 'w': 12, 'x': x, 'y': y},
+        'id': None,
+        'options': {
+            'legend': {'calcs': [], 'displayMode': 'list', 'placement': 'bottom', 'showLegend': True},
+            'tooltip': {'hideZeros': False, 'mode': 'single', 'sort': 'none'}
+        },
+        'pluginVersion': '12.3.0',
+        'targets': [{
+            'editorMode': 'code', 'format': 'time_series', 'rawQuery': True,
+            'rawSql': sql, 'refId': 'A'
+        }],
+        'title': title,
+        'type': 'timeseries'
+    }
+    panels.append(panel)
+
+print(json.dumps(panels))
+")
+        else
+            PANELS_JSON="[]"
+        fi
+
+        # Use jq to replace the __TYPE_SPECIFIC_PANELS__ placeholder with generated panels
+        echo "$PANELS_JSON" > "$WORK_DIR/dashboards/.type_panels_tmp.json"
+        jq --slurpfile type_panels "$WORK_DIR/dashboards/.type_panels_tmp.json" \
+            '[.panels[] | if . == "__TYPE_SPECIFIC_PANELS__" then $type_panels[0][] else . end] as $new_panels | .panels = $new_panels' \
+            "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json.tmp" \
             > "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json"
+        rm -f "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json.tmp"
+        rm -f "$WORK_DIR/dashboards/.type_panels_tmp.json"
         echo -e "${GREEN}    ✓ ${LINE_LOWER}-${WORKCELL}-dashboard.json${NC}"
     done
 done
@@ -709,7 +832,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
           \"editorMode\": \"code\",
           \"format\": \"time_series\",
           \"rawQuery\": true,
-          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'State' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'state' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
           \"refId\": \"${REF}\"
         }"
         TARGET_IDX=$((TARGET_IDX + 1))
@@ -775,7 +898,7 @@ fi
 SETUP_SVG+="</div>"
 
 ASSET_FILTER="get_asset_ids_stable('${LOCATION_0}', '${LOCATION_1}', '', '', '')"
-MACHINE_STATUS_SQL="WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT ${ASSET_FILTER}) AND ts.name = 'State' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'GoodParts') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'ScrapParts') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'CycleTime' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT ${ASSET_FILTER}) AND t.name IN ('GoodParts', 'ScrapParts') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT ${ASSET_FILTER}) ORDER BY a.name"
+MACHINE_STATUS_SQL="WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT ${ASSET_FILTER}) AND ts.name = 'state' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'good_count') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'scrap_count') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'cycle_time_ms' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT ${ASSET_FILTER}) AND t.name IN ('good_count', 'scrap_count') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT ${ASSET_FILTER}) ORDER BY a.name"
 
 sed \
     -e "s|__ENTERPRISE__|${LOCATION_0}|g" \

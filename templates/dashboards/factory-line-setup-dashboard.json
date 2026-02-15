@@ -128,7 +128,7 @@
                   {
                     "options": {
                       "IDLE": {
-                        "color": "orange",
+                        "color": "yellow",
                         "index": 1
                       }
                     },
@@ -137,7 +137,7 @@
                   {
                     "options": {
                       "STOPPED": {
-                        "color": "purple",
+                        "color": "orange",
                         "index": 2
                       }
                     },
@@ -236,7 +236,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '', '', '')) AND ts.name = 'State' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'GoodParts') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'ScrapParts') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'CycleTime' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '', '', '')) AND t.name IN ('GoodParts', 'ScrapParts') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '', '', '')) ORDER BY a.name",
+          "rawSql": "WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '', '', '')) AND ts.name = 'state' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'good_count') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'scrap_count') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'cycle_time_ms' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '', '', '')) AND t.name IN ('good_count', 'scrap_count') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '', '', '')) ORDER BY a.name",
           "refId": "A"
         }
       ],
@@ -292,7 +292,7 @@
             {
               "options": {
                 "IDLE": {
-                  "color": "orange",
+                  "color": "yellow",
                   "index": 1,
                   "text": "Idle"
                 }
@@ -322,7 +322,7 @@
             {
               "options": {
                 "STOPPED": {
-                  "color": "purple",
+                  "color": "orange",
                   "index": 4,
                   "text": "Stopped"
                 }
@@ -375,7 +375,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Injection Molding (Pos 1)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'injection-molding-L1-01')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Injection Molding (Pos 1)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'injection-molding-L1-01')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "A"
         },
         {
@@ -386,7 +386,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Robot Pick & Place (Pos 2)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'robot-pick-place-L1-02')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Robot Pick & Place (Pos 2)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'robot-pick-place-L1-02')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "B"
         },
         {
@@ -397,7 +397,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: CNC Milling (Pos 3)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'cnc-milling-L1-03')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: CNC Milling (Pos 3)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'cnc-milling-L1-03')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "C"
         },
         {
@@ -408,7 +408,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Robot Pick & Place (Pos 4)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'robot-pick-place-L1-04')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Robot Pick & Place (Pos 4)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'robot-pick-place-L1-04')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "D"
         },
         {
@@ -419,7 +419,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Packaging (Pos 5)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'packaging-L1-05')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 1: Packaging (Pos 5)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line1', 'packaging-L1-05')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "E"
         },
         {
@@ -430,7 +430,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 2: Metal Forming (Pos 1)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line2', 'metal-forming-L2-01')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 2: Metal Forming (Pos 1)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line2', 'metal-forming-L2-01')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "F"
         },
         {
@@ -441,7 +441,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 2: Spot Welder (Pos 2)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line2', 'spot-welder-L2-02')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 2: Spot Welder (Pos 2)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line2', 'spot-welder-L2-02')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "G"
         },
         {
@@ -452,7 +452,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 2: Packaging (Pos 3)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line2', 'packaging-L2-03')) AND t.name = 'State' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
+          "rawSql": "SELECT t.timestamp as time, t.value as \"Line 2: Packaging (Pos 3)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', 'line2', 'packaging-L2-03')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
           "refId": "H"
         }
       ],

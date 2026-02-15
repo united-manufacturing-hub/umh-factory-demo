@@ -21,7 +21,7 @@ SELECT DISTINCT ON (a.id)
     ts.timestamp AS state_since,
     EXTRACT(EPOCH FROM (NOW() - ts.timestamp))::integer AS duration_seconds
 FROM asset a
-LEFT JOIN tag_string ts ON ts.asset_id = a.id AND ts.name = 'State'
+LEFT JOIN tag_string ts ON ts.asset_id = a.id AND ts.name = 'state'
 WHERE a.workcell != ''  -- Only include workcell-level assets (machines)
 ORDER BY a.id, ts.timestamp DESC;
 
@@ -181,7 +181,7 @@ SELECT
     COUNT(*) AS sample_count
 FROM tag t
 JOIN asset a ON a.id = t.asset_id
-WHERE t.name = 'CycleTime'
+WHERE t.name = 'cycle_time_ms'
   AND t.value > 0
   AND t.value < 600000  -- Filter outliers (max 10 min cycle time)
   AND t.timestamp > NOW() - INTERVAL '24 hours'  -- Last 24 hours by default
@@ -196,7 +196,7 @@ END $$;
 -- -----------------------------------------------------------------------------
 -- Function: get_production_delta
 -- Purpose: Calculate production delta for a time range (handles counter resets)
--- Usage: SELECT get_production_delta(asset_id, 'GoodParts', start_time, end_time);
+-- Usage: SELECT get_production_delta(asset_id, 'good_count', start_time, end_time);
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION get_production_delta(
     _asset_id integer,
@@ -257,7 +257,7 @@ BEGIN
     INTO running_count, total_count
     FROM tag_string
     WHERE asset_id = _asset_id
-      AND name = 'State'
+      AND name = 'state'
       AND timestamp BETWEEN _start_time AND _end_time;
 
     IF total_count = 0 THEN
@@ -295,7 +295,7 @@ WITH daily_production AS (
               AND DATE(t2.timestamp) = DATE(t.timestamp)
         )) AS end_of_day_value
     FROM tag t
-    WHERE t.name IN ('GoodParts', 'ScrapParts')
+    WHERE t.name IN ('good_count', 'scrap_count')
       AND t.timestamp > NOW() - INTERVAL '30 days'
     GROUP BY t.asset_id, DATE(t.timestamp), t.name
 ),
@@ -312,8 +312,8 @@ daily_deltas AS (
     SELECT
         asset_id,
         production_date,
-        SUM(CASE WHEN name = 'GoodParts' THEN GREATEST(COALESCE(end_of_day_value, 0) - COALESCE(prev_value, 0), 0) ELSE 0 END) AS good_parts,
-        SUM(CASE WHEN name = 'ScrapParts' THEN GREATEST(COALESCE(end_of_day_value, 0) - COALESCE(prev_value, 0), 0) ELSE 0 END) AS scrap_parts
+        SUM(CASE WHEN name = 'good_count' THEN GREATEST(COALESCE(end_of_day_value, 0) - COALESCE(prev_value, 0), 0) ELSE 0 END) AS good_parts,
+        SUM(CASE WHEN name = 'scrap_count' THEN GREATEST(COALESCE(end_of_day_value, 0) - COALESCE(prev_value, 0), 0) ELSE 0 END) AS scrap_parts
     FROM daily_with_prev
     GROUP BY asset_id, production_date
 )
@@ -386,13 +386,13 @@ SELECT
     sp.area,
     sp.line,
     COALESCE(SUM(GREATEST(
-        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'GoodParts' AND timestamp <= sp.end_time ORDER BY timestamp DESC LIMIT 1), 0) -
-        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'GoodParts' AND timestamp < sp.start_time ORDER BY timestamp DESC LIMIT 1), 0),
+        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'good_count' AND timestamp <= sp.end_time ORDER BY timestamp DESC LIMIT 1), 0) -
+        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'good_count' AND timestamp < sp.start_time ORDER BY timestamp DESC LIMIT 1), 0),
         0
     )), 0) AS good_parts,
     COALESCE(SUM(GREATEST(
-        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'ScrapParts' AND timestamp <= sp.end_time ORDER BY timestamp DESC LIMIT 1), 0) -
-        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'ScrapParts' AND timestamp < sp.start_time ORDER BY timestamp DESC LIMIT 1), 0),
+        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'scrap_count' AND timestamp <= sp.end_time ORDER BY timestamp DESC LIMIT 1), 0) -
+        COALESCE((SELECT value FROM tag WHERE asset_id = sp.asset_id AND name = 'scrap_count' AND timestamp < sp.start_time ORDER BY timestamp DESC LIMIT 1), 0),
         0
     )), 0) AS scrap_parts
 FROM shift_production sp
@@ -419,7 +419,7 @@ WITH state_counts AS (
         COUNT(*) AS total_states,
         COUNT(*) FILTER (WHERE value = 'RUNNING') AS running_count
     FROM tag_string
-    WHERE name = 'State'
+    WHERE name = 'state'
       AND timestamp > NOW() - INTERVAL '24 hours'
     GROUP BY asset_id
 ),
@@ -427,12 +427,12 @@ parts_delta AS (
     SELECT
         asset_id,
         origin,
-        MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp <= NOW()) AS end_good,
-        MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp < NOW() - INTERVAL '24 hours') AS start_good,
-        MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp <= NOW()) AS end_scrap,
-        MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp < NOW() - INTERVAL '24 hours') AS start_scrap
+        MAX(value) FILTER (WHERE name = 'good_count' AND timestamp <= NOW()) AS end_good,
+        MAX(value) FILTER (WHERE name = 'good_count' AND timestamp < NOW() - INTERVAL '24 hours') AS start_good,
+        MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp <= NOW()) AS end_scrap,
+        MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp < NOW() - INTERVAL '24 hours') AS start_scrap
     FROM tag
-    WHERE name IN ('GoodParts', 'ScrapParts')
+    WHERE name IN ('good_count', 'scrap_count')
       AND timestamp > NOW() - INTERVAL '25 hours'  -- Include buffer for start values
     GROUP BY asset_id, origin
 ),
@@ -449,7 +449,7 @@ cycle_times AS (
         asset_id,
         AVG(value) / 1000.0 AS avg_cycle_time_sec  -- Convert ms to seconds
     FROM tag
-    WHERE name = 'CycleTime'
+    WHERE name = 'cycle_time_ms'
       AND value > 0
       AND value < 600000
       AND timestamp > NOW() - INTERVAL '24 hours'

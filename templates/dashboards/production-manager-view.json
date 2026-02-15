@@ -74,7 +74,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH state_data AS (\n  SELECT\n    COUNT(*) as total_states,\n    COUNT(*) FILTER (WHERE t.value = 'RUNNING') as running_count\n  FROM tag_string t\n  WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n    AND t.name = 'State'\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n),\nparts_data AS (\n  SELECT\n    COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta,\n    COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta\n  FROM (\n    SELECT asset_id, origin,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp <= NOW()::timestamptz) as end_good,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_good,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp <= NOW()::timestamptz) as end_scrap,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_scrap\n    FROM tag\n    WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n      AND name IN ('GoodParts', 'ScrapParts')\n    GROUP BY asset_id, origin\n  ) sub\n)\nSELECT ROUND(((\n  (CASE WHEN s.total_states > 0 THEN s.running_count * 100.0 / s.total_states ELSE 0 END / 100.0) *\n  LEAST(COALESCE(CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN\n    (p.good_delta + p.scrap_delta) * 100.0 / NULLIF(s.running_count * 1.0 / NULLIF(s.total_states, 0) * EXTRACT(EPOCH FROM (NOW()::timestamp - (NOW() - INTERVAL '${time_period}')::timestamp)) / 60.0, 0)\n  ELSE 0 END, 0), 100) / 100.0 *\n  COALESCE(CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN p.good_delta * 100.0 / (p.good_delta + p.scrap_delta) ELSE 100 END, 100) / 100.0\n) * 100)::numeric, 1) as \"OEE\"\nFROM state_data s, parts_data p",
+          "rawSql": "WITH state_data AS (\n  SELECT\n    COUNT(*) as total_states,\n    COUNT(*) FILTER (WHERE t.value = 'RUNNING') as running_count\n  FROM tag_string t\n  WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n    AND t.name = 'state'\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n),\nparts_data AS (\n  SELECT\n    COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta,\n    COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta\n  FROM (\n    SELECT asset_id, origin,\n      MAX(value) FILTER (WHERE name = 'good_count' AND timestamp <= NOW()::timestamptz) as end_good,\n      MAX(value) FILTER (WHERE name = 'good_count' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_good,\n      MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp <= NOW()::timestamptz) as end_scrap,\n      MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_scrap\n    FROM tag\n    WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n      AND name IN ('good_count', 'scrap_count')\n    GROUP BY asset_id, origin\n  ) sub\n)\nSELECT ROUND(((\n  (CASE WHEN s.total_states > 0 THEN s.running_count * 100.0 / s.total_states ELSE 0 END / 100.0) *\n  LEAST(COALESCE(CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN\n    (p.good_delta + p.scrap_delta) * 100.0 / NULLIF(s.running_count * 1.0 / NULLIF(s.total_states, 0) * EXTRACT(EPOCH FROM (NOW()::timestamp - (NOW() - INTERVAL '${time_period}')::timestamp)) / 60.0, 0)\n  ELSE 0 END, 0), 100) / 100.0 *\n  COALESCE(CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN p.good_delta * 100.0 / (p.good_delta + p.scrap_delta) ELSE 100 END, 100) / 100.0\n) * 100)::numeric, 1) as \"OEE\"\nFROM state_data s, parts_data p",
           "refId": "A"
         }
       ],
@@ -126,7 +126,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE t.value = 'RUNNING') * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1) as \"Availability\"\nFROM tag_string t\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND t.name = 'State'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()",
+          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE t.value = 'RUNNING') * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1) as \"Availability\"\nFROM tag_string t\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND t.name = 'state'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()",
           "refId": "A"
         }
       ],
@@ -178,7 +178,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((CASE WHEN (good_delta + scrap_delta) > 0 THEN good_delta * 100.0 / (good_delta + scrap_delta) ELSE 100 END)::numeric, 1) as \"Quality\"\nFROM (\n  SELECT\n    COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta,\n    COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta\n  FROM (\n    SELECT asset_id, origin,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp <= NOW()::timestamptz) as end_good,\n      MAX(value) FILTER (WHERE name = 'GoodParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_good,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp <= NOW()::timestamptz) as end_scrap,\n      MAX(value) FILTER (WHERE name = 'ScrapParts' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_scrap\n    FROM tag\n    WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n      AND name IN ('GoodParts', 'ScrapParts')\n    GROUP BY asset_id, origin\n  ) sub\n) sub",
+          "rawSql": "SELECT ROUND((CASE WHEN (good_delta + scrap_delta) > 0 THEN good_delta * 100.0 / (good_delta + scrap_delta) ELSE 100 END)::numeric, 1) as \"Quality\"\nFROM (\n  SELECT\n    COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta,\n    COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta\n  FROM (\n    SELECT asset_id, origin,\n      MAX(value) FILTER (WHERE name = 'good_count' AND timestamp <= NOW()::timestamptz) as end_good,\n      MAX(value) FILTER (WHERE name = 'good_count' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_good,\n      MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp <= NOW()::timestamptz) as end_scrap,\n      MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_scrap\n    FROM tag\n    WHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n      AND name IN ('good_count', 'scrap_count')\n    GROUP BY asset_id, origin\n  ) sub\n) sub",
           "refId": "A"
         }
       ],
@@ -224,7 +224,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH per_origin AS (\n  SELECT asset_id, origin,\n    MAX(value) FILTER (WHERE timestamp <= NOW()::timestamptz) as end_v,\n    MAX(value) FILTER (WHERE timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_v\n  FROM tag\n  WHERE name = 'GoodParts'\n    AND asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  GROUP BY asset_id, origin\n)\nSELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as \"Good Parts\"\nFROM per_origin",
+          "rawSql": "WITH per_origin AS (\n  SELECT asset_id, origin,\n    MAX(value) FILTER (WHERE timestamp <= NOW()::timestamptz) as end_v,\n    MAX(value) FILTER (WHERE timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_v\n  FROM tag\n  WHERE name = 'good_count'\n    AND asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  GROUP BY asset_id, origin\n)\nSELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as \"Good Parts\"\nFROM per_origin",
           "refId": "A"
         }
       ],
@@ -270,7 +270,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH per_origin AS (\n  SELECT asset_id, origin,\n    MAX(value) FILTER (WHERE timestamp <= NOW()::timestamptz) as end_v,\n    MAX(value) FILTER (WHERE timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_v\n  FROM tag\n  WHERE name = 'ScrapParts'\n    AND asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  GROUP BY asset_id, origin\n)\nSELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as \"Scrap Parts\"\nFROM per_origin",
+          "rawSql": "WITH per_origin AS (\n  SELECT asset_id, origin,\n    MAX(value) FILTER (WHERE timestamp <= NOW()::timestamptz) as end_v,\n    MAX(value) FILTER (WHERE timestamp < (NOW() - INTERVAL '${time_period}')::timestamptz) as start_v\n  FROM tag\n  WHERE name = 'scrap_count'\n    AND asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  GROUP BY asset_id, origin\n)\nSELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as \"Scrap Parts\"\nFROM per_origin",
           "refId": "A"
         }
       ],
@@ -317,7 +317,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT AVG(t.value) / 1000.0 as \"Avg Cycle Time\"\nFROM tag t\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND t.name = 'CycleTime'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  AND t.value > 0 AND t.value < 300000",
+          "rawSql": "SELECT AVG(t.value) / 1000.0 as \"Avg Cycle Time\"\nFROM tag t\nWHERE asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND t.name = 'cycle_time_ms'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  AND t.value > 0 AND t.value < 300000",
           "refId": "A"
         }
       ],
@@ -388,9 +388,9 @@
           "mappings": [
             { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" } }, "type": "value" },
             { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "red", "index": 2, "text": "STOPPED" } }, "type": "value" },
+            { "options": { "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" } }, "type": "value" },
             { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINTENANCE" } }, "type": "value" },
-            { "options": { "FAULT": { "color": "dark-red", "index": 4, "text": "FAULT" } }, "type": "value" },
+            { "options": { "FAULT": { "color": "red", "index": 4, "text": "FAULT" } }, "type": "value" },
             { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
           ],
           "thresholds": {
@@ -632,7 +632,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "WITH time_buckets AS (\n  SELECT\n    time_bucket('1 hour', t.timestamp) as bucket,\n    a.workcell,\n    SUM(CASE WHEN t.name = 'GoodParts' THEN t.value ELSE 0 END) as good_max,\n    SUM(CASE WHEN t.name = 'ScrapParts' THEN t.value ELSE 0 END) as scrap_max\n  FROM tag t\n  JOIN asset a ON a.id = t.asset_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line}'\n    AND a.workcell != ''\n    AND t.name IN ('GoodParts', 'ScrapParts')\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  GROUP BY bucket, a.workcell\n)\nSELECT\n  bucket as time,\n  workcell as metric,\n  CASE\n    WHEN (good_max + scrap_max) > 0 THEN ROUND((scrap_max * 100.0 / (good_max + scrap_max))::numeric, 2)\n    ELSE 0\n  END as value\nFROM time_buckets\nORDER BY bucket",
+          "rawSql": "WITH time_buckets AS (\n  SELECT\n    time_bucket('1 hour', t.timestamp) as bucket,\n    a.workcell,\n    SUM(CASE WHEN t.name = 'good_count' THEN t.value ELSE 0 END) as good_max,\n    SUM(CASE WHEN t.name = 'scrap_count' THEN t.value ELSE 0 END) as scrap_max\n  FROM tag t\n  JOIN asset a ON a.id = t.asset_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line}'\n    AND a.workcell != ''\n    AND t.name IN ('good_count', 'scrap_count')\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  GROUP BY bucket, a.workcell\n)\nSELECT\n  bucket as time,\n  workcell as metric,\n  CASE\n    WHEN (good_max + scrap_max) > 0 THEN ROUND((scrap_max * 100.0 / (good_max + scrap_max))::numeric, 2)\n    ELSE 0\n  END as value\nFROM time_buckets\nORDER BY bucket",
           "refId": "A"
         }
       ],
@@ -664,12 +664,12 @@
             "spanNulls": false
           },
           "mappings": [
-            { "options": { "FAULT": { "color": "dark-red", "index": 0, "text": "Fault" } }, "type": "value" },
+            { "options": { "FAULT": { "color": "red", "index": 0, "text": "Fault" } }, "type": "value" },
             { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "Idle" } }, "type": "value" },
             { "options": { "RUNNING": { "color": "green", "index": 2, "text": "Running" } }, "type": "value" },
             { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "Maintenance" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "red", "index": 4, "text": "Stopped" } }, "type": "value" },
-            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "Setup" } }, "type": "value" }
+            { "options": { "STOPPED": { "color": "orange", "index": 4, "text": "Stopped" } }, "type": "value" },
+            { "options": { "SETUP": { "color": "purple", "index": 5, "text": "Setup" } }, "type": "value" }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -698,7 +698,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  t.timestamp as time,\n  t.value as value,\n  a.workcell as metric\nFROM tag_string t\nJOIN asset a ON a.id = t.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND a.workcell != ''\n  AND t.name = 'State'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY t.timestamp",
+          "rawSql": "SELECT\n  t.timestamp as time,\n  t.value as value,\n  a.workcell as metric\nFROM tag_string t\nJOIN asset a ON a.id = t.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND a.workcell != ''\n  AND t.name = 'state'\n  AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY t.timestamp",
           "refId": "A"
         }
       ],
