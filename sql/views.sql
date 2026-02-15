@@ -518,6 +518,621 @@ DO $$ BEGIN
 EXCEPTION WHEN undefined_object THEN NULL;
 END $$;
 
+-- =============================================================================
+-- LAYER 1: PRIMITIVE FUNCTIONS
+-- These are the building blocks called by dashboard panels and composite functions
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Function: get_counter_delta
+-- Purpose: Counter delta with per-origin grouping and reset handling.
+--          Works at any hierarchy level (empty string = match all).
+-- Usage: SELECT get_counter_delta('E','S','A','L','W','good_count',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_counter_delta(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _tag_name text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+BEGIN
+    RETURN COALESCE((
+        SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0))
+        FROM (
+            SELECT
+                asset_id,
+                origin,
+                MAX(value) FILTER (WHERE timestamp <= _end_time) AS end_v,
+                MAX(value) FILTER (WHERE timestamp < _start_time) AS start_v
+            FROM tag
+            WHERE name = _tag_name
+              AND asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+            GROUP BY asset_id, origin
+        ) sub
+    ), 0);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_counter_delta(text,text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_availability
+-- Purpose: RUNNING count / total count from tag_string. Multi-asset aware.
+-- Usage: SELECT get_availability('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_availability(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+DECLARE
+    running_count bigint;
+    total_count bigint;
+BEGIN
+    SELECT
+        COUNT(*) FILTER (WHERE value = 'RUNNING'),
+        COUNT(*)
+    INTO running_count, total_count
+    FROM tag_string
+    WHERE asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+      AND name = 'state'
+      AND timestamp BETWEEN _start_time AND _end_time;
+
+    IF total_count = 0 THEN
+        RETURN NULL;
+    END IF;
+
+    RETURN ROUND((running_count * 100.0 / total_count)::numeric, 1);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_availability(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_planned_minutes
+-- Purpose: Sum of overlapping shift periods within time range.
+-- Usage: SELECT get_planned_minutes(start, end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_planned_minutes(
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+BEGIN
+    RETURN (
+        SELECT CASE WHEN COUNT(*) > 0
+            THEN SUM(EXTRACT(EPOCH FROM (
+                LEAST(s.end_time, _end_time) - GREATEST(s.start_time, _start_time)
+            )) / 60.0)
+            ELSE NULL
+        END
+        FROM shifts s
+        WHERE s.start_time < _end_time
+          AND s.end_time > _start_time
+    );
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_planned_minutes(timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_runtime_minutes
+-- Purpose: RUNNING minutes for single asset, shift-constrained. Uses state_changes + LEAD().
+-- Usage: SELECT get_runtime_minutes(asset_id, start, end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_runtime_minutes(
+    _asset_id integer,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+BEGIN
+    RETURN (
+        WITH shift_periods AS (
+            SELECT
+                GREATEST(s.start_time, _start_time) AS period_start,
+                LEAST(s.end_time, _end_time) AS period_end
+            FROM shifts s
+            WHERE s.start_time < _end_time
+              AND s.end_time > _start_time
+        ),
+        state_changes AS (
+            SELECT
+                timestamp,
+                value,
+                LEAD(timestamp) OVER (ORDER BY timestamp) AS next_ts
+            FROM tag_string
+            WHERE name = 'state'
+              AND asset_id = _asset_id
+        )
+        SELECT CASE WHEN (SELECT COUNT(*) FROM shift_periods) > 0
+            THEN COALESCE(SUM(
+                EXTRACT(EPOCH FROM (
+                    LEAST(COALESCE(sc.next_ts, sp.period_end), sp.period_end) -
+                    GREATEST(sc.timestamp, sp.period_start)
+                )) / 60.0
+            ), 0)
+            ELSE NULL
+        END
+        FROM state_changes sc, shift_periods sp
+        WHERE sc.value = 'RUNNING'
+          AND sc.timestamp < sp.period_end
+          AND COALESCE(sc.next_ts, sp.period_end) > sp.period_start
+    );
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_runtime_minutes(integer,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_cycle_time_avg
+-- Purpose: AVG cycle time in seconds (divides ms by 1000), filters outliers.
+--          NULL times = all-time average.
+-- Usage: SELECT get_cycle_time_avg('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_cycle_time_avg(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz DEFAULT NULL,
+    _end_time timestamptz DEFAULT NULL
+) RETURNS numeric AS $func$
+BEGIN
+    RETURN (
+        SELECT AVG(t.value) / 1000.0
+        FROM tag t
+        WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+          AND t.name = 'cycle_time_ms'
+          AND t.value > 0
+          AND t.value < 300000
+          AND (_start_time IS NULL OR t.timestamp >= _start_time)
+          AND (_end_time IS NULL OR t.timestamp <= _end_time)
+    );
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_cycle_time_avg(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_stop_count
+-- Purpose: COUNT of machine_stops in range.
+-- Usage: SELECT get_stop_count('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_stop_count(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS integer AS $func$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)::integer
+        FROM machine_stops ms
+        WHERE ms.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+          AND ms.start_time BETWEEN _start_time AND _end_time
+    );
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_stop_count(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_total_downtime_minutes
+-- Purpose: SUM duration of machine_stops in range.
+-- Usage: SELECT get_total_downtime_minutes('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_total_downtime_minutes(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+BEGIN
+    RETURN COALESCE((
+        SELECT SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0)
+        FROM machine_stops ms
+        WHERE ms.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+          AND ms.start_time >= _start_time
+          AND ms.start_time <= _end_time
+    ), 0);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_total_downtime_minutes(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- =============================================================================
+-- LAYER 2: COMPOSITE FUNCTIONS (call primitives)
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Function: get_quality
+-- Purpose: good / (good + scrap) * 100. Calls get_counter_delta internally.
+-- Usage: SELECT get_quality('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_quality(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+DECLARE
+    good_parts numeric;
+    scrap_parts numeric;
+    total numeric;
+BEGIN
+    good_parts := get_counter_delta(_enterprise, _site, _area, _line, _workcell, 'good_count', _start_time, _end_time);
+    scrap_parts := get_counter_delta(_enterprise, _site, _area, _line, _workcell, 'scrap_count', _start_time, _end_time);
+    total := good_parts + scrap_parts;
+
+    IF total = 0 THEN
+        RETURN 100;
+    END IF;
+
+    RETURN ROUND((good_parts * 100.0 / total)::numeric, 1);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_quality(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_performance
+-- Purpose: total_parts / theoretical_max * 100, capped at 100.
+-- Usage: SELECT get_performance('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_performance(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+DECLARE
+    good_parts numeric;
+    scrap_parts numeric;
+    total_parts numeric;
+    running_count bigint;
+    total_count bigint;
+    avg_ct numeric;
+    running_seconds numeric;
+    theoretical_max numeric;
+BEGIN
+    good_parts := get_counter_delta(_enterprise, _site, _area, _line, _workcell, 'good_count', _start_time, _end_time);
+    scrap_parts := get_counter_delta(_enterprise, _site, _area, _line, _workcell, 'scrap_count', _start_time, _end_time);
+    total_parts := good_parts + scrap_parts;
+
+    SELECT
+        COUNT(*) FILTER (WHERE value = 'RUNNING'),
+        COUNT(*)
+    INTO running_count, total_count
+    FROM tag_string
+    WHERE asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+      AND name = 'state'
+      AND timestamp BETWEEN _start_time AND _end_time;
+
+    IF total_count = 0 OR running_count = 0 THEN
+        RETURN 0;
+    END IF;
+
+    avg_ct := get_cycle_time_avg(_enterprise, _site, _area, _line, _workcell, _start_time, _end_time);
+    IF avg_ct IS NULL OR avg_ct = 0 THEN
+        RETURN 0;
+    END IF;
+
+    -- Running seconds = proportion of time range that was RUNNING
+    running_seconds := running_count * 1.0 / total_count * EXTRACT(EPOCH FROM (_end_time - _start_time));
+    -- Theoretical max = running_seconds / cycle_time_seconds
+    theoretical_max := running_seconds / avg_ct;
+
+    IF theoretical_max = 0 THEN
+        RETURN 0;
+    END IF;
+
+    RETURN LEAST(ROUND((total_parts * 100.0 / theoretical_max)::numeric, 1), 100);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_performance(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_oee
+-- Purpose: availability * performance * quality / 10000.
+-- Usage: SELECT get_oee('E','S','A','L','',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_oee(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+DECLARE
+    avail numeric;
+    perf numeric;
+    qual numeric;
+BEGIN
+    avail := COALESCE(get_availability(_enterprise, _site, _area, _line, _workcell, _start_time, _end_time), 0);
+    perf := COALESCE(get_performance(_enterprise, _site, _area, _line, _workcell, _start_time, _end_time), 0);
+    qual := COALESCE(get_quality(_enterprise, _site, _area, _line, _workcell, _start_time, _end_time), 100);
+
+    RETURN ROUND((avail * perf * qual / 10000.0)::numeric, 1);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_oee(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- =============================================================================
+-- LAYER 3: TABLE-RETURNING FUNCTIONS
+-- =============================================================================
+
+-- -----------------------------------------------------------------------------
+-- Function: get_state_timeline
+-- Purpose: State timeline data for Grafana state-timeline panel.
+-- Usage: SELECT * FROM get_state_timeline('E','S','A','L','W',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_state_timeline(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS TABLE("time" timestamptz, value text, metric text) AS $func$
+BEGIN
+    RETURN QUERY
+    SELECT
+        t.timestamp AS time,
+        t.value AS value,
+        a.workcell::text AS metric
+    FROM tag_string t
+    JOIN asset a ON a.id = t.asset_id
+    WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+      AND t.name = 'state'
+      AND t.timestamp BETWEEN _start_time AND _end_time
+    ORDER BY t.timestamp;
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_state_timeline(text,text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_tag_timeseries
+-- Purpose: Simple tag value lookup for type-specific machine panels.
+-- Usage: SELECT * FROM get_tag_timeseries(asset_id, 'tag_name', start, end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_tag_timeseries(
+    _asset_id integer,
+    _tag_name text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS TABLE("time" timestamptz, value double precision) AS $func$
+BEGIN
+    RETURN QUERY
+    SELECT t.timestamp AS time, t.value AS value
+    FROM tag t
+    WHERE t.asset_id = _asset_id
+      AND t.name = _tag_name
+      AND t.timestamp BETWEEN _start_time AND _end_time
+    ORDER BY t.timestamp;
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_tag_timeseries(integer,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_machine_status_table
+-- Purpose: Current status of all matching machines.
+-- Usage: SELECT * FROM get_machine_status_table('E','S','','','');
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_machine_status_table(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text
+) RETURNS TABLE(
+    machine text,
+    state text,
+    good_parts integer,
+    scrap_parts integer,
+    cycle_time numeric
+) AS $func$
+BEGIN
+    RETURN QUERY
+    WITH matching_assets AS (
+        SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell) AS id
+    ),
+    latest_state AS (
+        SELECT DISTINCT ON (ts.asset_id)
+            ts.asset_id,
+            ts.value AS state
+        FROM tag_string ts
+        WHERE ts.asset_id IN (SELECT id FROM matching_assets)
+          AND ts.name = 'state'
+        ORDER BY ts.asset_id, ts.timestamp DESC
+    ),
+    latest_parts AS (
+        SELECT
+            t.asset_id,
+            MAX(t.value) FILTER (WHERE t.name = 'good_count') AS good_parts,
+            MAX(t.value) FILTER (WHERE t.name = 'scrap_count') AS scrap_parts,
+            (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'cycle_time_ms' ORDER BY t2.timestamp DESC LIMIT 1) AS cycle_time
+        FROM tag t
+        WHERE t.asset_id IN (SELECT id FROM matching_assets)
+          AND t.name IN ('good_count', 'scrap_count')
+        GROUP BY t.asset_id
+    )
+    SELECT
+        a.workcell::text AS machine,
+        COALESCE(ls.state, 'UNKNOWN')::text AS state,
+        COALESCE(lp.good_parts, 0)::integer AS good_parts,
+        COALESCE(lp.scrap_parts, 0)::integer AS scrap_parts,
+        ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) AS cycle_time
+    FROM asset a
+    LEFT JOIN latest_state ls ON ls.asset_id = a.id
+    LEFT JOIN latest_parts lp ON lp.asset_id = a.id
+    WHERE a.id IN (SELECT id FROM matching_assets)
+    ORDER BY a.workcell;
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_machine_status_table(text,text,text,text,text) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_stop_reasons_pareto
+-- Purpose: Top stop reasons with counts and duration.
+-- Usage: SELECT * FROM get_stop_reasons_pareto('E','S','A','L','',start,end,10);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_stop_reasons_pareto(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _workcell text,
+    _start_time timestamptz,
+    _end_time timestamptz,
+    _limit integer DEFAULT 10
+) RETURNS TABLE(
+    reason text,
+    category text,
+    stop_count bigint,
+    duration_mins numeric,
+    pct numeric
+) AS $func$
+BEGIN
+    RETURN QUERY
+    WITH stop_data AS (
+        SELECT
+            COALESCE(sr.name, 'Unspecified') AS reason,
+            COALESCE(sr.category, 'Unknown') AS category,
+            COUNT(*) AS stop_count,
+            SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0) AS total_duration_mins
+        FROM machine_stops ms
+        LEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id
+        WHERE ms.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+          AND ms.start_time BETWEEN _start_time AND _end_time
+        GROUP BY sr.name, sr.category
+    ),
+    totals AS (
+        SELECT SUM(sd.stop_count) AS total_stops FROM stop_data sd
+    )
+    SELECT
+        sd.reason::text,
+        sd.category::text,
+        sd.stop_count,
+        ROUND(sd.total_duration_mins::numeric, 1) AS duration_mins,
+        ROUND((sd.stop_count * 100.0 / NULLIF(t.total_stops, 0))::numeric, 1) AS pct
+    FROM stop_data sd, totals t
+    ORDER BY sd.stop_count DESC
+    LIMIT _limit;
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_stop_reasons_pareto(text,text,text,text,text,timestamptz,timestamptz,integer) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- Function: get_output_vs_planned
+-- Purpose: Actual good parts vs production order target, as percentage.
+-- Usage: SELECT get_output_vs_planned('E','S','','L',start,end);
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION get_output_vs_planned(
+    _enterprise text,
+    _site text,
+    _area text,
+    _line text,
+    _start_time timestamptz,
+    _end_time timestamptz
+) RETURNS numeric AS $func$
+DECLARE
+    actual numeric;
+    target numeric;
+BEGIN
+    actual := get_counter_delta(_enterprise, _site, _area, _line, '', 'good_count', _start_time, _end_time);
+
+    SELECT COALESCE(SUM(po.quantity), 1000) INTO target
+    FROM production_orders po
+    JOIN asset a ON a.id = po.asset_id
+    WHERE a.enterprise = _enterprise
+      AND a.site = _site
+      AND (_line = '' OR a.line = _line)
+      AND po.status IN ('IN_PROGRESS', 'RELEASED');
+
+    IF target = 0 THEN
+        RETURN NULL;
+    END IF;
+
+    RETURN ROUND((actual * 100.0 / target)::numeric, 1);
+END;
+$func$ LANGUAGE plpgsql STABLE;
+
+DO $$ BEGIN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION get_output_vs_planned(text,text,text,text,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
 -- -----------------------------------------------------------------------------
 -- Success message
 -- -----------------------------------------------------------------------------
@@ -526,5 +1141,12 @@ DO $$ BEGIN
     RAISE NOTICE 'Views: v_machine_current_state, v_active_issues, v_stop_reasons_pareto,';
     RAISE NOTICE '       v_order_progress, v_cycle_time_stats, v_production_summary,';
     RAISE NOTICE '       v_shift_production, v_oee_by_asset';
-    RAISE NOTICE 'Functions: get_production_delta, get_availability_pct';
+    RAISE NOTICE 'Functions (legacy): get_production_delta, get_availability_pct';
+    RAISE NOTICE 'Functions (Layer 1): get_counter_delta, get_availability, get_planned_minutes,';
+    RAISE NOTICE '                     get_runtime_minutes, get_cycle_time_avg, get_stop_count,';
+    RAISE NOTICE '                     get_total_downtime_minutes';
+    RAISE NOTICE 'Functions (Layer 2): get_quality, get_performance, get_oee';
+    RAISE NOTICE 'Functions (Layer 3): get_state_timeline, get_tag_timeseries,';
+    RAISE NOTICE '                     get_machine_status_table, get_stop_reasons_pareto,';
+    RAISE NOTICE '                     get_output_vs_planned';
 END $$;

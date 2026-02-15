@@ -647,7 +647,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
           \"editorMode\": \"code\",
           \"format\": \"time_series\",
           \"rawQuery\": true,
-          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'state' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"rawSql\": \"SELECT time, value as \\\"${DISPLAY_ESC}\\\" FROM get_state_timeline('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}', \$__timeFrom(), \$__timeTo())\",
           \"refId\": \"${REF}\"
         }"
     done
@@ -746,7 +746,7 @@ for idx, entry in enumerate(tag_entries):
     x = col * 12
     y = 10 + row * 8
 
-    sql = f\"SELECT timestamp AS time, value as \\\"{tag_name}\\\" FROM tag WHERE name = '{tag_name}' AND \$__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('{enterprise}', '{site}', '{area}', '{line}', '{workcell}'))\"
+    sql = f\"SELECT time, value as \\\"{tag_name}\\\" FROM get_tag_timeseries(get_asset_id_immutable('{enterprise}', '{site}', '{area}', '{line}', '{workcell}'), '{tag_name}', \$__timeFrom(), \$__timeTo())\"
 
     panel = {
         'datasource': {'type': 'grafana-postgresql-datasource', 'uid': 'df9o2whw2o7wgb'},
@@ -832,7 +832,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
           \"editorMode\": \"code\",
           \"format\": \"time_series\",
           \"rawQuery\": true,
-          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'state' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"rawSql\": \"SELECT time, value as \\\"${DISPLAY_ESC}\\\" FROM get_state_timeline('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}', \$__timeFrom(), \$__timeTo())\",
           \"refId\": \"${REF}\"
         }"
         TARGET_IDX=$((TARGET_IDX + 1))
@@ -898,7 +898,7 @@ fi
 SETUP_SVG+="</div>"
 
 ASSET_FILTER="get_asset_ids_stable('${LOCATION_0}', '${LOCATION_1}', '', '', '')"
-MACHINE_STATUS_SQL="WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT ${ASSET_FILTER}) AND ts.name = 'state' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'good_count') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'scrap_count') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'cycle_time_ms' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT ${ASSET_FILTER}) AND t.name IN ('good_count', 'scrap_count') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT ${ASSET_FILTER}) ORDER BY a.name"
+MACHINE_STATUS_SQL="SELECT * FROM get_machine_status_table('${LOCATION_0}', '${LOCATION_1}', '', '', '')"
 
 sed \
     -e "s|__ENTERPRISE__|${LOCATION_0}|g" \

@@ -104,7 +104,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH state_data AS (SELECT COUNT(*) as total_states, COUNT(*) FILTER (WHERE t.value = 'RUNNING') as running_count FROM tag_string t WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo()), parts_data AS (SELECT COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta, COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta FROM (SELECT asset_id, origin, MAX(value) FILTER (WHERE name = 'good_count' AND timestamp <= $__timeTo()::timestamptz) as end_good, MAX(value) FILTER (WHERE name = 'good_count' AND timestamp < $__timeFrom()::timestamptz) as start_good, MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp <= $__timeTo()::timestamptz) as end_scrap, MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp < $__timeFrom()::timestamptz) as start_scrap FROM tag WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND name IN ('good_count', 'scrap_count') GROUP BY asset_id, origin) sub) SELECT ROUND((((running_pct / 100.0) * LEAST(COALESCE(perf, 0), 100) / 100.0 * COALESCE(qual, 100) / 100.0) * 100)::numeric, 1) as \"OEE\" FROM (SELECT CASE WHEN s.total_states > 0 THEN s.running_count * 100.0 / s.total_states ELSE 0 END as running_pct, CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN (p.good_delta + p.scrap_delta) * 100.0 / NULLIF(s.running_count * 1.0 / NULLIF(s.total_states, 0) * EXTRACT(EPOCH FROM ($__timeTo()::timestamp - $__timeFrom()::timestamp)) / 60.0, 0) ELSE 0 END as perf, CASE WHEN (p.good_delta + p.scrap_delta) > 0 THEN p.good_delta * 100.0 / (p.good_delta + p.scrap_delta) ELSE 100 END as qual FROM state_data s, parts_data p) sub",
+          "rawSql": "SELECT get_oee('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"OEE\"",
           "refId": "A"
         }
       ],
@@ -181,7 +181,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE t.value = 'RUNNING') * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1) as \"Availability\" FROM tag_string t WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo()",
+          "rawSql": "SELECT get_availability('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"Availability\"",
           "refId": "A"
         }
       ],
@@ -258,7 +258,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH parts AS (SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as total_parts FROM (SELECT asset_id, origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND name IN ('good_count', 'scrap_count') GROUP BY asset_id, origin) sub), running AS (SELECT COUNT(*) as running_count, (SELECT COUNT(*) FROM tag_string WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND name = 'state' AND timestamp BETWEEN $__timeFrom() AND $__timeTo()) as total_count FROM tag_string WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND name = 'state' AND value = 'RUNNING' AND timestamp BETWEEN $__timeFrom() AND $__timeTo()), cycle AS (SELECT COALESCE(AVG(value), 5) as avg_ct FROM tag WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND name = 'cycle_time_ms' AND value > 0 AND timestamp BETWEEN $__timeFrom() AND $__timeTo()) SELECT LEAST(ROUND((p.total_parts * 100.0 / NULLIF(r.running_count * EXTRACT(EPOCH FROM ($__timeTo()::timestamp - $__timeFrom()::timestamp)) / NULLIF(r.total_count, 1) / NULLIF(c.avg_ct, 1), 0))::numeric, 1), 100) as \"Performance\" FROM parts p, running r, cycle c",
+          "rawSql": "SELECT get_performance('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"Performance\"",
           "refId": "A"
         }
       ],
@@ -335,7 +335,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((CASE WHEN (good_delta + scrap_delta) > 0 THEN good_delta * 100.0 / (good_delta + scrap_delta) ELSE 100 END)::numeric, 1) as \"Quality\" FROM (SELECT COALESCE(SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)), 0) as good_delta, COALESCE(SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)), 0) as scrap_delta FROM (SELECT asset_id, origin, MAX(value) FILTER (WHERE name = 'good_count' AND timestamp <= $__timeTo()::timestamptz) as end_good, MAX(value) FILTER (WHERE name = 'good_count' AND timestamp < $__timeFrom()::timestamptz) as start_good, MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp <= $__timeTo()::timestamptz) as end_scrap, MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp < $__timeFrom()::timestamptz) as start_scrap FROM tag WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND name IN ('good_count', 'scrap_count') GROUP BY asset_id, origin) sub) sub",
+          "rawSql": "SELECT get_quality('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"Quality\"",
           "refId": "A"
         }
       ],
@@ -465,63 +465,7 @@
         }
       },
       "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "df9o2whw2o7wgb"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Injection Molding (Pos 1)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', 'injection-molding-L1-01')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "df9o2whw2o7wgb"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Robot Pick & Place (Pos 2)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', 'robot-pick-place-L1-02')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "df9o2whw2o7wgb"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"CNC Milling (Pos 3)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', 'cnc-milling-L1-03')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "df9o2whw2o7wgb"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Robot Pick & Place (Pos 4)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', 'robot-pick-place-L1-04')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "df9o2whw2o7wgb"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT t.timestamp as time, t.value as \"Packaging (Pos 5)\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', 'packaging-L1-05')) AND t.name = 'state' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() ORDER BY t.timestamp",
-          "refId": "E"
-        }
-      ],
+      "targets": "__STATE_TIMELINE_TARGETS__",
       "title": "Machine States",
       "type": "state-timeline"
     },
@@ -595,7 +539,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH per_origin AS (SELECT asset_id, origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'good_count' AND asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) GROUP BY asset_id, origin) SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as good_parts FROM per_origin",
+          "rawSql": "SELECT get_counter_delta('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', 'good_count', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as good_parts",
           "refId": "A"
         }
       ],
@@ -659,7 +603,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH per_origin AS (SELECT asset_id, origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'scrap_count' AND asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) GROUP BY asset_id, origin) SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as scrap_parts FROM per_origin",
+          "rawSql": "SELECT get_counter_delta('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', 'scrap_count', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as scrap_parts",
           "refId": "A"
         }
       ],
@@ -724,7 +668,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT AVG(t.value) as \"Avg CT\" FROM tag t WHERE asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND t.name = 'cycle_time_ms' AND t.timestamp BETWEEN $__timeFrom() AND $__timeTo() AND t.value > 0 AND t.value < 300",
+          "rawSql": "SELECT get_cycle_time_avg('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"Avg CT\"",
           "refId": "A"
         }
       ],
@@ -815,7 +759,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH stop_data AS (SELECT COALESCE(sr.name, 'Unspecified') as reason, COUNT(*) as stop_count FROM machine_stops ms LEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id WHERE ms.asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND ms.start_time BETWEEN $__timeFrom() AND $__timeTo() GROUP BY sr.name), totals AS (SELECT SUM(stop_count) as total_stops FROM stop_data) SELECT reason, ROUND((stop_count * 100.0 / NULLIF(total_stops, 0))::numeric, 1) as percentage FROM stop_data, totals ORDER BY stop_count DESC LIMIT 10",
+          "rawSql": "SELECT reason, pct as percentage FROM get_stop_reasons_pareto('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz, 10)",
           "refId": "A"
         }
       ],
