@@ -189,6 +189,11 @@ fi
 LINE_IDX=0
 TOTAL_MACHINES=0
 IFS=',' read -ra LINE_ENTRIES <<< "$SELECTED_LINES"
+
+# Sort entries alphabetically by template name for deterministic port assignment
+# (must match simulator's sorted line ordering in LoadFromLineEnvVars)
+IFS=$'\n' LINE_ENTRIES=($(sort <<<"${LINE_ENTRIES[*]}")); unset IFS
+
 for entry in "${LINE_ENTRIES[@]}"; do
     LINE_TEMPLATE="${entry%%:*}"
     LINE_COUNT="${entry##*:}"

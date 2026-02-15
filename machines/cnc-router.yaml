@@ -248,5 +248,10 @@ protocolConverter:
                 }
 
                 return msg;
+              conditions:
+                - if: msg.meta.tag_name === "blocked_by_buffer"
+                  then: |-
+                    msg.payload = Number(msg.payload);
+                    return msg;
       buffer:
         none: {}
