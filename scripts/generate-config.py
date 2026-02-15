@@ -263,7 +263,7 @@ def generate_config(factory_setup, machines, templates_dir, output_dir):
             'authToken': docker_values.get('auth_token') or 'YOUR_AUTH_TOKEN_HERE',
         },
         'metricsPort': 8080,
-        'enableResourceLimitBlocking': True,
+        'enableResourceLimitBlocking': False,
     }
 
     # Write output
