@@ -575,6 +575,18 @@ if [ ! -f "$WORK_DIR/grafana/apple-touch-icon.png" ]; then
 fi
 echo -e "${GREEN}  ✓ Grafana branding configured for: $LOCATION_0${NC}"
 
+# Generate ref IDs for Grafana targets: A-Z, then AA, AB, etc.
+gen_ref_id() {
+    local idx=$1
+    if [ $idx -lt 26 ]; then
+        printf "\\$(printf '%03o' $((65 + idx)))"
+    else
+        local first=$(( (idx / 26) - 1 ))
+        local second=$(( idx % 26 ))
+        printf "\\$(printf '%03o' $((65 + first)))\\$(printf '%03o' $((65 + second)))"
+    fi
+}
+
 # ============================================================
 # Step 8b: Generate Grafana dashboards
 # ============================================================
@@ -600,7 +612,6 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
 
     # Build state timeline targets JSON
     TARGETS_JSON="["
-    REF_LETTERS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J")
     for ((m=0; m<${#MACHINES[@]}; m++)); do
         MACHINE="${MACHINES[$m]}"
         POS=$((m + 1))
@@ -610,7 +621,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
         if [ $m -gt 0 ]; then
             TARGETS_JSON+=","
         fi
-        REF="${REF_LETTERS[$m]}"
+        REF=$(gen_ref_id $m)
         DISPLAY_ESC=$(echo "$DISPLAY" | sed 's/"/\\"/g')
         TARGETS_JSON+="
         {
@@ -670,7 +681,6 @@ echo "  Generating factory overview dashboard..."
 
 FACTORY_TARGETS_JSON="["
 TARGET_IDX=0
-REF_LETTERS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P")
 for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
     F_LINE_NUM=$((i + 1))
     LINE_NAME="${LINE_NAMES[$i]}"
@@ -686,7 +696,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
         if [ $TARGET_IDX -gt 0 ]; then
             FACTORY_TARGETS_JSON+=","
         fi
-        REF="${REF_LETTERS[$TARGET_IDX]}"
+        REF=$(gen_ref_id $TARGET_IDX)
         DISPLAY_ESC=$(echo "$DISPLAY" | sed 's/"/\\"/g')
         FACTORY_TARGETS_JSON+="
         {
