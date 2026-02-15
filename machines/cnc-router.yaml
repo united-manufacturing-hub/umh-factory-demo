@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: cnc-router
+display_name: "CNC Router"
 
 dataModel:
-  name: metal_forming
+  name: cnc_router
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        spindle_speed_rpm:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        x_position_mm:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        y_position_mm:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        z_position_mm:
+          _payloadshape: timeseries-number
+        cut_depth_mm:
+          _payloadshape: timeseries-number
+        feed_rate_mm_min:
+          _payloadshape: timeseries-number
+        dust_extraction_m3_h:
           _payloadshape: timeseries-number
         tool_wear_pct:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
-          _payloadshape: timeseries-number
-        blank_holder_force_kn:
-          _payloadshape: timeseries-number
-        material_thickness_mm:
-          _payloadshape: timeseries-number
-        tonnage_pct:
-          _payloadshape: timeseries-number
-        lubrication_level_pct:
+        power_consumption_kw:
           _payloadshape: timeseries-number
         vibration_mm_s:
           _payloadshape: timeseries-number
-        noise_level_db:
+        vacuum_hold_down_kpa:
           _payloadshape: timeseries-number
-        motor_current_a:
+        surface_finish_um:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        tool_temp_c:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        coolant_flow_l_min:
+          _payloadshape: timeseries-number
+        material_removal_rate_cm3_min:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _cnc_router_v1
   model:
-    name: metal_forming
+    name: cnc_router
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: spindle_speed_rpm
+    Unit: "RPM"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
-    Unit: "bar"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
+    TagName: x_position_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=9"
+    TagName: y_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=10"
+    TagName: z_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=11"
+    TagName: cut_depth_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=12"
+    TagName: feed_rate_mm_min
+    Unit: "mm/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=13"
+    TagName: dust_extraction_m3_h
+    Unit: "m3/h"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=14"
     TagName: tool_wear_pct
     Unit: "%"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
+    TagName: power_consumption_kw
+    Unit: "kW"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=17"
     TagName: vibration_mm_s
     Unit: "mm/s"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=17"
+    TagName: vacuum_hold_down_kpa
+    Unit: "kPa"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
+    TagName: surface_finish_um
+    Unit: "um"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
   - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: tool_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=20"
+    TagName: coolant_flow_l_min
+    Unit: "L/min"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _cnc_router_v1
+  - Address: "ns=2;i=21"
+    TagName: material_removal_rate_cm3_min
+    Unit: "cm3/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_cnc_router_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

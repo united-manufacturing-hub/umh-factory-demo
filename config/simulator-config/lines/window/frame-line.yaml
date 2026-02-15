@@ -1,0 +1,50 @@
+name: "window-frame"
+domain: "window"
+description: "Window frame fabrication and glazing line"
+machines:
+  - stage: 1
+    type: "profile_cutter"
+    role: "Cut PVC or aluminum profiles to measured lengths"
+    defaults:
+      cycle_time_ms: 15000
+      scrap_rate: 0.03
+      breakdown_probability: 0.020
+      auto_restore_time_ms: 30000
+  - stage: 2
+    type: "corner_welder"
+    role: "Weld or crimp frame corners to form rectangular frame"
+    defaults:
+      cycle_time_ms: 20000
+      scrap_rate: 0.04
+      breakdown_probability: 0.025
+      auto_restore_time_ms: 40000
+  - stage: 3
+    type: "glass_setter"
+    role: "Insert and seal glass pane into finished frame"
+    defaults:
+      cycle_time_ms: 25000
+      scrap_rate: 0.03
+      breakdown_probability: 0.020
+      auto_restore_time_ms: 35000
+buffers:
+  default_capacity: 6
+  overrides: []
+recipes:
+  - product_id: "WIN-STD-A"
+    description: "Standard window - 120x100cm double-glazed"
+    planned_qty_range: [10, 40]
+    overrides:
+      1:
+        cycle_time_ms: 16000
+      3:
+        cycle_time_ms: 22000
+  - product_id: "WIN-LRG-B"
+    description: "Large panorama window - 240x180cm triple-glazed"
+    planned_qty_range: [5, 15]
+    overrides:
+      1:
+        cycle_time_ms: 20000
+      2:
+        cycle_time_ms: 28000
+      3:
+        cycle_time_ms: 30000

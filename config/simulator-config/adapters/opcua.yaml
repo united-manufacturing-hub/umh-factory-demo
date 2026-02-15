@@ -1,0 +1,5 @@
+enabled: true
+base_port: 4840
+update_rate_ms: 1000
+max_sessions: 50
+hostname: "0.0.0.0"

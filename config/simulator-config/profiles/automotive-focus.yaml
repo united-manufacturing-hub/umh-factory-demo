@@ -1,0 +1,10 @@
+name: "automotive-focus"
+description: "Automotive-focused factory"
+lines:
+  - template: "automotive-welding"
+    instances: 2
+  - template: "automotive-assembly"
+    instances: 1
+  - template: "metal-parts-fabrication"
+    instances: 1
+overrides: {}

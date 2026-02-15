@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: assembly-press
+display_name: "Assembly Press"
 
 dataModel:
-  name: metal_forming
+  name: assembly_press
   version:
     v1:
       structure:
@@ -20,39 +20,39 @@ dataModel:
           _payloadshape: timeseries-number
         press_force_kn:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        alignment_accuracy_mm:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        dwell_time_ms:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        cycle_pressure_bar:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        ram_position_mm:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        insertion_depth_mm:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        parallelism_um:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        stroke_speed_mm_s:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        part_presence_pct:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        force_curve_peak_kn:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        work_energy_j:
           _payloadshape: timeseries-number
-        noise_level_db:
+        temperature_c:
           _payloadshape: timeseries-number
-        motor_current_a:
+        cushion_pressure_bar:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        ejector_force_n:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        servo_current_a:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _assembly_press_v1
   model:
-    name: metal_forming
+    name: assembly_press
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=7"
     TagName: press_force_kn
     Unit: "kN"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
+    TagName: alignment_accuracy_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=9"
+    TagName: dwell_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=10"
+    TagName: cycle_pressure_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=11"
+    TagName: ram_position_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=12"
+    TagName: insertion_depth_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=13"
+    TagName: parallelism_um
+    Unit: "um"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=14"
+    TagName: stroke_speed_mm_s
     Unit: "mm/s"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=15"
+    TagName: part_presence_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=16"
+    TagName: force_curve_peak_kn
     Unit: "kN"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
+    TagName: work_energy_j
+    Unit: "J"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
   - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: temperature_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=19"
+    TagName: cushion_pressure_bar
+    Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=20"
+    TagName: ejector_force_n
+    Unit: "N"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _assembly_press_v1
+  - Address: "ns=2;i=21"
+    TagName: servo_current_a
+    Unit: "A"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _assembly_press_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_assembly_press_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

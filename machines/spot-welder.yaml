@@ -6,33 +6,47 @@ dataModel:
   version:
     v1:
       structure:
-        State:
+        state:
           _payloadshape: timeseries-string
-        CycleCount:
+        cycle_count:
           _payloadshape: timeseries-number
-        WeldCurrent:
+        good_count:
           _payloadshape: timeseries-number
-        WeldVoltage:
+        scrap_count:
           _payloadshape: timeseries-number
-        WeldTime:
+        cycle_time_ms:
           _payloadshape: timeseries-number
-        ElectrodeForce:
+        blocked_by_buffer:
           _payloadshape: timeseries-number
-        ElectrodeWear:
+        weld_current_ka:
           _payloadshape: timeseries-number
-        NuggetDiameter:
+        electrode_force_kn:
           _payloadshape: timeseries-number
-        WeldQuality:
+        weld_time_ms:
           _payloadshape: timeseries-number
-        CoolingTemp:
+        nugget_diameter_mm:
           _payloadshape: timeseries-number
-        CoolingFlow:
+        tip_wear_pct:
           _payloadshape: timeseries-number
-        SpotNumber:
+        squeeze_time_ms:
           _payloadshape: timeseries-number
-        SpotsPerPart:
+        hold_time_ms:
           _payloadshape: timeseries-number
-        ErrorCode:
+        electrode_temp_c:
+          _payloadshape: timeseries-number
+        water_flow_l_min:
+          _payloadshape: timeseries-number
+        resistance_mohm:
+          _payloadshape: timeseries-number
+        expulsion_count:
+          _payloadshape: timeseries-number
+        weld_power_kw:
+          _payloadshape: timeseries-number
+        cap_displacement_mm:
+          _payloadshape: timeseries-number
+        shunt_factor:
+          _payloadshape: timeseries-number
+        sheet_gap_mm:
           _payloadshape: timeseries-number
 
 dataContract:
@@ -40,6 +54,134 @@ dataContract:
   model:
     name: spot_welder
     version: v1
+
+addressMappings:
+  - Address: "ns=2;i=1"
+    TagName: state
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=2"
+    TagName: cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=3"
+    TagName: good_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=4"
+    TagName: scrap_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=5"
+    TagName: cycle_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=6"
+    TagName: blocked_by_buffer
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=7"
+    TagName: weld_current_ka
+    Unit: "kA"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=8"
+    TagName: electrode_force_kn
+    Unit: "kN"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=9"
+    TagName: weld_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=10"
+    TagName: nugget_diameter_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=11"
+    TagName: tip_wear_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=12"
+    TagName: squeeze_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=13"
+    TagName: hold_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=14"
+    TagName: electrode_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=15"
+    TagName: water_flow_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=16"
+    TagName: resistance_mohm
+    Unit: "mohm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=17"
+    TagName: expulsion_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=18"
+    TagName: weld_power_kw
+    Unit: "kW"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=19"
+    TagName: cap_displacement_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=20"
+    TagName: shunt_factor
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
+  - Address: "ns=2;i=21"
+    TagName: sheet_gap_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _spot_welder_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -54,89 +196,57 @@ protocolConverter:
         opcua:
           endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
           nodeIDs:
-            - "ns=1;i=3"
-            - "ns=1;i=4"
-            - "ns=1;i=5"
-            - "ns=1;i=6"
-            - "ns=1;i=7"
-            - "ns=1;i=8"
-            - "ns=1;i=9"
-            - "ns=1;i=10"
-            - "ns=1;i=11"
-            - "ns=1;i=13"
-            - "ns=1;i=14"
-            - "ns=1;i=15"
-            - "ns=1;i=16"
-            - "ns=1;i=19"
+            - "ns=2;i=1"
+            - "ns=2;i=2"
+            - "ns=2;i=3"
+            - "ns=2;i=4"
+            - "ns=2;i=5"
+            - "ns=2;i=6"
+            - "ns=2;i=7"
+            - "ns=2;i=8"
+            - "ns=2;i=9"
+            - "ns=2;i=10"
+            - "ns=2;i=11"
+            - "ns=2;i=12"
+            - "ns=2;i=13"
+            - "ns=2;i=14"
+            - "ns=2;i=15"
+            - "ns=2;i=16"
+            - "ns=2;i=17"
+            - "ns=2;i=18"
+            - "ns=2;i=19"
+            - "ns=2;i=20"
+            - "ns=2;i=21"
           pollRate: 1000
           subscribeEnabled: false
       pipeline:
         processors:
           - tag_processor:
-              conditions:
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
-                  then: |
-                    msg.meta.tag_name = "State";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
-                  then: |
-                    msg.meta.tag_name = "CycleCount";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
-                  then: |
-                    msg.meta.tag_name = "WeldCurrent";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=6"'
-                  then: |
-                    msg.meta.tag_name = "WeldVoltage";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=7"'
-                  then: |
-                    msg.meta.tag_name = "WeldTime";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=8"'
-                  then: |
-                    msg.meta.tag_name = "ElectrodeForce";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=9"'
-                  then: |
-                    msg.meta.tag_name = "ElectrodeWear";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=10"'
-                  then: |
-                    msg.meta.tag_name = "NuggetDiameter";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=11"'
-                  then: |
-                    msg.meta.tag_name = "WeldQuality";
-                    msg.payload = Number(msg.payload);
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=13"'
-                  then: |
-                    msg.meta.tag_name = "CoolingTemp";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=14"'
-                  then: |
-                    msg.meta.tag_name = "CoolingFlow";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=15"'
-                  then: |
-                    msg.meta.tag_name = "SpotNumber";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=16"'
-                  then: |
-                    msg.meta.tag_name = "SpotsPerPart";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=19"'
-                  then: |
-                    msg.meta.tag_name = "ErrorCode";
-                    return msg;
-              defaults: |
+              defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
                 msg.meta.data_contract = "_spot_welder_v1";
-                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                // Auto-generated from addressMappings
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
                 return msg;
       buffer:
         none: {}

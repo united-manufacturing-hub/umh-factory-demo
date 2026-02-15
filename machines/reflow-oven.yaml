@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: reflow-oven
+display_name: "Reflow Oven"
 
 dataModel:
-  name: metal_forming
+  name: reflow_oven
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        zone1_temp_c:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        zone2_temp_c:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        zone3_temp_c:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        zone4_temp_c:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        conveyor_speed_cm_min:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        oxygen_level_ppm:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        nitrogen_flow_l_min:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        peak_temp_c:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        time_above_liquidus_s:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        heating_rate_c_s:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        cooling_rate_c_s:
           _payloadshape: timeseries-number
-        noise_level_db:
+        board_count:
           _payloadshape: timeseries-number
-        motor_current_a:
+        power_consumption_kw:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        exhaust_temp_c:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        belt_width_mm:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _reflow_oven_v1
   model:
-    name: metal_forming
+    name: reflow_oven
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: zone1_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
-    Unit: "bar"
+    TagName: zone2_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=9"
-    TagName: die_temperature_c
+    TagName: zone3_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
   - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: zone4_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=11"
+    TagName: conveyor_speed_cm_min
+    Unit: "cm/min"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=12"
+    TagName: oxygen_level_ppm
+    Unit: "ppm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=13"
+    TagName: nitrogen_flow_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=14"
+    TagName: peak_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=15"
+    TagName: time_above_liquidus_s
+    Unit: "s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=16"
+    TagName: heating_rate_c_s
+    Unit: "°C/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=17"
+    TagName: cooling_rate_c_s
+    Unit: "°C/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=18"
+    TagName: board_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=19"
+    TagName: power_consumption_kw
+    Unit: "kW"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=20"
+    TagName: exhaust_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
+  - Address: "ns=2;i=21"
+    TagName: belt_width_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reflow_oven_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_reflow_oven_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: painting-booth
+display_name: "Painting Booth"
 
 dataModel:
-  name: metal_forming
+  name: painting_booth
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        booth_temp_c:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        booth_humidity_pct:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        paint_flow_ml_min:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        atomization_pressure_bar:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        film_thickness_um:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        overspray_pct:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        fan_speed_rpm:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        filter_pressure_drop_pa:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        solvent_concentration_ppm:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        cure_temp_c:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        conveyor_speed_m_min:
           _payloadshape: timeseries-number
-        noise_level_db:
+        paint_viscosity_cp:
           _payloadshape: timeseries-number
-        motor_current_a:
+        color_delta_e:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        booth_airflow_m3_h:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        paint_waste_pct:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _painting_booth_v1
   model:
-    name: metal_forming
+    name: painting_booth
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: booth_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
+    TagName: booth_humidity_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=9"
+    TagName: paint_flow_ml_min
+    Unit: "mL/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=10"
+    TagName: atomization_pressure_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
+    TagName: film_thickness_um
+    Unit: "um"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
+    TagName: overspray_pct
+    Unit: "%"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
+    TagName: fan_speed_rpm
+    Unit: "RPM"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
+    TagName: filter_pressure_drop_pa
+    Unit: "Pa"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
+    TagName: solvent_concentration_ppm
+    Unit: "ppm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
   - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: cure_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=17"
+    TagName: conveyor_speed_m_min
+    Unit: "m/min"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=18"
+    TagName: paint_viscosity_cp
+    Unit: "cP"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=19"
+    TagName: color_delta_e
+    Unit: "dE"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=20"
+    TagName: booth_airflow_m3_h
+    Unit: "m3/h"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _painting_booth_v1
+  - Address: "ns=2;i=21"
+    TagName: paint_waste_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _painting_booth_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_painting_booth_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

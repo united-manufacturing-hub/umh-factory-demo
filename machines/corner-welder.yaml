@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: corner-welder
+display_name: "Corner Welder"
 
 dataModel:
-  name: metal_forming
+  name: corner_welder
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        weld_temp_c:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        weld_time_s:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        clamp_force_kn:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        joint_strength_n:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        alignment_accuracy_mm:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        heating_plate_temp_c:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        melt_depth_mm:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        joining_pressure_bar:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        cooling_time_s:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        bead_height_mm:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        weld_flash_mm:
           _payloadshape: timeseries-number
-        noise_level_db:
+        corner_angle_deg:
           _payloadshape: timeseries-number
-        motor_current_a:
+        servo_position_mm:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        power_consumption_kw:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        cycle_pressure_bar:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _corner_welder_v1
   model:
-    name: metal_forming
+    name: corner_welder
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
+    TagName: weld_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=8"
+    TagName: weld_time_s
+    Unit: "s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=9"
+    TagName: clamp_force_kn
     Unit: "kN"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=10"
+    TagName: joint_strength_n
+    Unit: "N"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=11"
+    TagName: alignment_accuracy_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=12"
+    TagName: heating_plate_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=13"
+    TagName: melt_depth_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _corner_welder_v1
+  - Address: "ns=2;i=14"
+    TagName: joining_pressure_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
+    TagName: cooling_time_s
+    Unit: "s"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
+    TagName: bead_height_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
+    TagName: weld_flash_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
+    TagName: corner_angle_deg
+    Unit: "deg"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
+    TagName: servo_position_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
-    Unit: "°C"
+    TagName: power_consumption_kw
+    Unit: "kW"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
   - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    TagName: cycle_pressure_bar
+    Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _corner_welder_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_corner_welder_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

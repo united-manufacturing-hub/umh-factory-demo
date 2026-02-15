@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: edge-bander
+display_name: "Edge Bander"
 
 dataModel:
-  name: metal_forming
+  name: edge_bander
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        glue_temp_c:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        feed_speed_m_min:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        trimmer_position_mm:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        tape_tension_n:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        roller_force_n:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        edge_thickness_mm:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        glue_flow_g_min:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        panel_thickness_mm:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        trim_quality_score_pct:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        pressure_zone_bar:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        pre_milling_depth_mm:
           _payloadshape: timeseries-number
-        noise_level_db:
+        hot_air_temp_c:
           _payloadshape: timeseries-number
-        motor_current_a:
+        joint_strength_n_cm:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        scraper_position_mm:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        buffing_speed_rpm:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _edge_bander_v1
   model:
-    name: metal_forming
+    name: edge_bander
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: glue_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
+    TagName: feed_speed_m_min
+    Unit: "m/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=9"
+    TagName: trimmer_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=10"
+    TagName: tape_tension_n
+    Unit: "N"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=11"
+    TagName: roller_force_n
+    Unit: "N"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=12"
+    TagName: edge_thickness_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=13"
+    TagName: glue_flow_g_min
+    Unit: "g/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=14"
+    TagName: panel_thickness_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=15"
+    TagName: trim_quality_score_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=16"
+    TagName: pressure_zone_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
+    TagName: pre_milling_depth_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
   - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: hot_air_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=19"
+    TagName: joint_strength_n_cm
+    Unit: "N/cm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=20"
+    TagName: scraper_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
+  - Address: "ns=2;i=21"
+    TagName: buffing_speed_rpm
+    Unit: "RPM"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _edge_bander_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_edge_bander_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

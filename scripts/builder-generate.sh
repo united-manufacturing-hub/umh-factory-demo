@@ -31,8 +31,7 @@ PORT_SIMULATOR="${PORT_SIMULATOR:-8081}"
 PORT_UMH="${PORT_UMH:-8090}"
 PORT_OPCUA_START="${PORT_OPCUA_START:-4840}"
 PORT_MODBUS="${PORT_MODBUS:-502}"
-OPCUA_COUNT=9
-OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
+SELECTED_LINES="${SELECTED_LINES:-automotive-welding:1}"
 
 DEFAULT_PORT_NGINX=80
 DEFAULT_PORT_GRAFANA=8080
@@ -146,32 +145,98 @@ fi
 echo -e "${GREEN}  ✓ API_URL: $API_URL${NC}"
 
 # ============================================================
-# Step 3: Static demo factory configuration
+# Step 3: Dynamic factory configuration from SELECTED_LINES
 # ============================================================
 echo ""
-echo -e "${BLUE}Step 3: Setting up demo factory layout...${NC}"
+echo -e "${BLUE}Step 3: Setting up factory layout from line selection...${NC}"
 echo ""
 
 declare -a LINE_NAMES
 declare -a LINE_MACHINES
 declare -a STANDALONE_MACHINES
+STANDALONE_MACHINES=()
 
-LINE_NAMES=("Line1" "Line2")
-LINE_MACHINES[0]="injection-molding,robot-pick-place,cnc-milling,robot-pick-place,packaging"
-LINE_MACHINES[1]="metal-forming,spot-welder,packaging"
-STANDALONE_MACHINES=("robot-welder")
+SIMULATOR_PROFILE=""
+LINE_CONFIG_DIR="$TEMPLATES_DIR/config/simulator-config/lines"
 
-echo "Demo factory configuration (matches machine-simulator default):"
+# Parse SELECTED_LINES env var (format: "line-name:count,line-name:count,..." or "__profile__:name")
+if [[ "$SELECTED_LINES" == "__profile__:"* ]]; then
+    SIMULATOR_PROFILE="${SELECTED_LINES#__profile__:}"
+    echo "  Using simulator profile: $SIMULATOR_PROFILE"
+
+    # Read profile to get line templates
+    PROFILE_FILE="$TEMPLATES_DIR/config/simulator-config/profiles/${SIMULATOR_PROFILE}.yaml"
+    if [ ! -f "$PROFILE_FILE" ]; then
+        echo -e "${RED}  Error: Profile not found: $PROFILE_FILE${NC}"
+        exit 1
+    fi
+
+    # Parse profile YAML to get line selections
+    SELECTED_LINES=$(python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+with open('$PROFILE_FILE') as f:
+    p = yaml.load(f)
+parts = []
+for l in p.get('lines', []):
+    parts.append(f\"{l['template']}:{l.get('instances', 1)}\")
+print(','.join(parts))
+")
+    echo "  Resolved lines: $SELECTED_LINES"
+fi
+
+# Parse line selections and read machine sequences from line template YAMLs
+LINE_IDX=0
+TOTAL_MACHINES=0
+IFS=',' read -ra LINE_ENTRIES <<< "$SELECTED_LINES"
+for entry in "${LINE_ENTRIES[@]}"; do
+    LINE_TEMPLATE="${entry%%:*}"
+    LINE_COUNT="${entry##*:}"
+    LINE_COUNT="${LINE_COUNT:-1}"
+
+    # Find line template YAML
+    LINE_YAML=$(find "$LINE_CONFIG_DIR" -name "*.yaml" -exec grep -l "name: \"${LINE_TEMPLATE}\"" {} \; | head -1)
+    if [ -z "$LINE_YAML" ]; then
+        echo -e "${RED}  Error: Line template not found: $LINE_TEMPLATE${NC}"
+        exit 1
+    fi
+
+    # Extract machine types from line template
+    MACHINES_CSV=$(python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+with open('$LINE_YAML') as f:
+    d = yaml.load(f)
+types = [m['type'].replace('_', '-') for m in d.get('machines', [])]
+print(','.join(types))
+")
+
+    IFS=',' read -ra MACHINE_LIST <<< "$MACHINES_CSV"
+    MACHINE_COUNT=${#MACHINE_LIST[@]}
+
+    for ((inst=1; inst<=LINE_COUNT; inst++)); do
+        BASE_DISPLAY=$(echo "$LINE_TEMPLATE" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1))substr($i,2)}1' | tr ' ' '-')
+        if [ "$LINE_COUNT" -eq 1 ]; then
+            LINE_DISPLAY_NAME="$BASE_DISPLAY"
+        else
+            LINE_DISPLAY_NAME="${BASE_DISPLAY}-${inst}"
+        fi
+
+        LINE_NAMES+=("$LINE_DISPLAY_NAME")
+        LINE_MACHINES[$LINE_IDX]="$MACHINES_CSV"
+        LINE_IDX=$((LINE_IDX + 1))
+        TOTAL_MACHINES=$((TOTAL_MACHINES + MACHINE_COUNT))
+
+        echo "  Line $LINE_IDX: $LINE_DISPLAY_NAME ($MACHINE_COUNT machines)"
+        echo "    Machines: $(echo "$MACHINES_CSV" | tr ',' ' -> ')"
+    done
+done
+
+OPCUA_COUNT=$TOTAL_MACHINES
+OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
+
 echo ""
-echo "  Line 1: Line1 (5 machines)"
-echo "    Machines: injection-molding -> robot-pick-place -> cnc-milling -> robot-pick-place -> packaging"
-echo "  Line 2: Line2 (3 machines)"
-echo "    Machines: metal-forming -> spot-welder -> packaging"
-echo "  Standalone: robot-welder"
-
-TOTAL_MACHINES=9
-echo ""
-echo -e "${GREEN}Factory configuration: $TOTAL_MACHINES machines total${NC}"
+echo -e "${GREEN}Factory configuration: ${#LINE_NAMES[@]} lines, $TOTAL_MACHINES machines total${NC}"
 
 # ============================================================
 # Step 4: Merge additional services into docker-compose.yaml
@@ -320,11 +385,11 @@ if [ -f "$TEMPLATES_DIR/reset-demo" ]; then
     echo -e "${GREEN}  ✓ Copied: reset-demo${NC}"
 fi
 
-# Copy simulator config
-if [ -f "$TEMPLATES_DIR/config/simulator-config/default.yaml" ]; then
-    cp "$TEMPLATES_DIR/config/simulator-config/default.yaml" "$WORK_DIR/simulator-config/default.yaml"
-    MACHINE_COUNT=$(grep -c "^  - id:" "$WORK_DIR/simulator-config/default.yaml" || echo "0")
-    echo -e "${GREEN}  ✓ Simulator config copied (${MACHINE_COUNT} machines)${NC}"
+# Copy simulator config directory
+if [ -d "$TEMPLATES_DIR/config/simulator-config" ]; then
+    cp -r "$TEMPLATES_DIR/config/simulator-config/"* "$WORK_DIR/simulator-config/"
+    LINE_COUNT=$(find "$WORK_DIR/simulator-config/lines" -name "*.yaml" 2>/dev/null | wc -l)
+    echo -e "${GREEN}  ✓ Simulator config copied (${LINE_COUNT} line templates)${NC}"
 else
     echo -e "${RED}  Error: Simulator config not found${NC}"
     exit 1
@@ -743,9 +808,13 @@ if [ "$PORT_UMH" != "$DEFAULT_PORT_UMH" ]; then
     sed -i "s|\"8090:8090\"|\"${PORT_UMH}:8090\"|g" "$WORK_DIR/docker-compose.yaml"
     echo -e "${GREEN}  ✓ UMH Core: $DEFAULT_PORT_UMH -> $PORT_UMH${NC}"
 fi
+COMPOSE_OPCUA_END=$((4840 + OPCUA_COUNT - 1))
+# Replace the default range in docker-compose with actual range needed
+sed -i "s|\"4840-4880:4840-4880\"|\"${PORT_OPCUA_START}-$((PORT_OPCUA_START + OPCUA_COUNT - 1)):4840-${COMPOSE_OPCUA_END}\"|g" "$WORK_DIR/docker-compose.yaml"
 if [ "$PORT_OPCUA_START" != "$DEFAULT_PORT_OPCUA_START" ]; then
-    sed -i "s|\"4840-4848:4840-4848\"|\"${PORT_OPCUA_START}-${OPCUA_END}:4840-4848\"|g" "$WORK_DIR/docker-compose.yaml"
-    echo -e "${GREEN}  ✓ OPC-UA: $DEFAULT_PORT_OPCUA_START-$((DEFAULT_PORT_OPCUA_START + OPCUA_COUNT - 1)) -> $PORT_OPCUA_START-$OPCUA_END${NC}"
+    echo -e "${GREEN}  ✓ OPC-UA: $DEFAULT_PORT_OPCUA_START -> $PORT_OPCUA_START (range: $OPCUA_COUNT ports)${NC}"
+else
+    echo -e "${GREEN}  ✓ OPC-UA: range adjusted to $OPCUA_COUNT ports ($PORT_OPCUA_START-$OPCUA_END)${NC}"
 fi
 if [ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ]; then
     sed -i "s|\"502:502\"|\"${PORT_MODBUS}:502\"|g" "$WORK_DIR/docker-compose.yaml"
@@ -753,6 +822,28 @@ if [ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ]; then
 fi
 
 echo -e "${GREEN}  ✓ Port remappings applied${NC}"
+
+# Inject simulator profile if set
+if [ -n "$SIMULATOR_PROFILE" ]; then
+    sed -i "s|SIMULATOR_PROFILE=\${SIMULATOR_PROFILE:-}|SIMULATOR_PROFILE=${SIMULATOR_PROFILE}|g" "$WORK_DIR/docker-compose.yaml"
+    echo -e "${GREEN}  ✓ Simulator profile set: $SIMULATOR_PROFILE${NC}"
+fi
+
+# Inject SELECTED_LINES as environment variable for the simulator
+python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+with open('$WORK_DIR/docker-compose.yaml') as f:
+    compose = yaml.load(f)
+sim = compose['services']['machine-simulator']
+env = sim.get('environment', [])
+env.append('SELECTED_LINES=${SELECTED_LINES}')
+sim['environment'] = env
+with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
+    yaml.dump(compose, f)
+"
+echo -e "${GREEN}  ✓ Simulator line selection injected${NC}"
 
 # Determine API base URL for form panels
 HOST_IP="${HOST_IP:-localhost}"

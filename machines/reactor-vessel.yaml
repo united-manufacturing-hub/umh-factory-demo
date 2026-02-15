@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: reactor-vessel
+display_name: "Reactor Vessel"
 
 dataModel:
-  name: metal_forming
+  name: reactor_vessel
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        vessel_temp_c:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        vessel_pressure_bar:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        agitator_speed_rpm:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        ph_level:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        batch_volume_l:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        dissolved_oxygen_ppm:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        conductivity_us_cm:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        turbidity_ntu:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        jacket_temp_c:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        feed_rate_ml_min:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        off_gas_flow_l_min:
           _payloadshape: timeseries-number
-        noise_level_db:
+        torque_nm:
           _payloadshape: timeseries-number
-        motor_current_a:
+        impeller_tip_speed_m_s:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        redox_potential_mv:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        foam_level_pct:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _reactor_vessel_v1
   model:
-    name: metal_forming
+    name: reactor_vessel
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: vessel_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
+    TagName: vessel_pressure_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
+    TagName: agitator_speed_rpm
+    Unit: "RPM"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
-    Unit: "mm"
+    TagName: ph_level
+    Unit: "pH"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
+    TagName: batch_volume_l
+    Unit: "L"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
+    TagName: dissolved_oxygen_ppm
+    Unit: "ppm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
+    TagName: conductivity_us_cm
+    Unit: "uS/cm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
-    Unit: "mm"
+    TagName: turbidity_ntu
+    Unit: "NTU"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
   - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: jacket_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _reactor_vessel_v1
+  - Address: "ns=2;i=16"
+    TagName: feed_rate_ml_min
+    Unit: "mL/min"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _reactor_vessel_v1
+  - Address: "ns=2;i=17"
+    TagName: off_gas_flow_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reactor_vessel_v1
+  - Address: "ns=2;i=18"
+    TagName: torque_nm
+    Unit: "N*m"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reactor_vessel_v1
+  - Address: "ns=2;i=19"
+    TagName: impeller_tip_speed_m_s
+    Unit: "m/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reactor_vessel_v1
+  - Address: "ns=2;i=20"
+    TagName: redox_potential_mv
+    Unit: "mV"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reactor_vessel_v1
+  - Address: "ns=2;i=21"
+    TagName: foam_level_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _reactor_vessel_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_reactor_vessel_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

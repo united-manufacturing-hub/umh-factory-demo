@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: glass-setter
+display_name: "Glass Setter"
 
 dataModel:
-  name: metal_forming
+  name: glass_setter
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        suction_vacuum_kpa:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        glass_thickness_mm:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        sealant_flow_ml_min:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        positioning_accuracy_mm:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        glazing_depth_mm:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        frame_dimension_mm:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        glass_weight_kg:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        sealant_temp_c:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        press_force_n:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        roller_speed_mm_s:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        gasket_compression_pct:
           _payloadshape: timeseries-number
-        noise_level_db:
+        uv_cure_intensity_mw_cm2:
           _payloadshape: timeseries-number
-        motor_current_a:
+        edge_clearance_mm:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        moisture_level_pct:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        alignment_offset_mm:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _glass_setter_v1
   model:
-    name: metal_forming
+    name: glass_setter
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: suction_vacuum_kpa
+    Unit: "kPa"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
-    Unit: "bar"
+    TagName: glass_thickness_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
+    TagName: sealant_flow_ml_min
+    Unit: "mL/min"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
+    TagName: positioning_accuracy_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
   - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
+    TagName: glazing_depth_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=12"
+    TagName: frame_dimension_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=13"
+    TagName: glass_weight_kg
+    Unit: "kg"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=14"
+    TagName: sealant_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=15"
+    TagName: press_force_n
+    Unit: "N"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=16"
+    TagName: roller_speed_mm_s
+    Unit: "mm/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=17"
+    TagName: gasket_compression_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=18"
+    TagName: uv_cure_intensity_mw_cm2
+    Unit: "mW/cm2"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=19"
+    TagName: edge_clearance_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=20"
+    TagName: moisture_level_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _glass_setter_v1
+  - Address: "ns=2;i=21"
+    TagName: alignment_offset_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _glass_setter_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_glass_setter_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

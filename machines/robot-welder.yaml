@@ -6,60 +6,48 @@ dataModel:
   version:
     v1:
       structure:
-        State:
+        state:
           _payloadshape: timeseries-string
-        CycleCount:
+        cycle_count:
           _payloadshape: timeseries-number
-        CycleTime:
+        good_count:
           _payloadshape: timeseries-number
-        CycleProgress:
+        scrap_count:
           _payloadshape: timeseries-number
-        GoodParts:
+        cycle_time_ms:
           _payloadshape: timeseries-number
-        ScrapParts:
+        blocked_by_buffer:
           _payloadshape: timeseries-number
-        PositionX:
+        joint1_temp_c:
           _payloadshape: timeseries-number
-        PositionY:
+        joint2_temp_c:
           _payloadshape: timeseries-number
-        PositionZ:
+        joint3_temp_c:
           _payloadshape: timeseries-number
-        Joint1:
+        joint4_temp_c:
           _payloadshape: timeseries-number
-        Joint2:
+        joint5_temp_c:
           _payloadshape: timeseries-number
-        Joint3:
+        joint6_temp_c:
           _payloadshape: timeseries-number
-        Joint4:
+        arc_voltage_v:
           _payloadshape: timeseries-number
-        Joint5:
+        arc_current_a:
           _payloadshape: timeseries-number
-        Joint6:
+        wire_feed_m_min:
           _payloadshape: timeseries-number
-        WeldCurrent:
+        gas_flow_l_min:
           _payloadshape: timeseries-number
-        WeldVoltage:
+        travel_speed_mm_s:
           _payloadshape: timeseries-number
-        WireSpeed:
+        weld_penetration_mm:
           _payloadshape: timeseries-number
-        GasFlow:
+        torch_angle_deg:
           _payloadshape: timeseries-number
-        WeldQuality:
+        seam_tracking_offset_mm:
           _payloadshape: timeseries-number
-        ArcLength:
+        spatter_count:
           _payloadshape: timeseries-number
-        WeldSeamLength:
-          _payloadshape: timeseries-number
-        TorchAngle:
-          _payloadshape: timeseries-number
-        CurrentOrderId:
-          _payloadshape: timeseries-string
-        CurrentPartNumber:
-          _payloadshape: timeseries-string
-        ErrorCode:
-          _payloadshape: timeseries-number
-        ErrorMessage:
-          _payloadshape: timeseries-string
 
 dataContract:
   name: _robot_welder_v1
@@ -67,101 +55,198 @@ dataContract:
     name: robot_welder
     version: v1
 
+addressMappings:
+  - Address: "ns=2;i=1"
+    TagName: state
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=2"
+    TagName: cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=3"
+    TagName: good_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=4"
+    TagName: scrap_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=5"
+    TagName: cycle_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=6"
+    TagName: blocked_by_buffer
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=7"
+    TagName: joint1_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=8"
+    TagName: joint2_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=9"
+    TagName: joint3_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=10"
+    TagName: joint4_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=11"
+    TagName: joint5_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=12"
+    TagName: joint6_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=13"
+    TagName: arc_voltage_v
+    Unit: "V"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=14"
+    TagName: arc_current_a
+    Unit: "A"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=15"
+    TagName: wire_feed_m_min
+    Unit: "m/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=16"
+    TagName: gas_flow_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=17"
+    TagName: travel_speed_mm_s
+    Unit: "mm/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=18"
+    TagName: weld_penetration_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=19"
+    TagName: torch_angle_deg
+    Unit: "deg"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=20"
+    TagName: seam_tracking_offset_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+  - Address: "ns=2;i=21"
+    TagName: spatter_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _robot_welder_v1
+
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
 protocolConverter:
   connection:
     nmap:
-      target: '{{ .IP }}'
-      port: '{{ .PORT }}'
+      target: "{{ .IP }}"
+      port: "{{ .PORT }}"
   dataflowcomponent_read:
     benthos:
       input:
         opcua:
           endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
           nodeIDs:
-            - "ns=1;i=3"
-            - "ns=1;i=4"
-            - "ns=1;i=5"
-            - "ns=1;i=6"
-            - "ns=1;i=7"
-            - "ns=1;i=8"
-            - "ns=1;i=9"
-            - "ns=1;i=10"
-            - "ns=1;i=17"
-            - "ns=1;i=18"
-            - "ns=1;i=19"
-            - "ns=1;i=20"
-            - "ns=1;i=23"
-            - "ns=1;i=25"
+            - "ns=2;i=1"
+            - "ns=2;i=2"
+            - "ns=2;i=3"
+            - "ns=2;i=4"
+            - "ns=2;i=5"
+            - "ns=2;i=6"
+            - "ns=2;i=7"
+            - "ns=2;i=8"
+            - "ns=2;i=9"
+            - "ns=2;i=10"
+            - "ns=2;i=11"
+            - "ns=2;i=12"
+            - "ns=2;i=13"
+            - "ns=2;i=14"
+            - "ns=2;i=15"
+            - "ns=2;i=16"
+            - "ns=2;i=17"
+            - "ns=2;i=18"
+            - "ns=2;i=19"
+            - "ns=2;i=20"
+            - "ns=2;i=21"
           pollRate: 1000
           subscribeEnabled: false
       pipeline:
         processors:
           - tag_processor:
-              conditions:
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=3"'
-                  then: |
-                    msg.meta.tag_name = "State";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=4"'
-                  then: |
-                    msg.meta.tag_name = "CycleCount";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=5"'
-                  then: |
-                    msg.meta.tag_name = "Joint1";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=6"'
-                  then: |
-                    msg.meta.tag_name = "Joint2";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=7"'
-                  then: |
-                    msg.meta.tag_name = "Joint3";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=8"'
-                  then: |
-                    msg.meta.tag_name = "Joint4";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=9"'
-                  then: |
-                    msg.meta.tag_name = "Joint5";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=10"'
-                  then: |
-                    msg.meta.tag_name = "Joint6";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=17"'
-                  then: |
-                    msg.meta.tag_name = "WeldCurrent";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=18"'
-                  then: |
-                    msg.meta.tag_name = "WeldVoltage";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=19"'
-                  then: |
-                    msg.meta.tag_name = "WireSpeed";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=20"'
-                  then: |
-                    msg.meta.tag_name = "GasFlow";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=23"'
-                  then: |
-                    msg.meta.tag_name = "WeldQuality";
-                    return msg;
-                - if: 'msg.meta.opcua_attr_nodeid == "ns=1;i=25"'
-                  then: |
-                    msg.meta.tag_name = "ErrorCode";
-                    return msg;
-              defaults: |
+              defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
                 msg.meta.data_contract = "_robot_welder_v1";
-                msg.meta.virtual_path = msg.meta.tag_name;
+                msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                // Auto-generated from addressMappings
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
                 return msg;
       buffer:
         none: {}

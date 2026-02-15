@@ -1,0 +1,50 @@
+name: "plastic-parts-molding"
+domain: "plastic-parts"
+description: "Plastic extrusion, injection molding, and trimming line"
+machines:
+  - stage: 1
+    type: "extruder"
+    role: "Melt and extrude plastic resin into preform"
+    defaults:
+      cycle_time_ms: 12000
+      scrap_rate: 0.03
+      breakdown_probability: 0.020
+      auto_restore_time_ms: 50000
+  - stage: 2
+    type: "injection_molding"
+    role: "Inject molten plastic into mold cavity under pressure"
+    defaults:
+      cycle_time_ms: 15000
+      scrap_rate: 0.04
+      breakdown_probability: 0.025
+      auto_restore_time_ms: 60000
+  - stage: 3
+    type: "trimming_press"
+    role: "Trim flash and sprue from molded parts"
+    defaults:
+      cycle_time_ms: 8000
+      scrap_rate: 0.02
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 20000
+buffers:
+  default_capacity: 10
+  overrides: []
+recipes:
+  - product_id: "HOUSING-ABS-A"
+    description: "ABS electronics housing - IP65 rated enclosure"
+    planned_qty_range: [40, 150]
+    overrides:
+      2:
+        cycle_time_ms: 18000
+      3:
+        cycle_time_ms: 10000
+  - product_id: "PIPE-PVC-B"
+    description: "PVC pipe fitting - 50mm elbow connector"
+    planned_qty_range: [80, 300]
+    overrides:
+      1:
+        cycle_time_ms: 10000
+      2:
+        cycle_time_ms: 12000
+      3:
+        cycle_time_ms: 6000

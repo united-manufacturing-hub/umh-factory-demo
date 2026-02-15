@@ -1,0 +1,48 @@
+name: "pharma-batch"
+domain: "pharma"
+description: "Pharmaceutical batch processing and filling line"
+machines:
+  - stage: 1
+    type: "reactor_vessel"
+    role: "Mix and react active pharmaceutical ingredients in batch"
+    defaults:
+      cycle_time_ms: 60000
+      scrap_rate: 0.02
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 120000
+  - stage: 2
+    type: "pharma_filler"
+    role: "Precision-fill measured doses into vials or bottles"
+    defaults:
+      cycle_time_ms: 25000
+      scrap_rate: 0.03
+      breakdown_probability: 0.020
+      auto_restore_time_ms: 60000
+  - stage: 3
+    type: "capping_machine"
+    role: "Apply tamper-evident caps and seal containers"
+    defaults:
+      cycle_time_ms: 20000
+      scrap_rate: 0.01
+      breakdown_probability: 0.010
+      auto_restore_time_ms: 30000
+buffers:
+  default_capacity: 5
+  overrides: []
+recipes:
+  - product_id: "TABLET-BATCH-A"
+    description: "Pain reliever tablet batch - 500mg ibuprofen"
+    planned_qty_range: [5, 20]
+    overrides:
+      1:
+        cycle_time_ms: 55000
+      2:
+        cycle_time_ms: 28000
+  - product_id: "SYRUP-BATCH-B"
+    description: "Cough syrup batch - 200ml bottles"
+    planned_qty_range: [5, 15]
+    overrides:
+      1:
+        cycle_time_ms: 45000
+      2:
+        cycle_time_ms: 22000

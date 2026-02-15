@@ -1,8 +1,8 @@
-name: metal-forming
-display_name: "Metal Forming Press"
+name: sealing-machine
+display_name: "Sealing Machine"
 
 dataModel:
-  name: metal_forming
+  name: sealing_machine
   version:
     v1:
       structure:
@@ -18,41 +18,41 @@ dataModel:
           _payloadshape: timeseries-number
         blocked_by_buffer:
           _payloadshape: timeseries-number
-        press_force_kn:
+        seal_temp_c:
           _payloadshape: timeseries-number
-        hydraulic_pressure_bar:
+        seal_pressure_bar:
           _payloadshape: timeseries-number
-        die_temperature_c:
+        seal_time_ms:
           _payloadshape: timeseries-number
-        stroke_position_mm:
+        conveyor_speed_m_min:
           _payloadshape: timeseries-number
-        tool_wear_pct:
+        jaw_gap_mm:
           _payloadshape: timeseries-number
-        ram_speed_mm_s:
+        seal_strength_n:
           _payloadshape: timeseries-number
-        blank_holder_force_kn:
+        peel_force_n:
           _payloadshape: timeseries-number
-        material_thickness_mm:
+        seal_width_mm:
           _payloadshape: timeseries-number
-        tonnage_pct:
+        cooling_water_temp_c:
           _payloadshape: timeseries-number
-        lubrication_level_pct:
+        film_tension_n:
           _payloadshape: timeseries-number
-        vibration_mm_s:
+        reject_count:
           _payloadshape: timeseries-number
-        noise_level_db:
+        vacuum_level_mbar:
           _payloadshape: timeseries-number
-        motor_current_a:
+        gas_flush_flow_l_min:
           _payloadshape: timeseries-number
-        hydraulic_oil_temp_c:
+        leak_rate_mbar_l_s:
           _payloadshape: timeseries-number
-        cycle_energy_kwh:
+        heater_power_pct:
           _payloadshape: timeseries-number
 
 dataContract:
-  name: _metal_forming_v1
+  name: _sealing_machine_v1
   model:
-    name: metal_forming
+    name: sealing_machine
     version: v1
 
 addressMappings:
@@ -61,127 +61,127 @@ addressMappings:
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=7"
-    TagName: press_force_kn
-    Unit: "kN"
+    TagName: seal_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=8"
-    TagName: hydraulic_pressure_bar
+    TagName: seal_pressure_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=9"
-    TagName: die_temperature_c
-    Unit: "°C"
+    TagName: seal_time_ms
+    Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=10"
-    TagName: stroke_position_mm
-    Unit: "mm"
+    TagName: conveyor_speed_m_min
+    Unit: "m/min"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=11"
-    TagName: tool_wear_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=12"
-    TagName: ram_speed_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=13"
-    TagName: blank_holder_force_kn
-    Unit: "kN"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=14"
-    TagName: material_thickness_mm
+    TagName: jaw_gap_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=12"
+    TagName: seal_strength_n
+    Unit: "N"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=13"
+    TagName: peel_force_n
+    Unit: "N"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=14"
+    TagName: seal_width_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
   - Address: "ns=2;i=15"
-    TagName: tonnage_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=16"
-    TagName: lubrication_level_pct
-    Unit: "%"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=17"
-    TagName: vibration_mm_s
-    Unit: "mm/s"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=18"
-    TagName: noise_level_db
-    Unit: "dB"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=19"
-    TagName: motor_current_a
-    Unit: "A"
-    VirtualPath: ""
-    LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=20"
-    TagName: hydraulic_oil_temp_c
+    TagName: cooling_water_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
-  - Address: "ns=2;i=21"
-    TagName: cycle_energy_kwh
-    Unit: "kWh"
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=16"
+    TagName: film_tension_n
+    Unit: "N"
     VirtualPath: ""
     LocationPathSuffix: ""
-    DataContract: _metal_forming_v1
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=17"
+    TagName: reject_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=18"
+    TagName: vacuum_level_mbar
+    Unit: "mbar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=19"
+    TagName: gas_flush_flow_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=20"
+    TagName: leak_rate_mbar_l_s
+    Unit: "mbar*L/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
+  - Address: "ns=2;i=21"
+    TagName: heater_power_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _sealing_machine_v1
 
 # Protocol converter template - exact UMH config format
 # {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
@@ -224,7 +224,7 @@ protocolConverter:
           - tag_processor:
               defaults: |-
                 msg.meta.location_path = "{{ .location_path }}";
-                msg.meta.data_contract = "_metal_forming_v1";
+                msg.meta.data_contract = "_sealing_machine_v1";
                 msg.meta.virtual_path = "";
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;

@@ -1,0 +1,56 @@
+name: "electronics-smt"
+domain: "electronics"
+description: "Surface-mount technology PCB assembly line"
+machines:
+  - stage: 1
+    type: "smt_placement"
+    role: "Place surface-mount components on solder-pasted PCB"
+    defaults:
+      cycle_time_ms: 5000
+      scrap_rate: 0.02
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 25000
+  - stage: 2
+    type: "reflow_oven"
+    role: "Reflow solder paste to permanently attach SMD components"
+    defaults:
+      cycle_time_ms: 8000
+      scrap_rate: 0.03
+      breakdown_probability: 0.010
+      auto_restore_time_ms: 60000
+  - stage: 3
+    type: "aoi_inspection"
+    role: "Automated optical inspection for solder defects"
+    defaults:
+      cycle_time_ms: 3000
+      scrap_rate: 0.01
+      breakdown_probability: 0.010
+      auto_restore_time_ms: 15000
+  - stage: 4
+    type: "labeling_machine"
+    role: "Apply serial number and compliance labels"
+    defaults:
+      cycle_time_ms: 2000
+      scrap_rate: 0.005
+      breakdown_probability: 0.005
+      auto_restore_time_ms: 10000
+buffers:
+  default_capacity: 15
+  overrides: []
+recipes:
+  - product_id: "PCB-CTRL-A"
+    description: "Controller board - industrial automation module"
+    planned_qty_range: [50, 200]
+    overrides:
+      1:
+        cycle_time_ms: 6000
+      2:
+        cycle_time_ms: 7000
+  - product_id: "PCB-PWR-B"
+    description: "Power supply board - 24V DC regulated output"
+    planned_qty_range: [40, 150]
+    overrides:
+      1:
+        cycle_time_ms: 4500
+      2:
+        cycle_time_ms: 8500

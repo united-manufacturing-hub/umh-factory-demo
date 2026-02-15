@@ -1,0 +1,46 @@
+name: "electronics-through-hole"
+domain: "electronics"
+description: "Through-hole PCB assembly line for high-reliability boards"
+machines:
+  - stage: 1
+    type: "robot_pick_place"
+    role: "Insert through-hole components into PCB"
+    defaults:
+      cycle_time_ms: 8000
+      scrap_rate: 0.02
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 20000
+  - stage: 2
+    type: "wave_solder"
+    role: "Wave-solder all through-hole joints in a single pass"
+    defaults:
+      cycle_time_ms: 12000
+      scrap_rate: 0.04
+      breakdown_probability: 0.025
+      auto_restore_time_ms: 45000
+  - stage: 3
+    type: "aoi_inspection"
+    role: "Automated optical inspection for solder bridges and voids"
+    defaults:
+      cycle_time_ms: 5000
+      scrap_rate: 0.01
+      breakdown_probability: 0.010
+      auto_restore_time_ms: 15000
+buffers:
+  default_capacity: 12
+  overrides: []
+recipes:
+  - product_id: "THT-MAIN-A"
+    description: "Mainboard - high-power motor controller"
+    planned_qty_range: [20, 80]
+    overrides:
+      1:
+        cycle_time_ms: 10000
+      2:
+        cycle_time_ms: 11000
+  - product_id: "THT-SENS-B"
+    description: "Sensor board - multi-channel analog input module"
+    planned_qty_range: [30, 100]
+    overrides:
+      1:
+        cycle_time_ms: 7000

@@ -1,0 +1,54 @@
+name: "automotive-assembly"
+domain: "automotive"
+description: "Automotive door assembly and painting line"
+machines:
+  - stage: 1
+    type: "robot_pick_place"
+    role: "Pick door components from bins and place on assembly fixture"
+    defaults:
+      cycle_time_ms: 10000
+      scrap_rate: 0.01
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 20000
+  - stage: 2
+    type: "assembly_press"
+    role: "Press-fit hinges, latches, and reinforcement panels"
+    defaults:
+      cycle_time_ms: 15000
+      scrap_rate: 0.03
+      breakdown_probability: 0.025
+      auto_restore_time_ms: 40000
+  - stage: 3
+    type: "spot_welder"
+    role: "Weld inner and outer door panels together"
+    defaults:
+      cycle_time_ms: 12000
+      scrap_rate: 0.02
+      breakdown_probability: 0.020
+      auto_restore_time_ms: 35000
+  - stage: 4
+    type: "painting_booth"
+    role: "Apply primer and base coat to assembled door"
+    defaults:
+      cycle_time_ms: 20000
+      scrap_rate: 0.04
+      breakdown_probability: 0.030
+      auto_restore_time_ms: 50000
+buffers:
+  default_capacity: 6
+  overrides: []
+recipes:
+  - product_id: "DOOR-ASM-A"
+    description: "Front door assembly - driver and passenger side"
+    planned_qty_range: [30, 80]
+    overrides:
+      4:
+        cycle_time_ms: 18000
+  - product_id: "DOOR-ASM-B"
+    description: "Rear door assembly - sedan and SUV models"
+    planned_qty_range: [20, 60]
+    overrides:
+      2:
+        cycle_time_ms: 17000
+      4:
+        cycle_time_ms: 22000

@@ -1,0 +1,46 @@
+name: "food-beverage-filling"
+domain: "food-beverage"
+description: "High-speed beverage filling and labeling line"
+machines:
+  - stage: 1
+    type: "filling_machine"
+    role: "Fill bottles with liquid product at high speed"
+    defaults:
+      cycle_time_ms: 1500
+      scrap_rate: 0.02
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 15000
+  - stage: 2
+    type: "sealing_machine"
+    role: "Apply and seal caps on filled bottles"
+    defaults:
+      cycle_time_ms: 1000
+      scrap_rate: 0.01
+      breakdown_probability: 0.010
+      auto_restore_time_ms: 10000
+  - stage: 3
+    type: "labeling_machine"
+    role: "Apply product labels and lot codes"
+    defaults:
+      cycle_time_ms: 800
+      scrap_rate: 0.005
+      breakdown_probability: 0.005
+      auto_restore_time_ms: 8000
+buffers:
+  default_capacity: 30
+  overrides: []
+recipes:
+  - product_id: "JUICE-500ML"
+    description: "500ml fruit juice bottles - orange and apple blend"
+    planned_qty_range: [200, 1000]
+    overrides:
+      1:
+        cycle_time_ms: 1800
+  - product_id: "WATER-1L"
+    description: "1 liter purified water bottles"
+    planned_qty_range: [300, 1500]
+    overrides:
+      1:
+        cycle_time_ms: 1200
+      2:
+        cycle_time_ms: 900

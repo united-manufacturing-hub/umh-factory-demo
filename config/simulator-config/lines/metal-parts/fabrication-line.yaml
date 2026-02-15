@@ -1,0 +1,48 @@
+name: "metal-parts-fabrication"
+domain: "metal-parts"
+description: "Sheet metal cutting, bending, and finishing line"
+machines:
+  - stage: 1
+    type: "laser_cutter"
+    role: "Laser-cut sheet metal blanks to precise shapes"
+    defaults:
+      cycle_time_ms: 8000
+      scrap_rate: 0.02
+      breakdown_probability: 0.020
+      auto_restore_time_ms: 35000
+  - stage: 2
+    type: "press_brake"
+    role: "Bend cut blanks into formed brackets and panels"
+    defaults:
+      cycle_time_ms: 10000
+      scrap_rate: 0.03
+      breakdown_probability: 0.025
+      auto_restore_time_ms: 30000
+  - stage: 3
+    type: "deburring_machine"
+    role: "Remove burrs and sharp edges from formed parts"
+    defaults:
+      cycle_time_ms: 5000
+      scrap_rate: 0.01
+      breakdown_probability: 0.010
+      auto_restore_time_ms: 15000
+buffers:
+  default_capacity: 12
+  overrides: []
+recipes:
+  - product_id: "BRACKET-SS-A"
+    description: "Stainless steel mounting bracket - 3mm 304SS"
+    planned_qty_range: [50, 200]
+    overrides:
+      1:
+        cycle_time_ms: 10000
+      2:
+        cycle_time_ms: 12000
+  - product_id: "PANEL-AL-B"
+    description: "Aluminum enclosure panel - 2mm 5052-H32"
+    planned_qty_range: [30, 100]
+    overrides:
+      1:
+        cycle_time_ms: 7000
+      2:
+        cycle_time_ms: 15000
