@@ -56,127 +56,127 @@ dataContract:
     version: v1
 
 addressMappings:
-  - Address: "ns=2;i=1"
+  - Address: "ns=1;i=1"
     TagName: state
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=2"
+  - Address: "ns=1;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=3"
+  - Address: "ns=1;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=4"
+  - Address: "ns=1;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=5"
+  - Address: "ns=1;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=6"
+  - Address: "ns=1;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=7"
+  - Address: "ns=1;i=7"
     TagName: glue_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=8"
+  - Address: "ns=1;i=8"
     TagName: feed_speed_m_min
     Unit: "m/min"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=9"
+  - Address: "ns=1;i=9"
     TagName: trimmer_position_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=10"
+  - Address: "ns=1;i=10"
     TagName: tape_tension_n
     Unit: "N"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=11"
+  - Address: "ns=1;i=11"
     TagName: roller_force_n
     Unit: "N"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=12"
+  - Address: "ns=1;i=12"
     TagName: edge_thickness_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=13"
+  - Address: "ns=1;i=13"
     TagName: glue_flow_g_min
     Unit: "g/min"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=14"
+  - Address: "ns=1;i=14"
     TagName: panel_thickness_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=15"
+  - Address: "ns=1;i=15"
     TagName: trim_quality_score_pct
     Unit: "%"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=16"
+  - Address: "ns=1;i=16"
     TagName: pressure_zone_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=17"
+  - Address: "ns=1;i=17"
     TagName: pre_milling_depth_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=18"
+  - Address: "ns=1;i=18"
     TagName: hot_air_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=19"
+  - Address: "ns=1;i=19"
     TagName: joint_strength_n_cm
     Unit: "N/cm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=20"
+  - Address: "ns=1;i=20"
     TagName: scraper_position_mm
     Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _edge_bander_v1
-  - Address: "ns=2;i=21"
+  - Address: "ns=1;i=21"
     TagName: buffing_speed_rpm
     Unit: "RPM"
     VirtualPath: ""
@@ -196,27 +196,27 @@ protocolConverter:
         opcua:
           endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
           nodeIDs:
-            - "ns=2;i=1"
-            - "ns=2;i=2"
-            - "ns=2;i=3"
-            - "ns=2;i=4"
-            - "ns=2;i=5"
-            - "ns=2;i=6"
-            - "ns=2;i=7"
-            - "ns=2;i=8"
-            - "ns=2;i=9"
-            - "ns=2;i=10"
-            - "ns=2;i=11"
-            - "ns=2;i=12"
-            - "ns=2;i=13"
-            - "ns=2;i=14"
-            - "ns=2;i=15"
-            - "ns=2;i=16"
-            - "ns=2;i=17"
-            - "ns=2;i=18"
-            - "ns=2;i=19"
-            - "ns=2;i=20"
-            - "ns=2;i=21"
+            - "ns=1;i=1"
+            - "ns=1;i=2"
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=15"
+            - "ns=1;i=16"
+            - "ns=1;i=17"
+            - "ns=1;i=18"
+            - "ns=1;i=19"
+            - "ns=1;i=20"
+            - "ns=1;i=21"
           pollRate: 1000
           subscribeEnabled: false
       pipeline:

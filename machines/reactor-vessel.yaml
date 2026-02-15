@@ -56,127 +56,127 @@ dataContract:
     version: v1
 
 addressMappings:
-  - Address: "ns=2;i=1"
+  - Address: "ns=1;i=1"
     TagName: state
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=2"
+  - Address: "ns=1;i=2"
     TagName: cycle_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=3"
+  - Address: "ns=1;i=3"
     TagName: good_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=4"
+  - Address: "ns=1;i=4"
     TagName: scrap_count
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=5"
+  - Address: "ns=1;i=5"
     TagName: cycle_time_ms
     Unit: "ms"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=6"
+  - Address: "ns=1;i=6"
     TagName: blocked_by_buffer
     Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=7"
+  - Address: "ns=1;i=7"
     TagName: vessel_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=8"
+  - Address: "ns=1;i=8"
     TagName: vessel_pressure_bar
     Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=9"
+  - Address: "ns=1;i=9"
     TagName: agitator_speed_rpm
     Unit: "RPM"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=10"
+  - Address: "ns=1;i=10"
     TagName: ph_level
     Unit: "pH"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=11"
+  - Address: "ns=1;i=11"
     TagName: batch_volume_l
     Unit: "L"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=12"
+  - Address: "ns=1;i=12"
     TagName: dissolved_oxygen_ppm
     Unit: "ppm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=13"
+  - Address: "ns=1;i=13"
     TagName: conductivity_us_cm
     Unit: "uS/cm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=14"
+  - Address: "ns=1;i=14"
     TagName: turbidity_ntu
     Unit: "NTU"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=15"
+  - Address: "ns=1;i=15"
     TagName: jacket_temp_c
     Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=16"
+  - Address: "ns=1;i=16"
     TagName: feed_rate_ml_min
     Unit: "mL/min"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=17"
+  - Address: "ns=1;i=17"
     TagName: off_gas_flow_l_min
     Unit: "L/min"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=18"
+  - Address: "ns=1;i=18"
     TagName: torque_nm
     Unit: "N*m"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=19"
+  - Address: "ns=1;i=19"
     TagName: impeller_tip_speed_m_s
     Unit: "m/s"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=20"
+  - Address: "ns=1;i=20"
     TagName: redox_potential_mv
     Unit: "mV"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _reactor_vessel_v1
-  - Address: "ns=2;i=21"
+  - Address: "ns=1;i=21"
     TagName: foam_level_pct
     Unit: "%"
     VirtualPath: ""
@@ -196,27 +196,27 @@ protocolConverter:
         opcua:
           endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
           nodeIDs:
-            - "ns=2;i=1"
-            - "ns=2;i=2"
-            - "ns=2;i=3"
-            - "ns=2;i=4"
-            - "ns=2;i=5"
-            - "ns=2;i=6"
-            - "ns=2;i=7"
-            - "ns=2;i=8"
-            - "ns=2;i=9"
-            - "ns=2;i=10"
-            - "ns=2;i=11"
-            - "ns=2;i=12"
-            - "ns=2;i=13"
-            - "ns=2;i=14"
-            - "ns=2;i=15"
-            - "ns=2;i=16"
-            - "ns=2;i=17"
-            - "ns=2;i=18"
-            - "ns=2;i=19"
-            - "ns=2;i=20"
-            - "ns=2;i=21"
+            - "ns=1;i=1"
+            - "ns=1;i=2"
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=15"
+            - "ns=1;i=16"
+            - "ns=1;i=17"
+            - "ns=1;i=18"
+            - "ns=1;i=19"
+            - "ns=1;i=20"
+            - "ns=1;i=21"
           pollRate: 1000
           subscribeEnabled: false
       pipeline:
