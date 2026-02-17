@@ -225,6 +225,15 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.2.1 (2026-02-17)
+
+### Other
+- Merge branch 'dev' into staging
+- Merge branch 'new-sim' into dev
+- fixed port checking
+
+**Full Changelog**: [`v1.2.0...v1.2.1`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.2.0...v1.2.1)
+
 ## v1.2.0 (2026-02-17)
 
 ### Features
