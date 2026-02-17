@@ -15,6 +15,8 @@
 set -euo pipefail
 
 WORK_DIR="/workspace"
+LOG_FILE="${WORK_DIR}/builder-generate.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Colors
 RED='\033[0;31m'
@@ -990,6 +992,11 @@ else:
         count = parts[1] if len(parts) > 1 else '1'
         env_name = 'SIMULATOR_LINE_' + template.upper().replace('-', '_')
         env.append(env_name + '=' + count)
+
+# Add webhook env vars pointing to erp-receiver inside umh-core
+umh_service = '$UMH_SERVICE'
+env.append(f'SIMULATOR_WEBHOOK_ENABLED=true')
+env.append(f'SIMULATOR_WEBHOOK_TARGET_URL=http://{umh_service}:8090/api/v1/')
 
 sim['environment'] = env
 with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
