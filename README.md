@@ -225,6 +225,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.2.6 (2026-02-17)
+
+### Other
+- fix install command in README to save script before running
+
+**Full Changelog**: [`v1.2.5...v1.2.6`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.2.5...v1.2.6)
+
 ## v1.2.5 (2026-02-17)
 
 ### Other
