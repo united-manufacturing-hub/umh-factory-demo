@@ -225,6 +225,38 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.2.0 (2026-02-17)
+
+### Features
+- new machine simulator
+- trigger workflow
+- changed version handling in script and docker container.
+
+### Other
+- merge dev into stating
+- merge new-sim into dev
+- change to independent install script.
+- updated readme and port checking
+- updated readme and port checking
+- updated readme
+- updated readme
+- added planned cycle time for mes. changed to static version for machine simulator
+- added support for new erp/mes bridge
+- changed sql views
+- upated dashboards and historical data generation
+- updated dashboards
+- fixed boolean conversion in templates
+- namespace changes
+- fixed env for simulator
+- fixed docker-compose templating error.
+- fixed line errors.
+- New setup test.
+- excluded readme changes in dev workflow.
+- release: v1.0.1-dev.2
+- release: v1.0.1-dev.1
+
+**Full Changelog**: [`v1.1.0...v1.2.0`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.1.0...v1.2.0)
+
 ## v1.1.0 (2026-02-14)
 
 ### Features
