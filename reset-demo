@@ -23,6 +23,13 @@ NC='\033[0m'
 echo -e "${BLUE}=== Reset Demo Folder ===${NC}"
 echo ""
 
+# Check Docker access
+if ! docker ps >/dev/null 2>&1; then
+    echo -e "${RED}Error: Cannot access Docker. Try running with sudo:${NC}"
+    echo "  sudo ./reset-demo"
+    exit 1
+fi
+
 # Check for docker-compose.yaml.backup
 if [ ! -f "$WORK_DIR/docker-compose.yaml.backup" ]; then
     echo -e "${RED}Error: docker-compose.yaml.backup not found${NC}"
