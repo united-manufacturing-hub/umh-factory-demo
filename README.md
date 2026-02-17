@@ -27,7 +27,7 @@ services:
 
 **Latest stable:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh
 ```
 
 **Latest dev:**
