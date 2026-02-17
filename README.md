@@ -225,6 +225,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.2.3 (2026-02-17)
+
+### Other
+- fix grafana-data ownership without sudo
+
+**Full Changelog**: [`v1.2.2...v1.2.3`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.2.2...v1.2.3)
+
 ## v1.2.2 (2026-02-17)
 
 ### Other
