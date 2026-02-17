@@ -174,10 +174,10 @@ Place a logo file (any format: PNG, JPG, SVG) in your directory before running `
 
 ## Reset
 
-To start over:
+To start over (use `sudo` if Docker requires root):
 
 ```bash
-./reset-demo
+sudo ./reset-demo
 ```
 Then run the curl command again.
 

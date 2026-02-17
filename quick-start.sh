@@ -139,7 +139,11 @@ echo -e "${BLUE}Checking port availability...${NC}"
 
 # Check if a port is in use on the host
 port_in_use() {
-    (echo >/dev/tcp/localhost/"$1") 2>/dev/null
+    # Check for active listeners
+    (echo >/dev/tcp/localhost/"$1") 2>/dev/null && return 0
+    # Check for Docker containers binding this port (including stopped ones)
+    docker ps -a --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:$1->" && return 0
+    return 1
 }
 
 # Find next available port starting from $1
