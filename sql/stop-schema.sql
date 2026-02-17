@@ -127,9 +127,13 @@ CREATE TABLE IF NOT EXISTS production_orders (
     completed_at TIMESTAMPTZ,
     due_date TIMESTAMPTZ,
     timestamp TIMESTAMPTZ DEFAULT NOW(),  -- Required by erp-order-bridge
+    planned_cycle_time_ms NUMERIC,            -- Ideal cycle time for OEE performance calc
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add planned_cycle_time_ms for ideal/planned cycle time (used in OEE performance calculation)
+ALTER TABLE production_orders ADD COLUMN IF NOT EXISTS planned_cycle_time_ms NUMERIC;
 
 CREATE INDEX IF NOT EXISTS idx_production_orders_asset ON production_orders(asset_id);
 CREATE INDEX IF NOT EXISTS idx_production_orders_status ON production_orders(status);
