@@ -12,3 +12,10 @@ erp:
 mes:
   dispatch_interval_ms: 5000
   dispatch_strategy: "round-robin"
+webhook:
+  enabled: false
+  target_url: ""
+  event_types: ["order.created", "order.progress", "order.closed", "machine.state_change", "machine.cycle_complete"]
+  timeout_ms: 5000
+  retry_attempts: 3
+  retry_delay_ms: 1000

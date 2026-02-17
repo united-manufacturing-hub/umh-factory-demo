@@ -20,9 +20,10 @@ pipeline:
           const lineId = msg.payload.line_id || '';
 
           if (eventType === 'order.created') {
+              // order.created data is the full Order struct: {id, product_id, planned_qty, ...}
               msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
               msg.payload = {
-                  orderId: data.order_id || '',
+                  orderId: data.id || data.order_id || '',
                   partNumber: data.product_id || '',
                   quantity: data.planned_qty || 0,
                   status: 'CREATED',
@@ -31,21 +32,24 @@ pipeline:
                   type: "production_order"
               };
           } else if (eventType === 'order.progress') {
+              // order.progress data is a map: {order_id, good_qty, scrap_qty, planned_qty, planned_cycle_time_ms}
               msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
               msg.payload = {
                   orderId: data.order_id || '',
                   quantity: data.planned_qty || 0,
                   quantityCompleted: data.good_qty || 0,
                   quantityScrap: data.scrap_qty || 0,
+                  planned_cycle_time_ms: data.planned_cycle_time_ms || null,
                   status: 'IN_PROGRESS',
                   target_line: lineId,
                   timestamp_ms: Date.now(),
                   type: "order_progress"
               };
           } else if (eventType === 'order.closed') {
+              // order.closed data is the full Order struct: {id, good_qty, scrap_qty, ...}
               msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
               msg.payload = {
-                  orderId: data.order_id || '',
+                  orderId: data.id || data.order_id || '',
                   quantityCompleted: data.good_qty || 0,
                   quantityScrap: data.scrap_qty || 0,
                   status: 'COMPLETED',

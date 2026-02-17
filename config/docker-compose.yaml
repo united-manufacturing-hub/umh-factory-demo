@@ -66,7 +66,7 @@ services:
       - timescaledb-network
 
   machine-simulator:
-    image: dh2k/machine-simulator-2:latest
+    image: dh2k/machine-simulator-2:v1.0.0
     restart: unless-stopped
     ports:
       - "8081:8081" # Web UI/API

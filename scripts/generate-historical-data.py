@@ -1199,6 +1199,8 @@ class LineSimulator:
     def _complete_order(self, t: datetime):
         if not self.active_order:
             return
+        # Use last machine's effective cycle time as planned_cycle_time_ms
+        last_machine_cycle_ms = self.machines[-1].effective_cycle_ms if self.machines else None
         self.completed_orders.append({
             "timestamp": t,
             "order_id": self.active_order["order_id"],
@@ -1213,6 +1215,7 @@ class LineSimulator:
             "due_date": t + timedelta(hours=random.randint(1, 24)),
             "started_at": self.active_order["started_at"],
             "completed_at": t,
+            "planned_cycle_time_ms": last_machine_cycle_ms,
         })
         self.active_order = None
         # Clear recipe overrides
@@ -1446,7 +1449,8 @@ def insert_production_orders(conn, asset_id: int, orders: List[Dict], batch_size
                 o["timestamp"], asset_id, o["order_id"], o["customer"],
                 o["part_number"], o["part_description"], o["quantity"],
                 o["quantity_completed"], o["quantity_scrap"], o["priority"],
-                o["status"], o["due_date"], o["started_at"], o["completed_at"]
+                o["status"], o["due_date"], o["started_at"], o["completed_at"],
+                o.get("planned_cycle_time_ms")
             )
             for o in batch
         ]
@@ -1455,14 +1459,15 @@ def insert_production_orders(conn, asset_id: int, orders: List[Dict], batch_size
             """INSERT INTO production_orders
                 (timestamp, asset_id, order_id, customer, part_number, part_description,
                  quantity, quantity_completed, quantity_scrap, priority, status,
-                 due_date, started_at, completed_at)
+                 due_date, started_at, completed_at, planned_cycle_time_ms)
             VALUES %s
             ON CONFLICT (asset_id, order_id) DO UPDATE SET
                 quantity_completed = EXCLUDED.quantity_completed,
                 quantity_scrap = EXCLUDED.quantity_scrap,
                 status = EXCLUDED.status,
                 started_at = EXCLUDED.started_at,
-                completed_at = EXCLUDED.completed_at""",
+                completed_at = EXCLUDED.completed_at,
+                planned_cycle_time_ms = COALESCE(EXCLUDED.planned_cycle_time_ms, production_orders.planned_cycle_time_ms)""",
             values,
         )
         inserted += cursor.rowcount
