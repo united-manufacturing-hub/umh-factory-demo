@@ -2,7 +2,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-umh--factory--demo-blue)](https://github.com/united-manufacturing-hub/umh-factory-demo)
 
-Factory demo environment for the United Manufacturing Hub (UMH). Sets up a complete stack with OPC-UA machine simulation, data collection, dashboards, and analytics.
+Factory demo environment for the United Manufacturing Hub (UMH). Sets up a complete production simulation with real industrial protocols (OPC-UA, Modbus TCP), webhook-based ERP/MES integration, Grafana dashboards, and OEE analytics.
 
 ## Quick Start
 
@@ -47,11 +47,84 @@ curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases
 
 ### 3. Access
 
-| Service | URL |
-|---------|-----|
-| Grafana | http://localhost:8080 (admin/admin) |
-| Machine Simulator | http://localhost:8081 |
-| API (via Nginx) | http://localhost:80 |
+| Service | URL | Description |
+|---------|-----|-------------|
+| Grafana | http://localhost:8080 (admin/admin) | OEE dashboards, machine monitoring |
+| Machine Simulator | http://localhost:8081 | Interactive factory control UI |
+| API (via Nginx) | http://localhost:80 | Stop reason API, operator forms |
+
+## Machine Simulator
+
+The simulator (`dh2k/machine-simulator-2:v1.0.0`) provides a realistic factory environment with an interactive web UI and full protocol support.
+
+### Interactive Web UI
+
+Access at **http://localhost:8081** - a dark-themed dashboard with real-time updates via WebSocket:
+
+- **Dashboard** - Overview of all lines, machines, and active orders
+- **Line Details** - Machine states, buffer levels, and production flow visualization
+- **Machine Details** - Per-machine tags, cycle counts, and state history
+- **Orders** - Create/manage production orders, view progress and completion
+- **Simulation Controls** - Adjust time scale (0.1x-100x), random factor, machine parameters
+
+### Protocols
+
+| Protocol | Port(s) | Description |
+|----------|---------|-------------|
+| OPC-UA | 4840+ (one per machine) | Real-time machine tags (state, cycle count, good/scrap, sensor data) |
+| Modbus TCP | 502 | Holding register gateway for all machines |
+| HTTP Webhooks | Configurable | Pushes order and machine events to external systems (e.g., UMH Core) |
+| REST API | 8081 | Full control: lines, machines, orders, operations, recipes, settings |
+| WebSocket | 8081/ws | Real-time event stream for UI and integrations |
+
+### Data Flow
+
+```
+Machine Simulator
+├── OPC-UA ──────────> UMH Core (protocol converter) ──> UNS ──> PostgreSQL
+├── Modbus TCP ──────> UMH Core (protocol converter) ──> UNS ──> PostgreSQL
+└── Webhooks (HTTP) ─> UMH Core (erp-receiver:8090) ──> UNS ──> production_orders table
+                       ├── order.created   → _erp.orders
+                       ├── order.progress  → _erp.orders (includes planned_cycle_time_ms)
+                       └── order.closed    → _erp.orders
+```
+
+### Available Line Templates
+
+10 industrial domains with 27 machine types:
+
+| Domain | Line Template | Machines |
+|--------|--------------|----------|
+| Automotive | assembly-line | Assembly Press, Spot Welder, Painting Booth, Robot Pick & Place |
+| Automotive | welding-line | Laser Cutter, Robot Welder, Spot Welder, Trimming Press |
+| Electronics | smt-line | SMT Placement, Reflow Oven, AOI Inspection, Labeling |
+| Electronics | through-hole-line | Wave Solder, AOI Inspection, Labeling |
+| Food & Beverage | filling-line | Filling Machine, Capping, Labeling, Sealing |
+| Furniture | assembly-line | CNC Router, Edge Bander, Assembly Press, Labeling |
+| Metal Parts | fabrication-line | Metal Forming, Press Brake, Deburring, Labeling |
+| Pharma | batch-line | Reactor Vessel, Pharma Filler, Capping, Labeling |
+| Plastic Parts | molding-line | Injection Molding, Trimming Press, Labeling |
+| Windows | frame-line | Profile Cutter, Corner Welder, Glass Setter, Sealing |
+
+### REST API
+
+Full API available at `http://localhost:8081/api/`:
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/simulation` | Current simulation state |
+| `PUT /api/simulation/timescale` | Adjust speed (0.1x - 100x) |
+| `GET /api/lines` | List all production lines |
+| `POST /api/lines/{id}/start\|stop` | Start/stop a line |
+| `GET /api/machines` | List all machines with current state |
+| `POST /api/machines/{id}/command` | Send start/stop/reset commands |
+| `GET /api/orders` | List all production orders |
+| `POST /api/orders` | Create a new order |
+| `PUT /api/orders/{id}/status` | Update order status |
+| `GET /api/operations` | List MES operations |
+| `GET /api/recipes` | List available recipes per line |
+| `GET/PUT /api/settings/machines/{id}` | View/adjust machine parameters |
+| `GET/PUT /api/settings/buffers/{id}` | View/adjust buffer capacity |
 
 ## What Gets Created
 
@@ -66,9 +139,11 @@ your-factory/
 ├── grafana-data/                # Grafana database
 ├── grafana-provisioning/        # Datasource config
 ├── configs/                     # Nginx config
-├── simulator-config/            # Machine definitions
+├── simulator-config/            # Machine & line definitions
 ├── simulator-data/              # Simulator state
 ├── timescaledb-data/            # PostgreSQL data
+├── builder-generate.log         # Builder phase 1 log
+├── builder-post-init.log        # Builder phase 2 log
 └── reset-demo                   # Reset utility
 ```
 
@@ -83,6 +158,19 @@ Place a logo file (any format: PNG, JPG, SVG) in your directory before running `
 | `--version=X.Y.Z` | — | Template version to download (highest priority) |
 | `VERSION` env var | 1.0.0 | Template version to download |
 | `BUILDER_IMAGE` | dh2k/demo-builder:v1.0.0 | Builder Docker image |
+| `SELECTED_LINES` | automotive-welding:1 | Line templates and instance counts |
+
+### Simulator Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SIMULATOR_PROFILE` | — | Named profile from `simulator-config/profiles/` |
+| `SIMULATOR_LINE_<TEMPLATE>` | — | Instance count per line template (e.g., `SIMULATOR_LINE_AUTOMOTIVE_WELDING=2`) |
+| `SIMULATOR_WEBHOOK_ENABLED` | false | Enable webhook event publishing |
+| `SIMULATOR_WEBHOOK_TARGET_URL` | — | Webhook endpoint (e.g., `http://umh-core:8090/api/v1/`) |
+| `SIMULATOR_WEBHOOK_EVENT_TYPES` | — | Comma-separated event types to publish |
+| `SIMULATOR_TIME_SCALE` | 1.0 | Simulation speed multiplier |
+| `SIMULATOR_OPCUA_HOSTNAME` | localhost | OPC-UA server hostname |
 
 ## Reset
 
@@ -91,15 +179,7 @@ To start over:
 ```bash
 ./reset-demo
 ```
-Then run the curl command again
-
-## Factory Configuration
-
-The default demo includes 9 machines across 2 production lines + 1 standalone:
-
-- **Line 1:** Injection Molding → Robot Pick & Place → CNC Milling → Robot Pick & Place → Packaging
-- **Line 2:** Metal Forming → Spot Welder → Packaging
-- **Standalone:** Robot Welder
+Then run the curl command again.
 
 ## Documentation
 
@@ -169,4 +249,3 @@ Run `./export-dashboard.sh --help` for all options.
 - Added container name check, repo override flag.
 
 **Full Changelog**: [`v1.0.0...v1.0.1-dev.1`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.0.0...v1.0.1-dev.1)
-
