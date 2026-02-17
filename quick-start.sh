@@ -495,6 +495,12 @@ done
 echo ""
 echo -e "${GREEN}  ✓ Phase 1 complete - all files generated${NC}"
 
+# ─── Ensure volume directories have correct ownership ─────────────
+# Grafana runs as UID 472; if Docker (or a previous run) created
+# grafana-data as root, Grafana cannot write to it.
+mkdir -p grafana-data
+chown 472:0 grafana-data 2>/dev/null || true
+
 # ─── Build and start compose services ────────────────────────────
 echo ""
 echo -e "${BLUE}Building Grafana container (with custom branding)...${NC}"
