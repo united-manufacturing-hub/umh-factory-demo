@@ -225,6 +225,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.2.5 (2026-02-17)
+
+### Other
+- fix umh-core-data and grafana-data ownership from builder
+
+**Full Changelog**: [`v1.2.4...v1.2.5`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.2.4...v1.2.5)
+
 ## v1.2.4 (2026-02-17)
 
 ### Other
