@@ -74,7 +74,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT timestamp as time,\n  CASE\n    WHEN value = '0' OR value = 'IDLE' THEN 'IDLE'\n    WHEN value = '1' OR value = 'SETUP' THEN 'SETUP'\n    WHEN value = '2' OR value = 'RUNNING' THEN 'RUNNING'\n    WHEN value = '3' OR value = 'PLANNED STOP' THEN 'PLANNED STOP'\n    WHEN value = '4' OR value = 'UNPLANNED STOP' THEN 'UNPLANNED STOP'\n    WHEN value = 'MAINTENANCE' THEN 'MAINTENANCE'\n    ELSE value\n  END as state\nFROM tag_string\nWHERE asset_id = ${asset_id}\n  AND name = 'State'\nORDER BY timestamp DESC\nLIMIT 1",
+          "rawSql": "SELECT timestamp as time,\n  CASE\n    WHEN value = '0' OR value = 'IDLE' THEN 'IDLE'\n    WHEN value = '1' OR value = 'SETUP' THEN 'SETUP'\n    WHEN value = '2' OR value = 'RUNNING' THEN 'RUNNING'\n    WHEN value = '3' OR value = 'PLANNED STOP' THEN 'PLANNED STOP'\n    WHEN value = '4' OR value = 'UNPLANNED STOP' THEN 'UNPLANNED STOP'\n    WHEN value = 'MAINTENANCE' THEN 'MAINTENANCE'\n    ELSE value\n  END as state\nFROM tag_string\nWHERE asset_id = ${asset_id}\n  AND name = 'state'\nORDER BY timestamp DESC\nLIMIT 1",
           "refId": "A"
         }
       ],
@@ -270,7 +270,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH produced AS (\n  SELECT COALESCE(\n    GREATEST(\n      (SELECT MAX(value) FROM tag WHERE asset_id = ${asset_id} AND name = 'GoodParts' AND timestamp <= NOW()) -\n      (SELECT COALESCE(MAX(value), 0) FROM tag WHERE asset_id = ${asset_id} AND name = 'GoodParts' AND timestamp < DATE_TRUNC('day', NOW())),\n      0\n    ), 0\n  ) as actual\n),\nplanned AS (\n  SELECT COALESCE(\n    (SELECT po.quantity FROM production_orders po WHERE po.asset_id = ${asset_id} AND po.status IN ('IN_PROGRESS', 'RELEASED') ORDER BY po.created_at DESC LIMIT 1),\n    500\n  ) as target\n)\nSELECT ROUND((p.actual * 100.0 / NULLIF(pl.target, 0))::numeric, 1) as \"vs Plan\"\nFROM produced p, planned pl",
+          "rawSql": "WITH produced AS (\n  SELECT COALESCE(\n    GREATEST(\n      (SELECT MAX(value) FROM tag WHERE asset_id = ${asset_id} AND name = 'good_count' AND timestamp <= NOW()) -\n      (SELECT COALESCE(MAX(value), 0) FROM tag WHERE asset_id = ${asset_id} AND name = 'good_count' AND timestamp < DATE_TRUNC('day', NOW())),\n      0\n    ), 0\n  ) as actual\n),\nplanned AS (\n  SELECT COALESCE(\n    (SELECT po.quantity FROM production_orders po WHERE po.asset_id = ${asset_id} AND po.status IN ('IN_PROGRESS', 'RELEASED') ORDER BY po.created_at DESC LIMIT 1),\n    500\n  ) as target\n)\nSELECT ROUND((p.actual * 100.0 / NULLIF(pl.target, 0))::numeric, 1) as \"vs Plan\"\nFROM produced p, planned pl",
           "refId": "A"
         }
       ],

@@ -74,7 +74,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH period_start AS (\n  SELECT '${shift_start}'::timestamptz as ts\n),\nproduced AS (\n  SELECT COALESCE(SUM(GREATEST(\n    COALESCE((SELECT MAX(value) FROM tag WHERE asset_id = a.id AND name = 'GoodParts' AND timestamp <= NOW()), 0) -\n    COALESCE((SELECT MAX(value) FROM tag WHERE asset_id = a.id AND name = 'GoodParts' AND timestamp < (SELECT ts FROM period_start)), 0),\n    0\n  )), 0) as actual\n  FROM asset a\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line}'\n    AND a.workcell != ''\n),\nplanned AS (\n  SELECT COALESCE(SUM(po.quantity), 1000) as target\n  FROM production_orders po\n  JOIN asset a ON a.id = po.asset_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line}'\n    AND po.status IN ('IN_PROGRESS', 'RELEASED')\n)\nSELECT ROUND((p.actual * 100.0 / NULLIF(pl.target, 0))::numeric, 1) as \"Output vs Planned\"\nFROM produced p, planned pl",
+          "rawSql": "SELECT get_output_vs_planned('${enterprise}', '${site}', '', '${line}', '${shift_start}'::timestamptz, NOW()) as \"Output vs Planned\"",
           "refId": "A"
         }
       ],
@@ -126,7 +126,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT AVG(t.value) / 1000.0 as \"Actual Cycle Time\"\nFROM tag t\nJOIN asset a ON a.id = t.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND a.workcell != ''\n  AND t.name = 'CycleTime'\n  AND t.value > 0 AND t.value < 300000\n  AND t.timestamp > NOW() - INTERVAL '1 hour'\nGROUP BY a.line",
+          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line}', '', NOW() - INTERVAL '1 hour', NOW()) as \"Actual Cycle Time\"",
           "refId": "A"
         }
       ],
@@ -173,7 +173,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "-- Planned cycle time (from recent average or default)\nSELECT COALESCE(\n  (SELECT AVG(value) / 1000.0\n   FROM tag t\n   JOIN asset a ON a.id = t.asset_id\n   WHERE a.enterprise = '${enterprise}'\n     AND a.site = '${site}'\n     AND a.line = '${line}'\n     AND t.name = 'CycleTime'\n     AND t.value > 0\n   LIMIT 1),\n  10.0\n) as \"Planned Cycle Time\"",
+          "rawSql": "SELECT COALESCE(get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line}', '', NULL, NULL), 10.0) as \"Planned Cycle Time\"",
           "refId": "A"
         }
       ],
@@ -225,7 +225,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(\n  SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time))) / 60.0,\n  0\n) as \"Total Downtime\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND ms.start_time >= '${shift_start}'::timestamptz",
+          "rawSql": "SELECT get_total_downtime_minutes('${enterprise}', '${site}', 'shopfloor', '${line}', '', '${shift_start}'::timestamptz, NOW()) as \"Total Downtime\"",
           "refId": "A"
         }
       ],
@@ -271,7 +271,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(GREATEST(\n  COALESCE((SELECT MAX(value) FROM tag WHERE asset_id = a.id AND name = 'GoodParts' AND timestamp <= NOW()), 0) -\n  COALESCE((SELECT MAX(value) FROM tag WHERE asset_id = a.id AND name = 'GoodParts' AND timestamp < '${shift_start}'::timestamptz), 0),\n  0\n)), 0) as \"Good Parts\"\nFROM asset a\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND a.workcell != ''",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line}', '', 'good_count', '${shift_start}'::timestamptz, NOW()) as \"Good Parts\"",
           "refId": "A"
         }
       ],
@@ -321,7 +321,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(GREATEST(\n  COALESCE((SELECT MAX(value) FROM tag WHERE asset_id = a.id AND name = 'ScrapParts' AND timestamp <= NOW()), 0) -\n  COALESCE((SELECT MAX(value) FROM tag WHERE asset_id = a.id AND name = 'ScrapParts' AND timestamp < '${shift_start}'::timestamptz), 0),\n  0\n)), 0) as \"Scrap Parts\"\nFROM asset a\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND a.workcell != ''",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line}', '', 'scrap_count', '${shift_start}'::timestamptz, NOW()) as \"Scrap Parts\"",
           "refId": "A"
         }
       ],
@@ -371,7 +371,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as \"Stop Count\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND ms.start_time >= '${shift_start}'::timestamptz",
+          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line}', '', '${shift_start}'::timestamptz, NOW()) as \"Stop Count\"",
           "refId": "A"
         }
       ],
@@ -396,9 +396,9 @@
           "mappings": [
             { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" } }, "type": "value" },
             { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "red", "index": 2, "text": "STOPPED" } }, "type": "value" },
+            { "options": { "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" } }, "type": "value" },
             { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINTENANCE" } }, "type": "value" },
-            { "options": { "FAULT": { "color": "dark-red", "index": 4, "text": "FAULT" } }, "type": "value" },
+            { "options": { "FAULT": { "color": "red", "index": 4, "text": "FAULT" } }, "type": "value" },
             { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
           ],
           "thresholds": {

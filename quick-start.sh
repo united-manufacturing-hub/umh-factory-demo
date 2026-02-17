@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # quick-start.sh - Single-command UMH demo setup
 #
-# Usage:
-#   curl -fsSL https://github.com/.../releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh
-#   bash quick-start.sh --dev               # Use dev branch instead of release tag
-#   bash quick-start.sh --branch=staging    # Use a specific branch
+# Usage (via install.sh bootstrap):
+#   bash install.sh                         # Latest stable release
+#   bash install.sh --dev                   # Latest dev prerelease
+#   bash install.sh --version=1.0.0         # Specific version
+#
+# Direct usage:
 #   bash quick-start.sh --repo=user/repo    # Use a different template repo
 #   bash quick-start.sh --version=1.0.0     # Use a specific version
+#   bash quick-start.sh --profile=demo-mixed # Use a simulator profile (skip line selection)
 #
 # Prerequisites:
 #   - Docker Engine + Docker Compose v2
@@ -18,15 +21,14 @@
 set -euo pipefail
 
 # ─── Parse arguments ─────────────────────────────────────────────
-USE_BRANCH=""
 USE_REPO=""
 CLI_VERSION=""
+SIMULATOR_PROFILE=""
 for arg in "$@"; do
     case "$arg" in
-        --dev)  USE_BRANCH="dev" ;;
-        --branch=*) USE_BRANCH="${arg#--branch=}" ;;
         --repo=*) USE_REPO="${arg#--repo=}" ;;
         --version=*) CLI_VERSION="${arg#--version=}" ;;
+        --profile=*) SIMULATOR_PROFILE="${arg#--profile=}" ;;
     esac
 done
 
@@ -134,17 +136,27 @@ echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
 echo ""
 echo -e "${BLUE}Checking port availability...${NC}"
 
-# Check if a port is in use on the host
+# Track ports we've already allocated in this run
+ALLOCATED_PORTS=""
+
+# Check if a port is in use on the host or already allocated by this script
 port_in_use() {
-    (echo >/dev/tcp/localhost/"$1") 2>/dev/null
+    # Check if we already allocated this port
+    echo "$ALLOCATED_PORTS" | grep -qw "$1" && return 0
+    # Check for active listeners
+    (echo >/dev/tcp/localhost/"$1") 2>/dev/null && return 0
+    # Check for Docker containers binding this port (including stopped ones)
+    docker ps -a --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:$1->" && return 0
+    return 1
 }
 
-# Find next available port starting from $1
+# Find next available port starting from $1 and mark it as allocated
 find_available_port() {
     local port=$1
     while port_in_use "$port"; do
         port=$((port + 1))
     done
+    ALLOCATED_PORTS="$ALLOCATED_PORTS $port"
     echo "$port"
 }
 
@@ -162,6 +174,9 @@ find_available_port_range() {
             fi
         done
         if $all_free; then
+            for ((p=start; p<start+count; p++)); do
+                ALLOCATED_PORTS="$ALLOCATED_PORTS $p"
+            done
             echo "$start"
             return
         fi
@@ -175,7 +190,7 @@ DEFAULT_PORT_SIMULATOR=8081
 DEFAULT_PORT_UMH=8090
 DEFAULT_PORT_OPCUA_START=4840
 DEFAULT_PORT_MODBUS=502
-OPCUA_COUNT=9
+OPCUA_COUNT=41  # Up to 41 ports for dynamic line selection (4840-4880)
 
 PORT_NGINX=$(find_available_port $DEFAULT_PORT_NGINX)
 PORT_GRAFANA=$(find_available_port $DEFAULT_PORT_GRAFANA)
@@ -318,6 +333,77 @@ if [[ "$GENERATE_HISTORY" =~ ^[Yy] ]]; then
     echo -e "${GREEN}  ✓ Will generate $HISTORY_DAYS days of history${NC}"
 fi
 
+# ─── Production line selection ────────────────────────────────────
+echo ""
+SELECTED_LINES=""
+
+if [ -n "$SIMULATOR_PROFILE" ]; then
+    echo -e "${GREEN}  ✓ Using simulator profile: $SIMULATOR_PROFILE${NC}"
+    SELECTED_LINES="__profile__:${SIMULATOR_PROFILE}"
+else
+    echo -e "${BLUE}Available production line templates:${NC}"
+    echo ""
+    echo "  Automotive:"
+    echo "    1) automotive-welding       - Body welding (metal forming → spot welder → robot welder → pick & place)"
+    echo "    2) automotive-assembly      - Door assembly and painting"
+    echo "  Electronics:"
+    echo "    3) electronics-smt          - Surface-mount technology assembly"
+    echo "    4) electronics-through-hole - Through-hole component assembly"
+    echo "  Food & Beverage:"
+    echo "    5) food-beverage-filling    - High-speed filling and labeling"
+    echo "  Pharma:"
+    echo "    6) pharma-batch             - Batch processing and filling"
+    echo "  Window:"
+    echo "    7) window-frame             - Frame fabrication and glazing"
+    echo "  Furniture:"
+    echo "    8) furniture-assembly       - Panel machining and assembly"
+    echo "  Metal Parts:"
+    echo "    9) metal-parts-fabrication  - Sheet metal processing"
+    echo "  Plastic Parts:"
+    echo "   10) plastic-parts-molding    - Extrusion and molding"
+    echo ""
+
+    LINE_TEMPLATES=(
+        "automotive-welding"
+        "automotive-assembly"
+        "electronics-smt"
+        "electronics-through-hole"
+        "food-beverage-filling"
+        "pharma-batch"
+        "window-frame"
+        "furniture-assembly"
+        "metal-parts-fabrication"
+        "plastic-parts-molding"
+    )
+
+    read -p "Select lines (comma-separated, e.g., 1,3,5) [1]: " LINE_SELECTION
+    LINE_SELECTION="${LINE_SELECTION:-1}"
+
+    IFS=',' read -ra SELECTIONS <<< "$LINE_SELECTION"
+    PARTS=()
+    for sel in "${SELECTIONS[@]}"; do
+        sel=$(echo "$sel" | tr -d ' ')
+        if [ "$sel" -ge 1 ] 2>/dev/null && [ "$sel" -le 10 ] 2>/dev/null; then
+            LINE_NAME="${LINE_TEMPLATES[$((sel - 1))]}"
+            read -p "How many '${LINE_NAME}' lines? [1]: " LINE_COUNT
+            LINE_COUNT="${LINE_COUNT:-1}"
+            PARTS+=("${LINE_NAME}:${LINE_COUNT}")
+            echo -e "${GREEN}  ✓ ${LINE_NAME} x${LINE_COUNT}${NC}"
+        else
+            echo -e "${YELLOW}  Skipping invalid selection: $sel${NC}"
+        fi
+    done
+
+    if [ ${#PARTS[@]} -eq 0 ]; then
+        echo -e "${YELLOW}  No valid lines selected, defaulting to automotive-welding x1${NC}"
+        PARTS=("automotive-welding:1")
+    fi
+
+    SELECTED_LINES=$(IFS=','; echo "${PARTS[*]}")
+    echo ""
+    echo -e "${GREEN}  ✓ Selected lines: $SELECTED_LINES${NC}"
+fi
+
 # ─── Check for container name conflicts ───────────────────────────
 echo ""
 echo -e "${BLUE}Checking for container name conflicts...${NC}"
@@ -372,9 +458,9 @@ docker run -d \
     -v "$(pwd):/workspace" \
     -e PHASE=all \
     ${TEMPLATE_VERSION:+-e "VERSION=${TEMPLATE_VERSION}"} \
-    -e "BRANCH=${USE_BRANCH}" \
     ${USE_REPO:+-e "REPO=${USE_REPO}"} \
     -e "HISTORY_DAYS=${HISTORY_DAYS}" \
+    -e "SELECTED_LINES=${SELECTED_LINES}" \
     -e "HOST_IP=${HOST_IP}" \
     -e "PORT_NGINX=${PORT_NGINX}" \
     -e "PORT_GRAFANA=${PORT_GRAFANA}" \

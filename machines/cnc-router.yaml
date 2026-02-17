@@ -1,0 +1,257 @@
+name: cnc-router
+display_name: "CNC Router"
+
+dataModel:
+  name: cnc_router
+  version:
+    v1:
+      structure:
+        state:
+          _payloadshape: timeseries-string
+        cycle_count:
+          _payloadshape: timeseries-number
+        good_count:
+          _payloadshape: timeseries-number
+        scrap_count:
+          _payloadshape: timeseries-number
+        cycle_time_ms:
+          _payloadshape: timeseries-number
+        blocked_by_buffer:
+          _payloadshape: timeseries-number
+        spindle_speed_rpm:
+          _payloadshape: timeseries-number
+        x_position_mm:
+          _payloadshape: timeseries-number
+        y_position_mm:
+          _payloadshape: timeseries-number
+        z_position_mm:
+          _payloadshape: timeseries-number
+        cut_depth_mm:
+          _payloadshape: timeseries-number
+        feed_rate_mm_min:
+          _payloadshape: timeseries-number
+        dust_extraction_m3_h:
+          _payloadshape: timeseries-number
+        tool_wear_pct:
+          _payloadshape: timeseries-number
+        power_consumption_kw:
+          _payloadshape: timeseries-number
+        vibration_mm_s:
+          _payloadshape: timeseries-number
+        vacuum_hold_down_kpa:
+          _payloadshape: timeseries-number
+        surface_finish_um:
+          _payloadshape: timeseries-number
+        tool_temp_c:
+          _payloadshape: timeseries-number
+        coolant_flow_l_min:
+          _payloadshape: timeseries-number
+        material_removal_rate_cm3_min:
+          _payloadshape: timeseries-number
+
+dataContract:
+  name: _cnc_router_v1
+  model:
+    name: cnc_router
+    version: v1
+
+addressMappings:
+  - Address: "ns=1;i=1"
+    TagName: state
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=2"
+    TagName: cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=3"
+    TagName: good_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=4"
+    TagName: scrap_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=5"
+    TagName: cycle_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=6"
+    TagName: blocked_by_buffer
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=7"
+    TagName: spindle_speed_rpm
+    Unit: "RPM"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=8"
+    TagName: x_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=9"
+    TagName: y_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=10"
+    TagName: z_position_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=11"
+    TagName: cut_depth_mm
+    Unit: "mm"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=12"
+    TagName: feed_rate_mm_min
+    Unit: "mm/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=13"
+    TagName: dust_extraction_m3_h
+    Unit: "m3/h"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=14"
+    TagName: tool_wear_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=15"
+    TagName: power_consumption_kw
+    Unit: "kW"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=16"
+    TagName: vibration_mm_s
+    Unit: "mm/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=17"
+    TagName: vacuum_hold_down_kpa
+    Unit: "kPa"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=18"
+    TagName: surface_finish_um
+    Unit: "um"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=19"
+    TagName: tool_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=20"
+    TagName: coolant_flow_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+  - Address: "ns=1;i=21"
+    TagName: material_removal_rate_cm3_min
+    Unit: "cm3/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _cnc_router_v1
+
+# Protocol converter template - exact UMH config format
+# {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
+protocolConverter:
+  connection:
+    nmap:
+      target: "{{ .IP }}"
+      port: "{{ .PORT }}"
+  dataflowcomponent_read:
+    benthos:
+      input:
+        opcua:
+          endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
+          nodeIDs:
+            - "ns=1;i=1"
+            - "ns=1;i=2"
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=15"
+            - "ns=1;i=16"
+            - "ns=1;i=17"
+            - "ns=1;i=18"
+            - "ns=1;i=19"
+            - "ns=1;i=20"
+            - "ns=1;i=21"
+          pollRate: 1000
+          subscribeEnabled: false
+      pipeline:
+        processors:
+          - tag_processor:
+              defaults: |-
+                msg.meta.location_path = "{{ .location_path }}";
+                msg.meta.data_contract = "_cnc_router_v1";
+                msg.meta.virtual_path = "";
+                msg.meta.historian = "true";
+                msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                // Auto-generated from addressMappings
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
+                return msg;
+              conditions:
+                - if: msg.meta.tag_name === "blocked_by_buffer"
+                  then: |-
+                    msg.payload = Number(msg.payload);
+                    return msg;
+      buffer:
+        none: {}

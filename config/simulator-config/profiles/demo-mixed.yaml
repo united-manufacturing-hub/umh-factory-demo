@@ -1,0 +1,12 @@
+name: "demo-mixed"
+description: "Mixed demo with one line per domain"
+lines:
+  - template: "automotive-welding"
+    instances: 1
+  - template: "electronics-smt"
+    instances: 1
+  - template: "food-beverage-filling"
+    instances: 1
+  - template: "pharma-batch"
+    instances: 1
+overrides: {}

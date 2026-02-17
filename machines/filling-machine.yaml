@@ -1,0 +1,257 @@
+name: filling-machine
+display_name: "Filling Machine"
+
+dataModel:
+  name: filling_machine
+  version:
+    v1:
+      structure:
+        state:
+          _payloadshape: timeseries-string
+        cycle_count:
+          _payloadshape: timeseries-number
+        good_count:
+          _payloadshape: timeseries-number
+        scrap_count:
+          _payloadshape: timeseries-number
+        cycle_time_ms:
+          _payloadshape: timeseries-number
+        blocked_by_buffer:
+          _payloadshape: timeseries-number
+        fill_volume_ml:
+          _payloadshape: timeseries-number
+        fill_rate_ml_s:
+          _payloadshape: timeseries-number
+        nozzle_pressure_bar:
+          _payloadshape: timeseries-number
+        product_temp_c:
+          _payloadshape: timeseries-number
+        tank_level_pct:
+          _payloadshape: timeseries-number
+        flow_rate_l_min:
+          _payloadshape: timeseries-number
+        fill_accuracy_pct:
+          _payloadshape: timeseries-number
+        drip_count:
+          _payloadshape: timeseries-number
+        valve_cycle_count:
+          _payloadshape: timeseries-number
+        cip_status:
+          _payloadshape: timeseries-number
+        product_viscosity_cp:
+          _payloadshape: timeseries-number
+        line_pressure_bar:
+          _payloadshape: timeseries-number
+        fill_weight_g:
+          _payloadshape: timeseries-number
+        density_kg_m3:
+          _payloadshape: timeseries-number
+        foam_level_pct:
+          _payloadshape: timeseries-number
+
+dataContract:
+  name: _filling_machine_v1
+  model:
+    name: filling_machine
+    version: v1
+
+addressMappings:
+  - Address: "ns=1;i=1"
+    TagName: state
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=2"
+    TagName: cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=3"
+    TagName: good_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=4"
+    TagName: scrap_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=5"
+    TagName: cycle_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=6"
+    TagName: blocked_by_buffer
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=7"
+    TagName: fill_volume_ml
+    Unit: "mL"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=8"
+    TagName: fill_rate_ml_s
+    Unit: "mL/s"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=9"
+    TagName: nozzle_pressure_bar
+    Unit: "bar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=10"
+    TagName: product_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=11"
+    TagName: tank_level_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=12"
+    TagName: flow_rate_l_min
+    Unit: "L/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=13"
+    TagName: fill_accuracy_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=14"
+    TagName: drip_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=15"
+    TagName: valve_cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=16"
+    TagName: cip_status
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=17"
+    TagName: product_viscosity_cp
+    Unit: "cP"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=18"
+    TagName: line_pressure_bar
+    Unit: "bar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=19"
+    TagName: fill_weight_g
+    Unit: "g"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=20"
+    TagName: density_kg_m3
+    Unit: "kg/m3"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+  - Address: "ns=1;i=21"
+    TagName: foam_level_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _filling_machine_v1
+
+# Protocol converter template - exact UMH config format
+# {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
+protocolConverter:
+  connection:
+    nmap:
+      target: "{{ .IP }}"
+      port: "{{ .PORT }}"
+  dataflowcomponent_read:
+    benthos:
+      input:
+        opcua:
+          endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
+          nodeIDs:
+            - "ns=1;i=1"
+            - "ns=1;i=2"
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=15"
+            - "ns=1;i=16"
+            - "ns=1;i=17"
+            - "ns=1;i=18"
+            - "ns=1;i=19"
+            - "ns=1;i=20"
+            - "ns=1;i=21"
+          pollRate: 1000
+          subscribeEnabled: false
+      pipeline:
+        processors:
+          - tag_processor:
+              defaults: |-
+                msg.meta.location_path = "{{ .location_path }}";
+                msg.meta.data_contract = "_filling_machine_v1";
+                msg.meta.virtual_path = "";
+                msg.meta.historian = "true";
+                msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                // Auto-generated from addressMappings
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
+                return msg;
+              conditions:
+                - if: msg.meta.tag_name === "blocked_by_buffer"
+                  then: |-
+                    msg.payload = Number(msg.payload);
+                    return msg;
+      buffer:
+        none: {}

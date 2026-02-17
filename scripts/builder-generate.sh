@@ -15,6 +15,8 @@
 set -euo pipefail
 
 WORK_DIR="/workspace"
+LOG_FILE="${WORK_DIR}/builder-generate.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Colors
 RED='\033[0;31m'
@@ -31,8 +33,7 @@ PORT_SIMULATOR="${PORT_SIMULATOR:-8081}"
 PORT_UMH="${PORT_UMH:-8090}"
 PORT_OPCUA_START="${PORT_OPCUA_START:-4840}"
 PORT_MODBUS="${PORT_MODBUS:-502}"
-OPCUA_COUNT=9
-OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
+SELECTED_LINES="${SELECTED_LINES:-automotive-welding:1}"
 
 DEFAULT_PORT_NGINX=80
 DEFAULT_PORT_GRAFANA=8080
@@ -49,6 +50,7 @@ echo ""
 # Load machine metadata from machines/*.yaml
 # ============================================================
 declare -A META_DISPLAY_NAME
+declare -A META_TYPE_TAGS  # machine-name -> "tag1|unit1;;tag2|unit2;;..."
 
 load_metadata() {
     local machines_dir="$TEMPLATES_DIR/machines"
@@ -59,8 +61,8 @@ load_metadata() {
 
     for machine_file in "$machines_dir"/*.yaml; do
         [ -f "$machine_file" ] || continue
-        local machine_name
-        machine_name=$(python3 -c "
+        local machine_info
+        machine_info=$(python3 -c "
 import sys
 from ruamel.yaml import YAML
 yaml = YAML()
@@ -68,12 +70,24 @@ with open('$machine_file') as f:
     d = yaml.load(f)
 print(d.get('name',''))
 print(d.get('display_name',''))
+# Extract type-specific tags (exclude base tags)
+base_tags = {'state', 'cycle_count', 'good_count', 'scrap_count', 'cycle_time_ms', 'blocked_by_buffer'}
+tags = []
+for m in d.get('addressMappings', []):
+    tag_name = m.get('TagName', '')
+    unit = m.get('Unit', 'raw')
+    if tag_name and tag_name not in base_tags:
+        tags.append(f'{tag_name}|{unit}')
+print(';;'.join(tags))
 ")
-        local name display
-        IFS=$'\n' read -r name display <<< "$machine_name"
+        local name display type_tags
+        IFS=$'\n' read -r name display type_tags <<< "$machine_info"
 
         if [ -n "$name" ]; then
             META_DISPLAY_NAME["$name"]="$display"
+            if [ -n "$type_tags" ]; then
+                META_TYPE_TAGS["$name"]="$type_tags"
+            fi
         fi
     done
 
@@ -146,32 +160,103 @@ fi
 echo -e "${GREEN}  ✓ API_URL: $API_URL${NC}"
 
 # ============================================================
-# Step 3: Static demo factory configuration
+# Step 3: Dynamic factory configuration from SELECTED_LINES
 # ============================================================
 echo ""
-echo -e "${BLUE}Step 3: Setting up demo factory layout...${NC}"
+echo -e "${BLUE}Step 3: Setting up factory layout from line selection...${NC}"
 echo ""
 
 declare -a LINE_NAMES
 declare -a LINE_MACHINES
 declare -a STANDALONE_MACHINES
+STANDALONE_MACHINES=()
 
-LINE_NAMES=("Line1" "Line2")
-LINE_MACHINES[0]="injection-molding,robot-pick-place,cnc-milling,robot-pick-place,packaging"
-LINE_MACHINES[1]="metal-forming,spot-welder,packaging"
-STANDALONE_MACHINES=("robot-welder")
+SIMULATOR_PROFILE=""
+LINE_CONFIG_DIR="$TEMPLATES_DIR/config/simulator-config/lines"
 
-echo "Demo factory configuration (matches machine-simulator default):"
+# Parse SELECTED_LINES env var (format: "line-name:count,line-name:count,..." or "__profile__:name")
+if [[ "$SELECTED_LINES" == "__profile__:"* ]]; then
+    SIMULATOR_PROFILE="${SELECTED_LINES#__profile__:}"
+    echo "  Using simulator profile: $SIMULATOR_PROFILE"
+
+    # Read profile to get line templates
+    PROFILE_FILE="$TEMPLATES_DIR/config/simulator-config/profiles/${SIMULATOR_PROFILE}.yaml"
+    if [ ! -f "$PROFILE_FILE" ]; then
+        echo -e "${RED}  Error: Profile not found: $PROFILE_FILE${NC}"
+        exit 1
+    fi
+
+    # Parse profile YAML to get line selections
+    SELECTED_LINES=$(python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+with open('$PROFILE_FILE') as f:
+    p = yaml.load(f)
+parts = []
+for l in p.get('lines', []):
+    parts.append(f\"{l['template']}:{l.get('instances', 1)}\")
+print(','.join(parts))
+")
+    echo "  Resolved lines: $SELECTED_LINES"
+fi
+
+# Parse line selections and read machine sequences from line template YAMLs
+LINE_IDX=0
+TOTAL_MACHINES=0
+IFS=',' read -ra LINE_ENTRIES <<< "$SELECTED_LINES"
+
+# Sort entries alphabetically by template name for deterministic port assignment
+# (must match simulator's sorted line ordering in LoadFromLineEnvVars)
+IFS=$'\n' LINE_ENTRIES=($(sort <<<"${LINE_ENTRIES[*]}")); unset IFS
+
+for entry in "${LINE_ENTRIES[@]}"; do
+    LINE_TEMPLATE="${entry%%:*}"
+    LINE_COUNT="${entry##*:}"
+    LINE_COUNT="${LINE_COUNT:-1}"
+
+    # Find line template YAML
+    LINE_YAML=$(find "$LINE_CONFIG_DIR" -name "*.yaml" -exec grep -l "name: \"${LINE_TEMPLATE}\"" {} \; | head -1)
+    if [ -z "$LINE_YAML" ]; then
+        echo -e "${RED}  Error: Line template not found: $LINE_TEMPLATE${NC}"
+        exit 1
+    fi
+
+    # Extract machine types from line template
+    MACHINES_CSV=$(python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+with open('$LINE_YAML') as f:
+    d = yaml.load(f)
+types = [m['type'].replace('_', '-') for m in d.get('machines', [])]
+print(','.join(types))
+")
+
+    IFS=',' read -ra MACHINE_LIST <<< "$MACHINES_CSV"
+    MACHINE_COUNT=${#MACHINE_LIST[@]}
+
+    for ((inst=1; inst<=LINE_COUNT; inst++)); do
+        BASE_DISPLAY=$(echo "$LINE_TEMPLATE" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1))substr($i,2)}1' | tr ' ' '-')
+        if [ "$LINE_COUNT" -eq 1 ]; then
+            LINE_DISPLAY_NAME="$BASE_DISPLAY"
+        else
+            LINE_DISPLAY_NAME="${BASE_DISPLAY}-${inst}"
+        fi
+
+        LINE_NAMES+=("$LINE_DISPLAY_NAME")
+        LINE_MACHINES[$LINE_IDX]="$MACHINES_CSV"
+        LINE_IDX=$((LINE_IDX + 1))
+        TOTAL_MACHINES=$((TOTAL_MACHINES + MACHINE_COUNT))
+
+        echo "  Line $LINE_IDX: $LINE_DISPLAY_NAME ($MACHINE_COUNT machines)"
+        echo "    Machines: $(echo "$MACHINES_CSV" | tr ',' ' -> ')"
+    done
+done
+
+OPCUA_COUNT=$TOTAL_MACHINES
+OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
+
 echo ""
-echo "  Line 1: Line1 (5 machines)"
-echo "    Machines: injection-molding -> robot-pick-place -> cnc-milling -> robot-pick-place -> packaging"
-echo "  Line 2: Line2 (3 machines)"
-echo "    Machines: metal-forming -> spot-welder -> packaging"
-echo "  Standalone: robot-welder"
-
-TOTAL_MACHINES=9
-echo ""
-echo -e "${GREEN}Factory configuration: $TOTAL_MACHINES machines total${NC}"
+echo -e "${GREEN}Factory configuration: ${#LINE_NAMES[@]} lines, $TOTAL_MACHINES machines total${NC}"
 
 # ============================================================
 # Step 4: Merge additional services into docker-compose.yaml
@@ -320,11 +405,11 @@ if [ -f "$TEMPLATES_DIR/reset-demo" ]; then
     echo -e "${GREEN}  ✓ Copied: reset-demo${NC}"
 fi
 
-# Copy simulator config
-if [ -f "$TEMPLATES_DIR/config/simulator-config/default.yaml" ]; then
-    cp "$TEMPLATES_DIR/config/simulator-config/default.yaml" "$WORK_DIR/simulator-config/default.yaml"
-    MACHINE_COUNT=$(grep -c "^  - id:" "$WORK_DIR/simulator-config/default.yaml" || echo "0")
-    echo -e "${GREEN}  ✓ Simulator config copied (${MACHINE_COUNT} machines)${NC}"
+# Copy simulator config directory
+if [ -d "$TEMPLATES_DIR/config/simulator-config" ]; then
+    cp -r "$TEMPLATES_DIR/config/simulator-config/"* "$WORK_DIR/simulator-config/"
+    LINE_COUNT=$(find "$WORK_DIR/simulator-config/lines" -name "*.yaml" 2>/dev/null | wc -l)
+    echo -e "${GREEN}  ✓ Simulator config copied (${LINE_COUNT} line templates)${NC}"
 else
     echo -e "${RED}  Error: Simulator config not found${NC}"
     exit 1
@@ -510,6 +595,18 @@ if [ ! -f "$WORK_DIR/grafana/apple-touch-icon.png" ]; then
 fi
 echo -e "${GREEN}  ✓ Grafana branding configured for: $LOCATION_0${NC}"
 
+# Generate ref IDs for Grafana targets: A-Z, then AA, AB, etc.
+gen_ref_id() {
+    local idx=$1
+    if [ $idx -lt 26 ]; then
+        printf "\\$(printf '%03o' $((65 + idx)))"
+    else
+        local first=$(( (idx / 26) - 1 ))
+        local second=$(( idx % 26 ))
+        printf "\\$(printf '%03o' $((65 + first)))\\$(printf '%03o' $((65 + second)))"
+    fi
+}
+
 # ============================================================
 # Step 8b: Generate Grafana dashboards
 # ============================================================
@@ -535,7 +632,6 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
 
     # Build state timeline targets JSON
     TARGETS_JSON="["
-    REF_LETTERS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J")
     for ((m=0; m<${#MACHINES[@]}; m++)); do
         MACHINE="${MACHINES[$m]}"
         POS=$((m + 1))
@@ -545,7 +641,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
         if [ $m -gt 0 ]; then
             TARGETS_JSON+=","
         fi
-        REF="${REF_LETTERS[$m]}"
+        REF=$(gen_ref_id $m)
         DISPLAY_ESC=$(echo "$DISPLAY" | sed 's/"/\\"/g')
         TARGETS_JSON+="
         {
@@ -553,7 +649,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
           \"editorMode\": \"code\",
           \"format\": \"time_series\",
           \"rawQuery\": true,
-          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'State' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"rawSql\": \"SELECT time, value as \\\"${DISPLAY_ESC}\\\" FROM get_state_timeline('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}', \$__timeFrom(), \$__timeTo())\",
           \"refId\": \"${REF}\"
         }"
     done
@@ -586,6 +682,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
         WC_DISPLAY="$(machine_display_name "$MACHINE") (Pos ${POS})"
         WC_DISPLAY_ESCAPED="${WC_DISPLAY//&/\\&}"
 
+        # Apply standard sed replacements
         sed \
             -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
             -e "s|__SITE__|${LOCATION_1}|g" \
@@ -593,9 +690,118 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
             -e "s|__LINE__|${LINE_LOWER}|g" \
             -e "s|__LINE_DISPLAY__|${LINE_DISPLAY}|g" \
             -e "s|__WORKCELL__|${WORKCELL}|g" \
-            -e "s|__WORKCELL_DISPLAY__|${WC_DISPLAY_ESCAPED}|g" \
+            -e "s|__MACHINE_DISPLAY__|${WC_DISPLAY_ESCAPED}|g" \
             "$TEMPLATES_DIR/templates/dashboards/machine-dashboard.json" \
+            > "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json.tmp"
+
+        # Generate type-specific panels from machine metadata
+        TYPE_TAGS="${META_TYPE_TAGS[$MACHINE]:-}"
+        if [ -n "$TYPE_TAGS" ]; then
+            PANELS_JSON=$(python3 -c "
+import json, sys
+tags_str = '''${TYPE_TAGS}'''
+enterprise = '${LOCATION_0}'
+site = '${LOCATION_1}'
+area = '${AREA}'
+line = '${LINE_LOWER}'
+workcell = '${WORKCELL}'
+wc_display = '${WC_DISPLAY}'
+
+panels = []
+tag_entries = [t for t in tags_str.split(';;') if t]
+for idx, entry in enumerate(tag_entries):
+    parts = entry.split('|', 1)
+    tag_name = parts[0]
+    unit = parts[1] if len(parts) > 1 else 'raw'
+
+    # Generate display name: press_force_kn -> Press Force (kN)
+    # Extract unit hint from tag name suffix
+    name_parts = tag_name.split('_')
+    # Check if last part is a unit suffix
+    unit_suffixes = {'kn': 'kN', 'bar': 'bar', 'c': chr(176)+'C', 'mm': 'mm', 'pct': '%',
+                     's': 's', 'a': 'A', 'db': 'dB', 'kwh': 'kWh', 'rpm': 'RPM',
+                     'hz': 'Hz', 'v': 'V', 'w': 'W', 'pa': 'Pa', 'lpm': 'L/min',
+                     'ms': 'ms', 'um': chr(181)+'m', 'deg': chr(176), 'mpa': 'MPa',
+                     'mp': 'MP', 'lux': 'lux', 'ml': 'mL'}
+    display_unit = unit if unit != 'raw' else ''
+    title_words = [w.capitalize() for w in name_parts]
+    # Remove unit suffix from title if last word matches
+    if name_parts[-1].lower() in unit_suffixes:
+        display_unit = unit_suffixes[name_parts[-1].lower()]
+        title_words = title_words[:-1]
+    # Also handle two-word unit suffixes like mm_s
+    if len(name_parts) >= 2:
+        combo = name_parts[-2].lower() + '_' + name_parts[-1].lower()
+        if combo in ('mm_s',):
+            display_unit = 'mm/s'
+            title_words = title_words[:-2]
+        elif combo in ('cm2_s',):
+            display_unit = 'cm'+chr(178)+'/s'
+            title_words = title_words[:-2]
+
+    title = ' '.join(title_words)
+    if display_unit:
+        title += f' ({display_unit})'
+
+    col = idx % 2
+    row = idx // 2
+    x = col * 12
+    y = 10 + row * 8
+
+    sql = f\"SELECT time, value as \\\"{tag_name}\\\" FROM get_tag_timeseries(get_asset_id_immutable('{enterprise}', '{site}', '{area}', '{line}', '{workcell}'), '{tag_name}', \$__timeFrom(), \$__timeTo())\"
+
+    panel = {
+        'datasource': {'type': 'grafana-postgresql-datasource', 'uid': 'df9o2whw2o7wgb'},
+        'fieldConfig': {
+            'defaults': {
+                'color': {'mode': 'palette-classic'},
+                'custom': {
+                    'axisBorderShow': False, 'axisCenteredZero': False,
+                    'axisColorMode': 'text', 'axisLabel': '', 'axisPlacement': 'auto',
+                    'barAlignment': 0, 'barWidthFactor': 0.6, 'drawStyle': 'line',
+                    'fillOpacity': 0, 'gradientMode': 'none',
+                    'hideFrom': {'legend': False, 'tooltip': False, 'viz': False},
+                    'insertNulls': False, 'lineInterpolation': 'linear', 'lineWidth': 1,
+                    'pointSize': 5, 'scaleDistribution': {'type': 'linear'},
+                    'showPoints': 'auto', 'showValues': False, 'spanNulls': False,
+                    'stacking': {'group': 'A', 'mode': 'none'},
+                    'thresholdsStyle': {'mode': 'off'}
+                },
+                'mappings': [],
+                'thresholds': {'mode': 'absolute', 'steps': [{'color': 'green', 'value': 0}]}
+            },
+            'overrides': []
+        },
+        'gridPos': {'h': 8, 'w': 12, 'x': x, 'y': y},
+        'id': None,
+        'options': {
+            'legend': {'calcs': [], 'displayMode': 'list', 'placement': 'bottom', 'showLegend': True},
+            'tooltip': {'hideZeros': False, 'mode': 'single', 'sort': 'none'}
+        },
+        'pluginVersion': '12.3.0',
+        'targets': [{
+            'editorMode': 'code', 'format': 'time_series', 'rawQuery': True,
+            'rawSql': sql, 'refId': 'A'
+        }],
+        'title': title,
+        'type': 'timeseries'
+    }
+    panels.append(panel)
+
+print(json.dumps(panels))
+")
+        else
+            PANELS_JSON="[]"
+        fi
+
+        # Use jq to replace the __TYPE_SPECIFIC_PANELS__ placeholder with generated panels
+        echo "$PANELS_JSON" > "$WORK_DIR/dashboards/.type_panels_tmp.json"
+        jq --slurpfile type_panels "$WORK_DIR/dashboards/.type_panels_tmp.json" \
+            '[.panels[] | if . == "__TYPE_SPECIFIC_PANELS__" then $type_panels[0][] else . end] as $new_panels | .panels = $new_panels' \
+            "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json.tmp" \
             > "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json"
+        rm -f "$WORK_DIR/dashboards/${LINE_LOWER}-${WORKCELL}-dashboard.json.tmp"
+        rm -f "$WORK_DIR/dashboards/.type_panels_tmp.json"
         echo -e "${GREEN}    ✓ ${LINE_LOWER}-${WORKCELL}-dashboard.json${NC}"
     done
 done
@@ -605,7 +811,6 @@ echo "  Generating factory overview dashboard..."
 
 FACTORY_TARGETS_JSON="["
 TARGET_IDX=0
-REF_LETTERS=("A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P")
 for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
     F_LINE_NUM=$((i + 1))
     LINE_NAME="${LINE_NAMES[$i]}"
@@ -621,7 +826,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
         if [ $TARGET_IDX -gt 0 ]; then
             FACTORY_TARGETS_JSON+=","
         fi
-        REF="${REF_LETTERS[$TARGET_IDX]}"
+        REF=$(gen_ref_id $TARGET_IDX)
         DISPLAY_ESC=$(echo "$DISPLAY" | sed 's/"/\\"/g')
         FACTORY_TARGETS_JSON+="
         {
@@ -629,7 +834,7 @@ for ((i=0; i<${#LINE_NAMES[@]}; i++)); do
           \"editorMode\": \"code\",
           \"format\": \"time_series\",
           \"rawQuery\": true,
-          \"rawSql\": \"SELECT t.timestamp as time, t.value as \\\"${DISPLAY_ESC}\\\" FROM tag_string t WHERE t.asset_id = (SELECT get_asset_id_immutable('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}')) AND t.name = 'State' AND t.timestamp BETWEEN \$__timeFrom() AND \$__timeTo() ORDER BY t.timestamp\",
+          \"rawSql\": \"SELECT time, value as \\\"${DISPLAY_ESC}\\\" FROM get_state_timeline('${LOCATION_0}', '${LOCATION_1}', '${AREA}', '${LINE_LOWER}', '${WORKCELL}', \$__timeFrom(), \$__timeTo())\",
           \"refId\": \"${REF}\"
         }"
         TARGET_IDX=$((TARGET_IDX + 1))
@@ -695,7 +900,7 @@ fi
 SETUP_SVG+="</div>"
 
 ASSET_FILTER="get_asset_ids_stable('${LOCATION_0}', '${LOCATION_1}', '', '', '')"
-MACHINE_STATUS_SQL="WITH latest_state AS (SELECT DISTINCT ON (ts.asset_id) ts.asset_id, ts.value as state FROM tag_string ts WHERE ts.asset_id IN (SELECT ${ASSET_FILTER}) AND ts.name = 'State' ORDER BY ts.asset_id, ts.timestamp DESC), latest_parts AS (SELECT t.asset_id, MAX(t.value) FILTER (WHERE t.name = 'GoodParts') as good_parts, MAX(t.value) FILTER (WHERE t.name = 'ScrapParts') as scrap_parts, (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'CycleTime' ORDER BY t2.timestamp DESC LIMIT 1) as cycle_time FROM tag t WHERE t.asset_id IN (SELECT ${ASSET_FILTER}) AND t.name IN ('GoodParts', 'ScrapParts') GROUP BY t.asset_id) SELECT a.name as \"Machine\", COALESCE(ls.state, 'UNKNOWN') as \"State\", COALESCE(lp.good_parts, 0)::int as \"Good Parts\", COALESCE(lp.scrap_parts, 0)::int as \"Scrap Parts\", ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) as \"Cycle Time (s)\" FROM asset a LEFT JOIN latest_state ls ON ls.asset_id = a.id LEFT JOIN latest_parts lp ON lp.asset_id = a.id WHERE a.id IN (SELECT ${ASSET_FILTER}) ORDER BY a.name"
+MACHINE_STATUS_SQL="SELECT * FROM get_machine_status_table('${LOCATION_0}', '${LOCATION_1}', '', '', '')"
 
 sed \
     -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
@@ -743,9 +948,13 @@ if [ "$PORT_UMH" != "$DEFAULT_PORT_UMH" ]; then
     sed -i "s|\"8090:8090\"|\"${PORT_UMH}:8090\"|g" "$WORK_DIR/docker-compose.yaml"
     echo -e "${GREEN}  ✓ UMH Core: $DEFAULT_PORT_UMH -> $PORT_UMH${NC}"
 fi
+COMPOSE_OPCUA_END=$((4840 + OPCUA_COUNT - 1))
+# Replace the default range in docker-compose with actual range needed
+sed -i "s|\"4840-4880:4840-4880\"|\"${PORT_OPCUA_START}-$((PORT_OPCUA_START + OPCUA_COUNT - 1)):4840-${COMPOSE_OPCUA_END}\"|g" "$WORK_DIR/docker-compose.yaml"
 if [ "$PORT_OPCUA_START" != "$DEFAULT_PORT_OPCUA_START" ]; then
-    sed -i "s|\"4840-4848:4840-4848\"|\"${PORT_OPCUA_START}-${OPCUA_END}:4840-4848\"|g" "$WORK_DIR/docker-compose.yaml"
-    echo -e "${GREEN}  ✓ OPC-UA: $DEFAULT_PORT_OPCUA_START-$((DEFAULT_PORT_OPCUA_START + OPCUA_COUNT - 1)) -> $PORT_OPCUA_START-$OPCUA_END${NC}"
+    echo -e "${GREEN}  ✓ OPC-UA: $DEFAULT_PORT_OPCUA_START -> $PORT_OPCUA_START (range: $OPCUA_COUNT ports)${NC}"
+else
+    echo -e "${GREEN}  ✓ OPC-UA: range adjusted to $OPCUA_COUNT ports ($PORT_OPCUA_START-$OPCUA_END)${NC}"
 fi
 if [ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ]; then
     sed -i "s|\"502:502\"|\"${PORT_MODBUS}:502\"|g" "$WORK_DIR/docker-compose.yaml"
@@ -753,6 +962,47 @@ if [ "$PORT_MODBUS" != "$DEFAULT_PORT_MODBUS" ]; then
 fi
 
 echo -e "${GREEN}  ✓ Port remappings applied${NC}"
+
+# Inject simulator line env vars into docker-compose.yaml
+# The simulator expects SIMULATOR_LINE_<TEMPLATE_UPPER>=<count> or SIMULATOR_PROFILE=<name>
+python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+with open('$WORK_DIR/docker-compose.yaml') as f:
+    compose = yaml.load(f)
+sim = compose['services']['machine-simulator']
+env = sim.get('environment', [])
+
+profile = '$SIMULATOR_PROFILE'
+selected = '$SELECTED_LINES'
+
+if profile:
+    # Replace the placeholder with actual profile name
+    env = [e for e in env if not (isinstance(e, str) and 'SIMULATOR_PROFILE' in e)]
+    env.append('SIMULATOR_PROFILE=' + profile)
+else:
+    # Remove the empty SIMULATOR_PROFILE line
+    env = [e for e in env if not (isinstance(e, str) and 'SIMULATOR_PROFILE' in e)]
+    # Convert SELECTED_LINES to SIMULATOR_LINE_* env vars
+    # Format: template-name:count,template-name:count
+    for entry in selected.split(','):
+        parts = entry.split(':')
+        template = parts[0]
+        count = parts[1] if len(parts) > 1 else '1'
+        env_name = 'SIMULATOR_LINE_' + template.upper().replace('-', '_')
+        env.append(env_name + '=' + count)
+
+# Add webhook env vars pointing to erp-receiver inside umh-core
+umh_service = '$UMH_SERVICE'
+env.append(f'SIMULATOR_WEBHOOK_ENABLED=true')
+env.append(f'SIMULATOR_WEBHOOK_TARGET_URL=http://{umh_service}:8090/api/v1/')
+
+sim['environment'] = env
+with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
+    yaml.dump(compose, f)
+"
+echo -e "${GREEN}  ✓ Simulator line env vars injected${NC}"
 
 # Determine API base URL for form panels
 HOST_IP="${HOST_IP:-localhost}"

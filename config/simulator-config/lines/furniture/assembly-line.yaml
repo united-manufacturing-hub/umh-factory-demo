@@ -1,0 +1,48 @@
+name: "furniture-assembly"
+domain: "furniture"
+description: "Furniture panel machining and assembly line"
+machines:
+  - stage: 1
+    type: "cnc_router"
+    role: "CNC-route panel shapes, drill holes, and cut joints"
+    defaults:
+      cycle_time_ms: 18000
+      scrap_rate: 0.03
+      breakdown_probability: 0.025
+      auto_restore_time_ms: 45000
+  - stage: 2
+    type: "edge_bander"
+    role: "Apply and trim edge banding on exposed panel edges"
+    defaults:
+      cycle_time_ms: 12000
+      scrap_rate: 0.02
+      breakdown_probability: 0.015
+      auto_restore_time_ms: 25000
+  - stage: 3
+    type: "assembly_press"
+    role: "Press-fit dowels and assemble panel components"
+    defaults:
+      cycle_time_ms: 25000
+      scrap_rate: 0.04
+      breakdown_probability: 0.030
+      auto_restore_time_ms: 40000
+buffers:
+  default_capacity: 8
+  overrides: []
+recipes:
+  - product_id: "DESK-OAK-A"
+    description: "Oak desk top - 160x80cm with cable management cutout"
+    planned_qty_range: [10, 30]
+    overrides:
+      1:
+        cycle_time_ms: 22000
+      3:
+        cycle_time_ms: 20000
+  - product_id: "SHELF-PINE-B"
+    description: "Pine shelf unit - 80x30cm with three adjustable shelves"
+    planned_qty_range: [15, 50]
+    overrides:
+      1:
+        cycle_time_ms: 15000
+      2:
+        cycle_time_ms: 10000

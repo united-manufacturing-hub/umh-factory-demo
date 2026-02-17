@@ -6,52 +6,48 @@ dataModel:
   version:
     v1:
       structure:
-        State:
+        state:
           _payloadshape: timeseries-string
-        CycleCount:
+        cycle_count:
           _payloadshape: timeseries-number
-        CycleTime:
+        good_count:
           _payloadshape: timeseries-number
-        CycleProgress:
+        scrap_count:
           _payloadshape: timeseries-number
-        GoodParts:
+        cycle_time_ms:
           _payloadshape: timeseries-number
-        ScrapParts:
+        blocked_by_buffer:
           _payloadshape: timeseries-number
-        BarrelTemperature:
+        barrel_zone1_temp_c:
           _payloadshape: timeseries-number
-        MoldTemperature:
+        barrel_zone2_temp_c:
           _payloadshape: timeseries-number
-        InjectionPressure:
+        barrel_zone3_temp_c:
           _payloadshape: timeseries-number
-        HoldingPressure:
+        barrel_zone4_temp_c:
           _payloadshape: timeseries-number
-        ScrewPosition:
+        injection_pressure_bar:
           _payloadshape: timeseries-number
-        ScrewSpeed:
+        mold_temp_c:
           _payloadshape: timeseries-number
-        ClampForce:
+        clamp_force_tons:
           _payloadshape: timeseries-number
-        CoolingTime:
+        cooling_time_s:
           _payloadshape: timeseries-number
-        ShotWeight:
+        shot_weight_g:
           _payloadshape: timeseries-number
-        CushionPosition:
+        cushion_mm:
           _payloadshape: timeseries-number
-        CurrentOrderId:
-          _payloadshape: timeseries-string
-        CurrentPartNumber:
-          _payloadshape: timeseries-string
-        CurrentPartId:
-          _payloadshape: timeseries-string
-        MoldOpen:
+        screw_speed_rpm:
           _payloadshape: timeseries-number
-        EjectorPosition:
+        back_pressure_bar:
           _payloadshape: timeseries-number
-        ErrorCode:
+        melt_temp_c:
           _payloadshape: timeseries-number
-        ErrorMessage:
-          _payloadshape: timeseries-string
+        pack_pressure_bar:
+          _payloadshape: timeseries-number
+        fill_time_s:
+          _payloadshape: timeseries-number
 
 dataContract:
   name: _injection_molding_v1
@@ -60,87 +56,129 @@ dataContract:
     version: v1
 
 addressMappings:
+  - Address: "ns=1;i=1"
+    TagName: state
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=2"
+    TagName: cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
   - Address: "ns=1;i=3"
-    TagName: State
-    Unit: raw
+    TagName: good_count
+    Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=4"
-    TagName: CycleCount
-    Unit: raw
+    TagName: scrap_count
+    Unit: "raw"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=5"
-    TagName: BarrelTemperature
-    Unit: raw
+    TagName: cycle_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=6"
+    TagName: blocked_by_buffer
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=7"
+    TagName: barrel_zone1_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=8"
+    TagName: barrel_zone2_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=9"
+    TagName: barrel_zone3_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=10"
-    TagName: MoldTemperature
-    Unit: raw
+    TagName: barrel_zone4_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=11"
-    TagName: InjectionPressure
-    Unit: raw
+    TagName: injection_pressure_bar
+    Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=12"
-    TagName: HoldingPressure
-    Unit: raw
+    TagName: mold_temp_c
+    Unit: "°C"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=13"
-    TagName: ScrewPosition
-    Unit: raw
+    TagName: clamp_force_tons
+    Unit: "tons"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=14"
-    TagName: ScrewSpeed
-    Unit: raw
+    TagName: cooling_time_s
+    Unit: "s"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=15"
-    TagName: ClampForce
-    Unit: raw
+    TagName: shot_weight_g
+    Unit: "g"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=16"
-    TagName: CoolingTime
-    Unit: raw
+    TagName: cushion_mm
+    Unit: "mm"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=17"
-    TagName: ShotWeight
-    Unit: raw
+    TagName: screw_speed_rpm
+    Unit: "RPM"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=18"
-    TagName: CushionPosition
-    Unit: raw
+    TagName: back_pressure_bar
+    Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=19"
-    TagName: CycleTime
-    Unit: raw
+    TagName: melt_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _injection_molding_v1
+  - Address: "ns=1;i=20"
+    TagName: pack_pressure_bar
+    Unit: "bar"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
   - Address: "ns=1;i=21"
-    TagName: ErrorCode
-    Unit: raw
+    TagName: fill_time_s
+    Unit: "s"
     VirtualPath: ""
     LocationPathSuffix: ""
     DataContract: _injection_molding_v1
@@ -158,9 +196,15 @@ protocolConverter:
         opcua:
           endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
           nodeIDs:
+            - "ns=1;i=1"
+            - "ns=1;i=2"
             - "ns=1;i=3"
             - "ns=1;i=4"
             - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
             - "ns=1;i=10"
             - "ns=1;i=11"
             - "ns=1;i=12"
@@ -171,6 +215,7 @@ protocolConverter:
             - "ns=1;i=17"
             - "ns=1;i=18"
             - "ns=1;i=19"
+            - "ns=1;i=20"
             - "ns=1;i=21"
           pollRate: 1000
           subscribeEnabled: false
@@ -184,7 +229,7 @@ protocolConverter:
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
 
-                // Auto-generated from CSV table
+                // Auto-generated from addressMappings
                 switch(msg.meta.opcua_attr_nodeid) {
                 {{- range .AddressMappings }}
                   case "{{ .Address }}":
@@ -203,5 +248,10 @@ protocolConverter:
                 }
 
                 return msg;
+              conditions:
+                - if: msg.meta.tag_name === "blocked_by_buffer"
+                  then: |-
+                    msg.payload = Number(msg.payload);
+                    return msg;
       buffer:
         none: {}

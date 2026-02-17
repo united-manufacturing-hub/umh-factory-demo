@@ -1,0 +1,24 @@
+name: "full-catalog"
+description: "One instance of every line template"
+lines:
+  - template: "automotive-welding"
+    instances: 1
+  - template: "automotive-assembly"
+    instances: 1
+  - template: "electronics-smt"
+    instances: 1
+  - template: "electronics-through-hole"
+    instances: 1
+  - template: "food-beverage-filling"
+    instances: 1
+  - template: "pharma-batch"
+    instances: 1
+  - template: "window-frame"
+    instances: 1
+  - template: "furniture-assembly"
+    instances: 1
+  - template: "metal-parts-fabrication"
+    instances: 1
+  - template: "plastic-parts-molding"
+    instances: 1
+overrides: {}

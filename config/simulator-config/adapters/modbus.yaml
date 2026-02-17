@@ -1,0 +1,4 @@
+enabled: true
+port: 502
+max_clients: 10
+update_interval_ms: 500

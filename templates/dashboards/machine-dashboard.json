@@ -75,7 +75,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH time_range AS (SELECT $__timeFrom()::timestamptz as t_start, $__timeTo()::timestamptz as t_end), shift_periods AS (SELECT GREATEST(s.start_time, tr.t_start) as period_start, LEAST(s.end_time, tr.t_end) as period_end FROM shifts s, time_range tr WHERE s.start_time < tr.t_end AND s.end_time > tr.t_start) SELECT CASE WHEN COUNT(*) > 0 THEN SUM(EXTRACT(EPOCH FROM (period_end - period_start)) / 60) ELSE NULL END as planned_minutes FROM shift_periods",
+          "rawSql": "SELECT get_planned_minutes($__timeFrom()::timestamptz, $__timeTo()::timestamptz) as planned_minutes",
           "refId": "A"
         }
       ],
@@ -135,7 +135,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH time_range AS (SELECT $__timeFrom()::timestamptz as t_start, $__timeTo()::timestamptz as t_end), shift_periods AS (SELECT GREATEST(s.start_time, tr.t_start) as period_start, LEAST(s.end_time, tr.t_end) as period_end FROM shifts s, time_range tr WHERE s.start_time < tr.t_end AND s.end_time > tr.t_start), state_changes AS (SELECT timestamp, value, LEAD(timestamp) OVER (ORDER BY timestamp) as next_ts FROM tag WHERE name = 'State' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'))) SELECT CASE WHEN (SELECT COUNT(*) FROM shift_periods) > 0 THEN COALESCE(SUM(EXTRACT(EPOCH FROM (LEAST(COALESCE(sc.next_ts, sp.period_end), sp.period_end) - GREATEST(sc.timestamp, sp.period_start))) / 60), 0) ELSE NULL END as running_minutes FROM state_changes sc, shift_periods sp WHERE sc.value = 2 AND sc.timestamp < sp.period_end AND COALESCE(sc.next_ts, sp.period_end) > sp.period_start",
+          "rawSql": "SELECT get_runtime_minutes(get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'), $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as running_minutes",
           "refId": "A"
         }
       ],
@@ -194,7 +194,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH per_origin AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'GoodParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin) SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as good_parts FROM per_origin",
+          "rawSql": "SELECT get_counter_delta('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__', 'good_count', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as good_parts",
           "refId": "A"
         }
       ],
@@ -258,7 +258,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH per_origin AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'ScrapParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin) SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) as scrap_parts FROM per_origin",
+          "rawSql": "SELECT get_counter_delta('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__', 'scrap_count', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as scrap_parts",
           "refId": "A"
         }
       ],
@@ -317,7 +317,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH good_deltas AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'GoodParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin), scrap_deltas AS (SELECT origin, MAX(value) FILTER (WHERE timestamp <= $__timeTo()::timestamptz) as end_v, MAX(value) FILTER (WHERE timestamp < $__timeFrom()::timestamptz) as start_v FROM tag WHERE name = 'ScrapParts' AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) GROUP BY origin) SELECT COALESCE((SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FROM good_deltas), 0) + COALESCE((SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FROM scrap_deltas), 0) as total_parts",
+          "rawSql": "SELECT get_counter_delta('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__', 'good_count', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) + get_counter_delta('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__', 'scrap_count', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as total_parts",
           "refId": "A"
         }
       ],
@@ -349,8 +349,8 @@
           "mappings": [
             {
               "options": {
-                "Idle": {
-                  "color": "blue",
+                "RUNNING": {
+                  "color": "green",
                   "index": 0
                 }
               },
@@ -358,7 +358,7 @@
             },
             {
               "options": {
-                "Setup": {
+                "IDLE": {
                   "color": "yellow",
                   "index": 1
                 }
@@ -367,8 +367,8 @@
             },
             {
               "options": {
-                "Running": {
-                  "color": "green",
+                "STOPPED": {
+                  "color": "orange",
                   "index": 2
                 }
               },
@@ -376,8 +376,8 @@
             },
             {
               "options": {
-                "PlannedStop": {
-                  "color": "orange",
+                "FAULT": {
+                  "color": "red",
                   "index": 3
                 }
               },
@@ -385,8 +385,8 @@
             },
             {
               "options": {
-                "UnplannedStop": {
-                  "color": "red",
+                "MAINTENANCE": {
+                  "color": "blue",
                   "index": 4
                 }
               },
@@ -438,208 +438,14 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT timestamp AS time, CASE WHEN value = 0 THEN 'Idle' WHEN value = 1 THEN 'Setup' WHEN value = 2 THEN 'Running' WHEN value = 3 THEN 'PlannedStop' WHEN value = 4 THEN 'UnplannedStop' ELSE 'Unknown' END as \"State\" FROM tag WHERE name = 'State' AND $__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__')) ORDER BY 1",
+          "rawSql": "SELECT time, value as \"State\" FROM get_state_timeline('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__', $__timeFrom()::timestamptz, $__timeTo()::timestamptz)",
           "refId": "A"
         }
       ],
       "title": "Machine State Over Time",
       "type": "state-timeline"
     },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "df9o2whw2o7wgb"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "area"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 140
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 10
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT timestamp AS time, value as \"InjectionPressure\" FROM tag WHERE name = 'InjectionPressure' AND $__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'))",
-          "refId": "A"
-        }
-      ],
-      "title": "__MACHINE_DISPLAY__ Injection Pressure (bar)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "df9o2whw2o7wgb"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "area"
-            }
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 45
-              },
-              {
-                "color": "red",
-                "value": 55
-              }
-            ]
-          },
-          "unit": "celsius"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 10
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT timestamp AS time, value as \"MoldTemperature\" FROM tag WHERE name = 'MoldTemperature' AND $__timeFilter(timestamp) AND asset_id = (SELECT get_asset_id_immutable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '__WORKCELL__'))",
-          "refId": "A"
-        }
-      ],
-      "title": "__MACHINE_DISPLAY__ Mold Temperature (°C)",
-      "type": "timeseries"
-    }
+    "__TYPE_SPECIFIC_PANELS__"
   ],
   "preload": false,
   "refresh": "5s",

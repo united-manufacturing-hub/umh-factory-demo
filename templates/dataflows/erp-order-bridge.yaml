@@ -37,6 +37,7 @@ pipeline:
         root.started_at = this.startedAt
         root.completed_at = this.endedAt
         root.target_line = this.target_line
+        root.planned_cycle_time_ms = this.planned_cycle_time_ms.or(null)
       label: transform_order
     - bloblang: |-
         let topic = meta("umh_topic")
@@ -136,9 +137,10 @@ output:
         ALTER TABLE production_orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
       EXCEPTION WHEN duplicate_column THEN NULL;
       END $$;
+      ALTER TABLE production_orders ADD COLUMN IF NOT EXISTS planned_cycle_time_ms NUMERIC;
     query: |
-      INSERT INTO production_orders (timestamp, asset_id, order_id, customer, part_number, part_description, quantity, quantity_completed, quantity_scrap, priority, status, due_date, started_at, completed_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      INSERT INTO production_orders (timestamp, asset_id, order_id, customer, part_number, part_description, quantity, quantity_completed, quantity_scrap, priority, status, due_date, started_at, completed_at, planned_cycle_time_ms)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       ON CONFLICT (asset_id, order_id) DO UPDATE SET
         timestamp = EXCLUDED.timestamp,
         quantity_completed = GREATEST(production_orders.quantity_completed, EXCLUDED.quantity_completed),
@@ -152,7 +154,8 @@ output:
           ELSE EXCLUDED.status
         END,
         started_at = COALESCE(production_orders.started_at, EXCLUDED.started_at),
-        completed_at = COALESCE(EXCLUDED.completed_at, production_orders.completed_at)
+        completed_at = COALESCE(EXCLUDED.completed_at, production_orders.completed_at),
+        planned_cycle_time_ms = COALESCE(EXCLUDED.planned_cycle_time_ms, production_orders.planned_cycle_time_ms)
     args_mapping: |
       root = [
         this.timestamp,
@@ -168,7 +171,8 @@ output:
         this.status,
         this.due_date,
         this.started_at,
-        this.completed_at
+        this.completed_at,
+        this.planned_cycle_time_ms
       ]
     unsafe_dynamic_query: true
 

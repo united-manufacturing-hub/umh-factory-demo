@@ -1,7 +1,7 @@
 # ERP Receiver Dataflow
-# Receives production orders and shifts from ERP/simulator via HTTP and publishes to UNS
-# The simulator sends webhook events with envelope: {event_type, timestamp, order: {...}}
-# This receiver extracts the order payload, maps fields, and publishes to the correct UNS topic.
+# Receives production orders from simulator webhook and shifts from ERP via HTTP
+# Webhook payload format: {event_type, timestamp, machine_id, line_id, data: {...}}
+# Routes by event_type to appropriate UNS topics.
 
 input:
   http_server:
@@ -14,56 +14,52 @@ pipeline:
   processors:
     - nodered_js:
         code: |
-          // Parse request path to determine type
           const path = msg.meta.http_server_request_path || '';
           const eventType = msg.payload.event_type || '';
+          const data = msg.payload.data || {};
+          const lineId = msg.payload.line_id || '';
 
-          // v1.6.0: Handle order_progress events (periodic updates during production)
-          if (eventType === 'order_progress') {
+          if (eventType === 'order.created') {
+              // order.created data is the full Order struct: {id, product_id, planned_qty, ...}
               msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
               msg.payload = {
-                  orderId: msg.payload.order_id || '',
-                  quantityCompleted: msg.payload.good_qty || 0,
-                  quantityScrap: msg.payload.scrap_qty || 0,
-                  quantity: msg.payload.target_qty || 0,
-                  status: 'IN_PROGRESS',
-                  target_line: msg.payload.line_name || '',
-                  timestamp_ms: Date.now(),
-                  type: "order_progress"
-              };
-          // Simulator sends webhook events with envelope: {event_type, timestamp, order: {...}}
-          // Extract the order payload and map fields for the ERP order bridge
-          // Event types: order_created, order_released, order_completed, order_closed
-          } else if (path.includes('production-orders')) {
-              const order = msg.payload.order || msg.payload;
-              msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
-
-              // Map status from event_type if order.status is missing
-              let status = order.status || 'CREATED';
-              if (eventType === 'order_completed' || eventType === 'order_closed') {
-                  status = 'COMPLETED';
-              } else if (eventType === 'order_released') {
-                  status = 'RELEASED';
-              }
-
-              // Map simulator fields to ERP order bridge expected fields
-              msg.payload = {
-                  orderId: order.id || '',
-                  customer: '',
-                  partNumber: order.material_id || order.product_type || '',
-                  partDescription: order.description || '',
-                  quantity: order.planned_qty || 0,
-                  quantityCompleted: order.good_qty || 0,
-                  quantityScrap: order.scrap_qty || 0,
-                  priority: order.priority || 0,
-                  status: status,
-                  dueDate: order.planned_end || null,
-                  startedAt: order.actual_start || null,
-                  endedAt: order.actual_end || null,
-                  target_line: order.target_line || '',
+                  orderId: data.id || data.order_id || '',
+                  partNumber: data.product_id || '',
+                  quantity: data.planned_qty || 0,
+                  status: 'CREATED',
+                  target_line: lineId,
                   timestamp_ms: Date.now(),
                   type: "production_order"
               };
+          } else if (eventType === 'order.progress') {
+              // order.progress data is a map: {order_id, good_qty, scrap_qty, planned_qty, planned_cycle_time_ms}
+              msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
+              msg.payload = {
+                  orderId: data.order_id || '',
+                  quantity: data.planned_qty || 0,
+                  quantityCompleted: data.good_qty || 0,
+                  quantityScrap: data.scrap_qty || 0,
+                  planned_cycle_time_ms: data.planned_cycle_time_ms || null,
+                  status: 'IN_PROGRESS',
+                  target_line: lineId,
+                  timestamp_ms: Date.now(),
+                  type: "order_progress"
+              };
+          } else if (eventType === 'order.closed') {
+              // order.closed data is the full Order struct: {id, good_qty, scrap_qty, ...}
+              msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
+              msg.payload = {
+                  orderId: data.id || data.order_id || '',
+                  quantityCompleted: data.good_qty || 0,
+                  quantityScrap: data.scrap_qty || 0,
+                  status: 'COMPLETED',
+                  target_line: lineId,
+                  timestamp_ms: Date.now(),
+                  type: "production_order"
+              };
+          } else if (eventType && eventType.startsWith('machine.')) {
+              // Machine data flows via OPC-UA, drop these events
+              return null;
           } else if (path.includes('shifts')) {
               msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.shifts";
               msg.payload.type = "shift_update";

@@ -1,0 +1,266 @@
+name: extruder
+display_name: "Extruder"
+
+dataModel:
+  name: extruder
+  version:
+    v1:
+      structure:
+        state:
+          _payloadshape: timeseries-string
+        cycle_count:
+          _payloadshape: timeseries-number
+        good_count:
+          _payloadshape: timeseries-number
+        scrap_count:
+          _payloadshape: timeseries-number
+        cycle_time_ms:
+          _payloadshape: timeseries-number
+        blocked_by_buffer:
+          _payloadshape: timeseries-number
+        zone1_temp_c:
+          _payloadshape: timeseries-number
+        zone2_temp_c:
+          _payloadshape: timeseries-number
+        zone3_temp_c:
+          _payloadshape: timeseries-number
+        zone4_temp_c:
+          _payloadshape: timeseries-number
+        screw_speed_rpm:
+          _payloadshape: timeseries-number
+        melt_pressure_bar:
+          _payloadshape: timeseries-number
+        die_pressure_bar:
+          _payloadshape: timeseries-number
+        haul_off_speed_m_min:
+          _payloadshape: timeseries-number
+        melt_temp_c:
+          _payloadshape: timeseries-number
+        motor_current_a:
+          _payloadshape: timeseries-number
+        throughput_kg_h:
+          _payloadshape: timeseries-number
+        torque_pct:
+          _payloadshape: timeseries-number
+        head_pressure_bar:
+          _payloadshape: timeseries-number
+        vacuum_mbar:
+          _payloadshape: timeseries-number
+        cooling_water_temp_c:
+          _payloadshape: timeseries-number
+        line_speed_m_min:
+          _payloadshape: timeseries-number
+
+dataContract:
+  name: _extruder_v1
+  model:
+    name: extruder
+    version: v1
+
+addressMappings:
+  - Address: "ns=1;i=1"
+    TagName: state
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=2"
+    TagName: cycle_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=3"
+    TagName: good_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=4"
+    TagName: scrap_count
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=5"
+    TagName: cycle_time_ms
+    Unit: "ms"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=6"
+    TagName: blocked_by_buffer
+    Unit: "raw"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=7"
+    TagName: zone1_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=8"
+    TagName: zone2_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=9"
+    TagName: zone3_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=10"
+    TagName: zone4_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=11"
+    TagName: screw_speed_rpm
+    Unit: "RPM"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=12"
+    TagName: melt_pressure_bar
+    Unit: "bar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=13"
+    TagName: die_pressure_bar
+    Unit: "bar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=14"
+    TagName: haul_off_speed_m_min
+    Unit: "m/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=15"
+    TagName: melt_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=16"
+    TagName: motor_current_a
+    Unit: "A"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=17"
+    TagName: throughput_kg_h
+    Unit: "kg/h"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=18"
+    TagName: torque_pct
+    Unit: "%"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=19"
+    TagName: head_pressure_bar
+    Unit: "bar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=20"
+    TagName: vacuum_mbar
+    Unit: "mbar"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=21"
+    TagName: cooling_water_temp_c
+    Unit: "°C"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+  - Address: "ns=1;i=22"
+    TagName: line_speed_m_min
+    Unit: "m/min"
+    VirtualPath: ""
+    LocationPathSuffix: ""
+    DataContract: _extruder_v1
+
+# Protocol converter template - exact UMH config format
+# {{ .IP }}, {{ .PORT }}, {{ .location_path }} are UMH runtime template variables
+protocolConverter:
+  connection:
+    nmap:
+      target: "{{ .IP }}"
+      port: "{{ .PORT }}"
+  dataflowcomponent_read:
+    benthos:
+      input:
+        opcua:
+          endpoint: opc.tcp://{{ .IP }}:{{ .PORT }}
+          nodeIDs:
+            - "ns=1;i=1"
+            - "ns=1;i=2"
+            - "ns=1;i=3"
+            - "ns=1;i=4"
+            - "ns=1;i=5"
+            - "ns=1;i=6"
+            - "ns=1;i=7"
+            - "ns=1;i=8"
+            - "ns=1;i=9"
+            - "ns=1;i=10"
+            - "ns=1;i=11"
+            - "ns=1;i=12"
+            - "ns=1;i=13"
+            - "ns=1;i=14"
+            - "ns=1;i=15"
+            - "ns=1;i=16"
+            - "ns=1;i=17"
+            - "ns=1;i=18"
+            - "ns=1;i=19"
+            - "ns=1;i=20"
+            - "ns=1;i=21"
+            - "ns=1;i=22"
+          pollRate: 1000
+          subscribeEnabled: false
+      pipeline:
+        processors:
+          - tag_processor:
+              defaults: |-
+                msg.meta.location_path = "{{ .location_path }}";
+                msg.meta.data_contract = "_extruder_v1";
+                msg.meta.virtual_path = "";
+                msg.meta.historian = "true";
+                msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
+
+                // Auto-generated from addressMappings
+                switch(msg.meta.opcua_attr_nodeid) {
+                {{- range .AddressMappings }}
+                  case "{{ .Address }}":
+                    msg.meta.tag_name = "{{ .TagName }}";
+                    msg.meta.unit = "{{ .Unit }}";
+                    {{- if .VirtualPath }}msg.meta.virtual_path = "{{ .VirtualPath }}";{{- end }}
+                    {{- if .LocationPathSuffix }}msg.meta.location_path += ".{{ .LocationPathSuffix }}";{{- end }}
+                    {{- if .DataContract }}msg.meta.data_contract = "{{ .DataContract }}";{{- end }}
+
+                    break;
+                {{- end }}
+                  default:
+                    msg.meta.tag_name = msg.meta.opcua_tag_name;
+                    msg.meta.unit = "raw";
+                    break;
+                }
+
+                return msg;
+              conditions:
+                - if: msg.meta.tag_name === "blocked_by_buffer"
+                  then: |-
+                    msg.payload = Number(msg.payload);
+                    return msg;
+      buffer:
+        none: {}

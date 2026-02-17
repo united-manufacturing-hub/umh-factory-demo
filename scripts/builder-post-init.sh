@@ -15,6 +15,8 @@
 set -euo pipefail
 
 WORK_DIR="/workspace"
+LOG_FILE="${WORK_DIR}/builder-post-init.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 # Colors
 RED='\033[0;31m'

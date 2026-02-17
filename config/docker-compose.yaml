@@ -66,35 +66,19 @@ services:
       - timescaledb-network
 
   machine-simulator:
-    image: dh2k/machine-simulator:v1.7.0
+    image: dh2k/machine-simulator-2:v1.0.0
     restart: unless-stopped
     ports:
       - "8081:8081" # Web UI/API
-      - "4840-4848:4840-4848" # OPC-UA ports for all machines (9 in default config)
+      - "4840-4880:4840-4880" # OPC-UA ports (dynamic range based on machine count)
       - "502:502" # Modbus TCP
     volumes:
       - ./simulator-data:/app/data
-      - ./simulator-config:/app/configs:ro
+      - ./simulator-config:/app/config:ro
     environment:
-      - SIMULATOR_TIME_SCALE=1.0
-      - ERP_MODE=auto
-      - ERP_WEBHOOK_ENDPOINT=http://umh-core:8090/api/v1/production-orders
-      - MES_WEBHOOK_ENDPOINT=http://umh-core:8093/api/v1/operations
-      - OPCUA_HOSTNAME=machine-simulator
+      - SIMULATOR_OPCUA_HOSTNAME=machine-simulator
       - LOG_LEVEL=${SIMULATOR_LOG_LEVEL:-info}
-      - MODBUS_ENABLED=true
-      - OPCUA_CONNECTION_LOGGING=${OPCUA_CONNECTION_LOGGING:-false}
-      # v1.6.0 - Order Progress (every 5 seconds)
-      - ERP_ORDER_PROGRESS_MS=5000
-      # v1.6.0 - Shift Management (enabled, 6am-10pm Mon-Fri)
-      - SHIFT_ENABLED=true
-      - SHIFT_START=06:00
-      - SHIFT_END=22:00
-      - SHIFT_TIMEZONE=Local
-      # v1.6.0 - External Shift Polling (disabled by default - requires shift-api dataflow)
-      - MES_EXTERNAL_SHIFT=false
-      # - MES_EXTERNAL_API=http://umh-core:8094
-      # - MES_SHIFT_POLL_MS=60000
+      # SIMULATOR_PROFILE or SIMULATOR_LINE_* env vars injected by builder
     healthcheck:
       test:
         [

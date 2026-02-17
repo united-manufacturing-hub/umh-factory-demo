@@ -1,0 +1,21 @@
+time_scale: 1.0
+random_factor: 0.1
+tick_rate_ms: 100
+log_level: "info"
+api:
+  host: "0.0.0.0"
+  port: 8081
+erp:
+  mode: "auto"
+  auto_order_interval_ms: 30000
+  max_backlog: 5
+mes:
+  dispatch_interval_ms: 5000
+  dispatch_strategy: "round-robin"
+webhook:
+  enabled: false
+  target_url: ""
+  event_types: ["order.created", "order.progress", "order.closed", "machine.state_change", "machine.cycle_complete"]
+  timeout_ms: 5000
+  retry_attempts: 3
+  retry_delay_ms: 1000
