@@ -179,11 +179,6 @@ jobs:
         if: steps.bump.outputs.skip != 'true' && steps.branch.outputs.is_stable == 'true'
         run: |
           NEW_VERSION="v${{ steps.bump.outputs.version }}"
-          REPO="${{ github.repository }}"
-
-          # Update curl URLs
-          STABLE_URL="https://github.com/${REPO}/releases/latest/download/quick-start.sh"
-          sed -i "s|curl -fsSL https://github.com/${REPO}/releases/[^ ]* -o quick-start.sh|curl -fsSL ${STABLE_URL} -o quick-start.sh|" README.md
 
           # Update changelog
           if grep -q "^## Changelog" README.md; then
@@ -238,4 +233,5 @@ jobs:
             --generate-notes=false \
             $PRERELEASE_FLAG \
             $LATEST_FLAG \
-            quick-start.sh
+            quick-start.sh \
+            install.sh

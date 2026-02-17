@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # quick-start.sh - Single-command UMH demo setup
 #
-# Usage:
-#   curl -fsSL https://github.com/.../releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh
-#   bash quick-start.sh --dev               # Use dev branch instead of release tag
-#   bash quick-start.sh --branch=staging    # Use a specific branch
+# Usage (via install.sh bootstrap):
+#   bash install.sh                         # Latest stable release
+#   bash install.sh --dev                   # Latest dev prerelease
+#   bash install.sh --version=1.0.0         # Specific version
+#
+# Direct usage:
 #   bash quick-start.sh --repo=user/repo    # Use a different template repo
 #   bash quick-start.sh --version=1.0.0     # Use a specific version
 #   bash quick-start.sh --profile=demo-mixed # Use a simulator profile (skip line selection)
@@ -19,14 +21,11 @@
 set -euo pipefail
 
 # ─── Parse arguments ─────────────────────────────────────────────
-USE_BRANCH=""
 USE_REPO=""
 CLI_VERSION=""
 SIMULATOR_PROFILE=""
 for arg in "$@"; do
     case "$arg" in
-        --dev)  USE_BRANCH="dev" ;;
-        --branch=*) USE_BRANCH="${arg#--branch=}" ;;
         --repo=*) USE_REPO="${arg#--repo=}" ;;
         --version=*) CLI_VERSION="${arg#--version=}" ;;
         --profile=*) SIMULATOR_PROFILE="${arg#--profile=}" ;;
@@ -137,8 +136,13 @@ echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
 echo ""
 echo -e "${BLUE}Checking port availability...${NC}"
 
-# Check if a port is in use on the host
+# Track ports we've already allocated in this run
+ALLOCATED_PORTS=""
+
+# Check if a port is in use on the host or already allocated by this script
 port_in_use() {
+    # Check if we already allocated this port
+    echo "$ALLOCATED_PORTS" | grep -qw "$1" && return 0
     # Check for active listeners
     (echo >/dev/tcp/localhost/"$1") 2>/dev/null && return 0
     # Check for Docker containers binding this port (including stopped ones)
@@ -146,12 +150,13 @@ port_in_use() {
     return 1
 }
 
-# Find next available port starting from $1
+# Find next available port starting from $1 and mark it as allocated
 find_available_port() {
     local port=$1
     while port_in_use "$port"; do
         port=$((port + 1))
     done
+    ALLOCATED_PORTS="$ALLOCATED_PORTS $port"
     echo "$port"
 }
 
@@ -169,6 +174,9 @@ find_available_port_range() {
             fi
         done
         if $all_free; then
+            for ((p=start; p<start+count; p++)); do
+                ALLOCATED_PORTS="$ALLOCATED_PORTS $p"
+            done
             echo "$start"
             return
         fi
@@ -450,7 +458,6 @@ docker run -d \
     -v "$(pwd):/workspace" \
     -e PHASE=all \
     ${TEMPLATE_VERSION:+-e "VERSION=${TEMPLATE_VERSION}"} \
-    -e "BRANCH=${USE_BRANCH}" \
     ${USE_REPO:+-e "REPO=${USE_REPO}"} \
     -e "HISTORY_DAYS=${HISTORY_DAYS}" \
     -e "SELECTED_LINES=${SELECTED_LINES}" \

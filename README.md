@@ -25,24 +25,24 @@ services:
 
 ### 2. Run the setup
 
-**Stable (latest release):**
+**Latest stable:**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh | bash
 ```
 
-**Dev (latest prerelease):**
+**Latest dev:**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.1-dev.2/quick-start.sh -o quick-start.sh && bash quick-start.sh --dev
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --dev
 ```
 
 **Specific version:**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/download/v1.0.0/quick-start.sh -o quick-start.sh && bash quick-start.sh --version=1.0.0
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --version=1.0.0
 ```
 
 **Custom repo:**
 ```bash
-curl -fsSL https://github.com/united-manufacturing-hub/umh-factory-demo/releases/latest/download/quick-start.sh -o quick-start.sh && bash quick-start.sh --repo=myRepo/umh-factory-demo
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --repo=myRepo/umh-factory-demo
 ```
 
 ### 3. Access
