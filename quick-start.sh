@@ -498,9 +498,11 @@ echo -e "${GREEN}  ✓ Phase 1 complete - all files generated${NC}"
 # ─── Fix file ownership from builder container ───────────────────
 # The builder runs as root, so all generated files are root-owned.
 # Fix ownership so the host user can write (e.g., signal files)
-# and Grafana (UID 472) can write to its data dir.
+# and services can write to their data dirs.
 docker run --rm -v "$(pwd):/workspace" alpine sh -c \
-    "chown -R $(id -u):$(id -g) /workspace/.builder && chown -R 472:0 /workspace/grafana-data"
+    "chown -R $(id -u):$(id -g) /workspace/.builder \
+     && chown -R 472:0 /workspace/grafana-data \
+     && chown -R 1000:1000 /workspace/umh-core-data"
 
 # ─── Build and start compose services ────────────────────────────
 echo ""
