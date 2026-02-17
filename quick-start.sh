@@ -498,8 +498,9 @@ echo -e "${GREEN}  ✓ Phase 1 complete - all files generated${NC}"
 # ─── Ensure volume directories have correct ownership ─────────────
 # Grafana runs as UID 472; if Docker (or a previous run) created
 # grafana-data as root, Grafana cannot write to it.
+# Use a lightweight container to fix ownership (works without sudo).
 mkdir -p grafana-data
-chown 472:0 grafana-data 2>/dev/null || true
+docker run --rm -v "$(pwd)/grafana-data:/data" alpine chown -R 472:0 /data
 
 # ─── Build and start compose services ────────────────────────────
 echo ""
