@@ -456,6 +456,55 @@ else
     echo -e "${GREEN}  ✓ Selected lines: $SELECTED_LINES${NC}"
 fi
 
+# ─── Logo / branding image ─────────────────────────────────────────
+echo ""
+echo -e "${BLUE}Checking for custom logo...${NC}"
+
+LOGO_FOUND=false
+for f in "$WORK_DIR"/logo.{png,jpg,jpeg,svg} "$WORK_DIR"/img/logo.{png,jpg,jpeg,svg}; do
+    if [ -f "$f" ]; then
+        echo -e "${GREEN}  ✓ Found logo: $f${NC}"
+        LOGO_FOUND=true
+        break
+    fi
+done
+
+# Also check for any image file in workspace root (the builder accepts any image)
+if ! $LOGO_FOUND; then
+    for f in "$WORK_DIR"/*.png "$WORK_DIR"/*.jpg "$WORK_DIR"/*.jpeg "$WORK_DIR"/*.svg; do
+        if [ -f "$f" ]; then
+            echo -e "${GREEN}  ✓ Found image: $(basename "$f")${NC}"
+            LOGO_FOUND=true
+            break
+        fi
+    done
+fi
+
+if ! $LOGO_FOUND; then
+    echo -e "${YELLOW}  No logo image found in current directory.${NC}"
+    echo "  The builder will use the default UMH logo unless you provide one."
+    echo ""
+    read -p "  Paste a URL to a logo image (or press Enter to skip): " LOGO_URL
+
+    if [ -n "$LOGO_URL" ]; then
+        # Derive filename from URL, fallback to logo.png
+        LOGO_FILENAME=$(basename "$LOGO_URL" | sed 's/[?#].*//')
+        case "$LOGO_FILENAME" in
+            *.png|*.jpg|*.jpeg|*.svg) ;; # keep extension
+            *) LOGO_FILENAME="logo.png" ;;
+        esac
+
+        echo "  Downloading logo..."
+        if curl -fsSL --max-time 15 "$LOGO_URL" -o "$WORK_DIR/$LOGO_FILENAME"; then
+            echo -e "${GREEN}  ✓ Saved as $LOGO_FILENAME${NC}"
+        else
+            echo -e "${YELLOW}  Download failed — continuing with default logo${NC}"
+        fi
+    else
+        echo "  Skipping — will use default UMH logo."
+    fi
+fi
+
 # ─── Check for container name conflicts ───────────────────────────
 echo ""
 echo -e "${BLUE}Checking for container name conflicts...${NC}"
