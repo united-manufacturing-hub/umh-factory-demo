@@ -74,7 +74,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_oee('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"OEE\"",
+          "rawSql": "SELECT get_oee('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"OEE\"",
           "refId": "A"
         }
       ],
@@ -126,7 +126,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_availability('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Availability\"",
+          "rawSql": "SELECT get_availability('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Availability\"",
           "refId": "A"
         }
       ],
@@ -178,7 +178,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_quality('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Quality\"",
+          "rawSql": "SELECT get_quality('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Quality\"",
           "refId": "A"
         }
       ],
@@ -224,7 +224,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line}', '', 'good_count', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Good Parts\"",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'good_count', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Good Parts\"",
           "refId": "A"
         }
       ],
@@ -270,7 +270,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line}', '', 'scrap_count', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Scrap Parts\"",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'scrap_count', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Scrap Parts\"",
           "refId": "A"
         }
       ],
@@ -317,7 +317,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Avg Cycle Time\"",
+          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Avg Cycle Time\"",
           "refId": "A"
         }
       ],
@@ -363,7 +363,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Stop Count\"",
+          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW()) as \"Stop Count\"",
           "refId": "A"
         }
       ],
@@ -423,7 +423,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  workcell as metric,\n  state,\n  duration_seconds\nFROM v_machine_current_state\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line}'\nORDER BY workcell",
+          "rawSql": "SELECT\n  workcell as metric,\n  state,\n  duration_seconds\nFROM v_machine_current_state\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line:raw}'\nORDER BY workcell",
           "refId": "A"
         }
       ],
@@ -503,7 +503,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT reason || ' (' || category || ')' as \"Reason\", stop_count as \"Count\", duration_mins as \"Duration (min)\" FROM get_stop_reasons_pareto('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW(), 10)",
+          "rawSql": "SELECT reason || ' (' || category || ')' as \"Reason\", stop_count as \"Count\", duration_mins as \"Duration (min)\" FROM get_stop_reasons_pareto('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW(), 10)",
           "refId": "A"
         }
       ],
@@ -556,7 +556,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0 as \"Duration (min)\"\nFROM machine_stops ms\nWHERE ms.asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line}', ''))\n  AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY \"Duration (min)\"",
+          "rawSql": "SELECT\n  EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0 as \"Duration (min)\"\nFROM machine_stops ms\nWHERE ms.asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line:raw}', ''))\n  AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY \"Duration (min)\"",
           "refId": "A"
         }
       ],
@@ -632,7 +632,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "WITH time_buckets AS (\n  SELECT\n    time_bucket('1 hour', t.timestamp) as bucket,\n    a.workcell,\n    SUM(CASE WHEN t.name = 'good_count' THEN t.value ELSE 0 END) as good_max,\n    SUM(CASE WHEN t.name = 'scrap_count' THEN t.value ELSE 0 END) as scrap_max\n  FROM tag t\n  JOIN asset a ON a.id = t.asset_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line}'\n    AND a.workcell != ''\n    AND t.name IN ('good_count', 'scrap_count')\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  GROUP BY bucket, a.workcell\n)\nSELECT\n  bucket as time,\n  workcell as metric,\n  CASE\n    WHEN (good_max + scrap_max) > 0 THEN ROUND((scrap_max * 100.0 / (good_max + scrap_max))::numeric, 2)\n    ELSE 0\n  END as value\nFROM time_buckets\nORDER BY bucket",
+          "rawSql": "WITH time_buckets AS (\n  SELECT\n    time_bucket('1 hour', t.timestamp) as bucket,\n    a.workcell,\n    SUM(CASE WHEN t.name = 'good_count' THEN t.value ELSE 0 END) as good_max,\n    SUM(CASE WHEN t.name = 'scrap_count' THEN t.value ELSE 0 END) as scrap_max\n  FROM tag t\n  JOIN asset a ON a.id = t.asset_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND a.line = '${line:raw}'\n    AND a.workcell != ''\n    AND t.name IN ('good_count', 'scrap_count')\n    AND t.timestamp BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\n  GROUP BY bucket, a.workcell\n)\nSELECT\n  bucket as time,\n  workcell as metric,\n  CASE\n    WHEN (good_max + scrap_max) > 0 THEN ROUND((scrap_max * 100.0 / (good_max + scrap_max))::numeric, 2)\n    ELSE 0\n  END as value\nFROM time_buckets\nORDER BY bucket",
           "refId": "A"
         }
       ],
@@ -698,7 +698,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time, value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW())",
+          "rawSql": "SELECT time, value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW())",
           "refId": "A"
         }
       ],
@@ -761,13 +761,13 @@
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
         },
-        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "hide": 0,
         "includeAll": false,
         "label": "Line",
         "name": "line",
         "options": [],
-        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "refresh": 1,
         "type": "query"
       },

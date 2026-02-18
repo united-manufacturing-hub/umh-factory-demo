@@ -107,29 +107,81 @@ echo -e "${GREEN}  ✓ docker-compose.yaml found${NC}"
 echo ""
 echo -e "${BLUE}Detecting host IP address...${NC}"
 
-DETECTED_IP=""
-# Try common methods to detect the primary IP
+# Collect candidate IPs
+IP_OPTIONS=()
+IP_LABELS=()
+
+# 1) localhost (always available)
+IP_OPTIONS+=("localhost")
+IP_LABELS+=("localhost (this machine only)")
+
+# 2) Docker bridge network gateway
+DOCKER_BRIDGE_IP=$(docker network inspect bridge 2>/dev/null \
+    | grep -o '"Gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
+if [ -n "$DOCKER_BRIDGE_IP" ]; then
+    IP_OPTIONS+=("$DOCKER_BRIDGE_IP")
+    IP_LABELS+=("$DOCKER_BRIDGE_IP (Docker bridge)")
+fi
+
+# 3) Local/LAN IP (Wi-Fi, Ethernet, VPN, etc.)
+LOCAL_IP=""
 if command -v ip &>/dev/null; then
-    DETECTED_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
+    LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
 elif command -v ifconfig &>/dev/null; then
-    DETECTED_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1)
+    LOCAL_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1)
+fi
+if [ -z "$LOCAL_IP" ]; then
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
+fi
+if [ -n "$LOCAL_IP" ]; then
+    IP_OPTIONS+=("$LOCAL_IP")
+    IP_LABELS+=("$LOCAL_IP (LAN)")
 fi
 
-# Fallback: try hostname
-if [ -z "$DETECTED_IP" ]; then
-    DETECTED_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "")
+# 4) External/public IP
+EXTERNAL_IP=$(curl -s --max-time 3 https://ifconfig.me 2>/dev/null \
+    || curl -s --max-time 3 https://api.ipify.org 2>/dev/null || true)
+if [ -n "$EXTERNAL_IP" ]; then
+    IP_OPTIONS+=("$EXTERNAL_IP")
+    IP_LABELS+=("$EXTERNAL_IP (external/public)")
 fi
 
-if [ -z "$DETECTED_IP" ]; then
-    DETECTED_IP="localhost"
-fi
-
-echo "  Detected IP: $DETECTED_IP"
 echo ""
 echo "  Dashboards will use this IP for API calls (e.g., form panels)."
 echo "  Use 'localhost' only if accessing Grafana from this same machine."
-read -p "  Host IP or hostname [$DETECTED_IP]: " USER_HOST_IP
-HOST_IP="${USER_HOST_IP:-$DETECTED_IP}"
+echo ""
+
+for i in "${!IP_OPTIONS[@]}"; do
+    echo "    $((i + 1))) ${IP_LABELS[$i]}"
+done
+echo "    $((${#IP_OPTIONS[@]} + 1))) Enter manually"
+echo ""
+
+# Default to LAN IP if available, otherwise localhost
+DEFAULT_IDX=1
+if [ -n "${LOCAL_IP:-}" ]; then
+    for i in "${!IP_OPTIONS[@]}"; do
+        if [ "${IP_OPTIONS[$i]}" = "$LOCAL_IP" ]; then
+            DEFAULT_IDX=$((i + 1))
+            break
+        fi
+    done
+fi
+
+read -p "  Select IP [${DEFAULT_IDX}]: " IP_CHOICE
+IP_CHOICE="${IP_CHOICE:-$DEFAULT_IDX}"
+
+MANUAL_IDX=$((${#IP_OPTIONS[@]} + 1))
+if [ "$IP_CHOICE" -eq "$MANUAL_IDX" ] 2>/dev/null; then
+    read -p "  Enter IP or hostname: " HOST_IP
+    HOST_IP="${HOST_IP:-localhost}"
+elif [ "$IP_CHOICE" -ge 1 ] 2>/dev/null && [ "$IP_CHOICE" -le "${#IP_OPTIONS[@]}" ] 2>/dev/null; then
+    HOST_IP="${IP_OPTIONS[$((IP_CHOICE - 1))]}"
+else
+    echo -e "${YELLOW}  Invalid selection, using default${NC}"
+    HOST_IP="${IP_OPTIONS[$((DEFAULT_IDX - 1))]}"
+fi
+
 echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
 
 # ─── Port scanning and selection ─────────────────────────────────
@@ -402,6 +454,55 @@ else
     SELECTED_LINES=$(IFS=','; echo "${PARTS[*]}")
     echo ""
     echo -e "${GREEN}  ✓ Selected lines: $SELECTED_LINES${NC}"
+fi
+
+# ─── Logo / branding image ─────────────────────────────────────────
+echo ""
+echo -e "${BLUE}Checking for custom logo...${NC}"
+
+LOGO_FOUND=false
+for f in "$WORK_DIR"/logo.{png,jpg,jpeg,svg} "$WORK_DIR"/img/logo.{png,jpg,jpeg,svg}; do
+    if [ -f "$f" ]; then
+        echo -e "${GREEN}  ✓ Found logo: $f${NC}"
+        LOGO_FOUND=true
+        break
+    fi
+done
+
+# Also check for any image file in workspace root (the builder accepts any image)
+if ! $LOGO_FOUND; then
+    for f in "$WORK_DIR"/*.png "$WORK_DIR"/*.jpg "$WORK_DIR"/*.jpeg "$WORK_DIR"/*.svg; do
+        if [ -f "$f" ]; then
+            echo -e "${GREEN}  ✓ Found image: $(basename "$f")${NC}"
+            LOGO_FOUND=true
+            break
+        fi
+    done
+fi
+
+if ! $LOGO_FOUND; then
+    echo -e "${YELLOW}  No logo image found in current directory.${NC}"
+    echo "  The builder will use the default UMH logo unless you provide one."
+    echo ""
+    read -p "  Paste a URL to a logo image (or press Enter to skip): " LOGO_URL
+
+    if [ -n "$LOGO_URL" ]; then
+        # Derive filename from URL, fallback to logo.png
+        LOGO_FILENAME=$(basename "$LOGO_URL" | sed 's/[?#].*//')
+        case "$LOGO_FILENAME" in
+            *.png|*.jpg|*.jpeg|*.svg) ;; # keep extension
+            *) LOGO_FILENAME="logo.png" ;;
+        esac
+
+        echo "  Downloading logo..."
+        if curl -fsSL --max-time 15 "$LOGO_URL" -o "$WORK_DIR/$LOGO_FILENAME"; then
+            echo -e "${GREEN}  ✓ Saved as $LOGO_FILENAME${NC}"
+        else
+            echo -e "${YELLOW}  Download failed — continuing with default logo${NC}"
+        fi
+    else
+        echo "  Skipping — will use default UMH logo."
+    fi
 fi
 
 # ─── Check for container name conflicts ───────────────────────────

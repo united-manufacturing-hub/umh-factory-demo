@@ -32,6 +32,7 @@ buffers:
 recipes:
   - product_id: "BRACKET-SS-A"
     description: "Stainless steel mounting bracket - 3mm 304SS"
+    cost_per_unit: 15.00
     planned_qty_range: [50, 200]
     overrides:
       1:
@@ -40,6 +41,7 @@ recipes:
         cycle_time_ms: 12000
   - product_id: "PANEL-AL-B"
     description: "Aluminum enclosure panel - 2mm 5052-H32"
+    cost_per_unit: 32.00
     planned_qty_range: [30, 100]
     overrides:
       1:

@@ -65,7 +65,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(ROUND(AVG(oee_pct)::numeric, 1), 0) as \"OEE\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line}' = 'All' OR line = '${line}')",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(oee_pct)::numeric, 1), 0) as \"OEE\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')",
           "refId": "A"
         }
       ],
@@ -111,7 +111,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(ROUND(\n  COUNT(*) FILTER (WHERE status = 'COMPLETED' AND on_time = true) * 100.0 /\n  NULLIF(COUNT(*) FILTER (WHERE status = 'COMPLETED'), 0)\n, 1), 100) as \"OTIF\"\nFROM v_order_progress\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line}' = 'All' OR line = '${line}')",
+          "rawSql": "SELECT COALESCE(ROUND(\n  COUNT(*) FILTER (WHERE status = 'COMPLETED' AND on_time = true) * 100.0 /\n  NULLIF(COUNT(*) FILTER (WHERE status = 'COMPLETED'), 0)\n, 1), 100) as \"OTIF\"\nFROM v_order_progress\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')",
           "refId": "A"
         }
       ],
@@ -157,7 +157,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(ROUND(AVG(quality_pct)::numeric, 1), 100) as \"FPY\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line}' = 'All' OR line = '${line}')",
+          "rawSql": "SELECT COALESCE(ROUND(AVG(quality_pct)::numeric, 1), 100) as \"FPY\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')",
           "refId": "A"
         }
       ],
@@ -202,7 +202,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(\n  EXTRACT(DAY FROM (NOW() - MAX(ts.timestamp)))::integer,\n  999\n) as \"Safety Days\"\nFROM tag_string ts\nJOIN asset a ON a.id = ts.asset_id\nWHERE ts.name = 'state'\n  AND ts.value = 'FAULT'\n  AND a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line}' = 'All' OR a.line = '${line}')",
+          "rawSql": "SELECT COALESCE(\n  EXTRACT(DAY FROM (NOW() - MAX(ts.timestamp)))::integer,\n  999\n) as \"Safety Days\"\nFROM tag_string ts\nJOIN asset a ON a.id = ts.asset_id\nWHERE ts.name = 'state'\n  AND ts.value = 'FAULT'\n  AND a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')",
           "refId": "A"
         }
       ],
@@ -274,7 +274,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  v.line as \"Line\",\n  COALESCE(SUM(v.good_parts)::int, 0) as \"Actual\",\n  COALESCE(SUM(po.quantity), 0)::int as \"Target\"\nFROM v_oee_by_asset v\nLEFT JOIN production_orders po ON po.asset_id = v.asset_id AND po.status IN ('IN_PROGRESS', 'COMPLETED')\nWHERE v.enterprise = '${enterprise}'\n  AND v.site = '${site}'\n  AND ('${line}' = 'All' OR v.line = '${line}')\nGROUP BY v.line\nORDER BY v.line",
+          "rawSql": "SELECT\n  v.line as \"Line\",\n  COALESCE(SUM(v.good_parts)::int, 0) as \"Actual\",\n  COALESCE(SUM(po.quantity), 0)::int as \"Target\"\nFROM v_oee_by_asset v\nLEFT JOIN production_orders po ON po.asset_id = v.asset_id AND po.status IN ('IN_PROGRESS', 'COMPLETED')\nWHERE v.enterprise = '${enterprise}'\n  AND v.site = '${site}'\n  AND ('${line:raw}' = 'All' OR v.line = '${line:raw}')\nGROUP BY v.line\nORDER BY v.line",
           "refId": "A"
         }
       ],
@@ -338,7 +338,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(sr.name, 'Unspecified') as \"Reason\",\n  COUNT(*)::int as \"Count\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nLEFT JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line}' = 'All' OR a.line = '${line}')\n  AND ms.start_time > NOW() - INTERVAL '7 days'\nGROUP BY sr.name\nORDER BY COUNT(*) DESC\nLIMIT 10",
+          "rawSql": "SELECT\n  COALESCE(sr.name, 'Unspecified') as \"Reason\",\n  COUNT(*)::int as \"Count\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nLEFT JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time > NOW() - INTERVAL '7 days'\nGROUP BY sr.name\nORDER BY COUNT(*) DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
@@ -400,7 +400,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  v.line as \"Line\",\n  CASE WHEN (v.good_parts + v.scrap_parts) > 0 THEN ROUND((v.scrap_parts * 100.0 / (v.good_parts + v.scrap_parts))::numeric, 2) ELSE 0 END as \"Scrap Rate\"\nFROM v_oee_by_asset v\nWHERE v.enterprise = '${enterprise}'\n  AND v.site = '${site}'\n  AND ('${line}' = 'All' OR v.line = '${line}')\nGROUP BY v.line, v.good_parts, v.scrap_parts\nORDER BY \"Scrap Rate\" DESC",
+          "rawSql": "SELECT\n  v.line as \"Line\",\n  CASE WHEN (v.good_parts + v.scrap_parts) > 0 THEN ROUND((v.scrap_parts * 100.0 / (v.good_parts + v.scrap_parts))::numeric, 2) ELSE 0 END as \"Scrap Rate\"\nFROM v_oee_by_asset v\nWHERE v.enterprise = '${enterprise}'\n  AND v.site = '${site}'\n  AND ('${line:raw}' = 'All' OR v.line = '${line:raw}')\nGROUP BY v.line, v.good_parts, v.scrap_parts\nORDER BY \"Scrap Rate\" DESC",
           "refId": "A"
         }
       ],
@@ -464,7 +464,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  line as \"Line\",\n  ROUND(AVG(availability_pct)::numeric, 1) as \"Availability\",\n  ROUND(AVG(performance_pct)::numeric, 1) as \"Performance\",\n  ROUND(AVG(quality_pct)::numeric, 1) as \"Quality\",\n  ROUND(AVG(oee_pct)::numeric, 1) as \"OEE\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line}' = 'All' OR line = '${line}')\nGROUP BY line\nORDER BY line",
+          "rawSql": "SELECT\n  line as \"Line\",\n  ROUND(AVG(availability_pct)::numeric, 1) as \"Availability\",\n  ROUND(AVG(performance_pct)::numeric, 1) as \"Performance\",\n  ROUND(AVG(quality_pct)::numeric, 1) as \"Quality\",\n  ROUND(AVG(oee_pct)::numeric, 1) as \"OEE\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')\nGROUP BY line\nORDER BY line",
           "refId": "A"
         }
       ],
@@ -546,7 +546,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  line as \"Line\",\n  workcell as \"Machine\",\n  reason_name as \"Reason\",\n  category as \"Category\",\n  ROUND(duration_mins::numeric, 1) as \"Duration (min)\",\n  start_time as \"Started\",\n  notes as \"Notes\"\nFROM v_active_issues\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line}' = 'All' OR line = '${line}')\nORDER BY duration_mins DESC",
+          "rawSql": "SELECT\n  line as \"Line\",\n  workcell as \"Machine\",\n  reason_name as \"Reason\",\n  category as \"Category\",\n  ROUND(duration_mins::numeric, 1) as \"Duration (min)\",\n  start_time as \"Started\",\n  notes as \"Notes\"\nFROM v_active_issues\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')\nORDER BY duration_mins DESC",
           "refId": "A"
         }
       ],
@@ -601,13 +601,13 @@
         "allValue": "All",
         "current": { "selected": true, "text": "All", "value": "All" },
         "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
-        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "hide": 0,
         "includeAll": true,
         "label": "Line",
         "name": "line",
         "options": [],
-        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "refresh": 1,
         "type": "query"
       }

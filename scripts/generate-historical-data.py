@@ -122,6 +122,7 @@ class StageConfig:
 class RecipeConfig:
     product_id: str
     description: str
+    cost_per_unit: float
     planned_qty_range: Tuple[int, int]
     overrides: Dict[int, Dict]
 
@@ -674,6 +675,7 @@ def load_line_configs(lines_dir: str) -> Dict[str, LineConfig]:
                 recipes.append(RecipeConfig(
                     product_id=r["product_id"],
                     description=r.get("description", ""),
+                    cost_per_unit=r.get("cost_per_unit", 0.0),
                     planned_qty_range=qty_range,
                     overrides=overrides,
                 ))
@@ -1266,10 +1268,12 @@ def generate_shifts(start_time: datetime, end_time: datetime, skip_weekends: boo
       Afternoon: 14:00 – 22:00
 
     Returns list of (shift_name, start_time, end_time) tuples.
+    Shifts are always generated with their full duration (not truncated)
+    so that "Current Shift" queries always find an active shift.
     """
     shifts = []
     day = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
-    while day < end_time:
+    while day <= end_time:
         if skip_weekends and day.weekday() >= 5:
             day += timedelta(days=1)
             continue
@@ -1279,10 +1283,10 @@ def generate_shifts(start_time: datetime, end_time: datetime, skip_weekends: boo
         afternoon_start = day.replace(hour=14)
         afternoon_end = day.replace(hour=22)
 
-        if morning_end > start_time and morning_start < end_time:
-            shifts.append(("Morning", max(morning_start, start_time), min(morning_end, end_time)))
-        if afternoon_end > start_time and afternoon_start < end_time:
-            shifts.append(("Afternoon", max(afternoon_start, start_time), min(afternoon_end, end_time)))
+        if morning_end > start_time:
+            shifts.append(("Morning", max(morning_start, start_time), morning_end))
+        if afternoon_end > start_time:
+            shifts.append(("Afternoon", max(afternoon_start, start_time), afternoon_end))
 
         day += timedelta(days=1)
     return shifts
@@ -1477,6 +1481,31 @@ def insert_production_orders(conn, asset_id: int, orders: List[Dict], batch_size
     return inserted
 
 
+def insert_part_scrap_costs(conn, line_configs: Dict[str, 'LineConfig']) -> int:
+    """Insert per-part scrap costs from line template recipes into part_scrap_costs table."""
+    parts = []
+    seen = set()
+    for lc in line_configs.values():
+        for recipe in lc.recipes:
+            if recipe.cost_per_unit > 0 and recipe.product_id not in seen:
+                parts.append((recipe.product_id, recipe.cost_per_unit, recipe.description))
+                seen.add(recipe.product_id)
+    if not parts:
+        return 0
+    cursor = conn.cursor()
+    execute_values(
+        cursor,
+        """INSERT INTO part_scrap_costs (part_number, cost_per_unit, description)
+        VALUES %s
+        ON CONFLICT (part_number) DO NOTHING""",
+        parts,
+    )
+    inserted = cursor.rowcount
+    conn.commit()
+    cursor.close()
+    return inserted
+
+
 def cleanup_historical_data(conn):
     """Delete all previously generated historical data."""
     cursor = conn.cursor()
@@ -1631,6 +1660,10 @@ def main():
             sys.exit(1)
 
         cleanup_historical_data(conn)
+
+        if line_templates:
+            cost_count = insert_part_scrap_costs(conn, line_templates)
+            print(f"  Inserted {cost_count} part scrap costs from line templates")
 
     # Generate and insert shifts
     shift_records = generate_shifts(start_time, end_time, args.skip_weekends)

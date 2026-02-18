@@ -74,7 +74,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_output_vs_planned('${enterprise}', '${site}', '', '${line}', '${shift_start}'::timestamptz, NOW()) as \"Output vs Planned\"",
+          "rawSql": "SELECT get_output_vs_planned('${enterprise}', '${site}', '', '${line:raw}', '${shift_start}'::timestamptz, NOW()) as \"Output vs Planned\"",
           "refId": "A"
         }
       ],
@@ -126,7 +126,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line}', '', NOW() - INTERVAL '1 hour', NOW()) as \"Actual Cycle Time\"",
+          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', NOW() - INTERVAL '1 hour', NOW()) as \"Actual Cycle Time\"",
           "refId": "A"
         }
       ],
@@ -173,7 +173,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line}', '', NULL, NULL), 10.0) as \"Planned Cycle Time\"",
+          "rawSql": "SELECT COALESCE(get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', NULL, NULL), 10.0) as \"Planned Cycle Time\"",
           "refId": "A"
         }
       ],
@@ -225,7 +225,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_total_downtime_minutes('${enterprise}', '${site}', 'shopfloor', '${line}', '', '${shift_start}'::timestamptz, NOW()) as \"Total Downtime\"",
+          "rawSql": "SELECT get_total_downtime_minutes('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', '${shift_start}'::timestamptz, NOW()) as \"Total Downtime\"",
           "refId": "A"
         }
       ],
@@ -271,7 +271,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line}', '', 'good_count', '${shift_start}'::timestamptz, NOW()) as \"Good Parts\"",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'good_count', '${shift_start}'::timestamptz, NOW()) as \"Good Parts\"",
           "refId": "A"
         }
       ],
@@ -321,7 +321,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line}', '', 'scrap_count', '${shift_start}'::timestamptz, NOW()) as \"Scrap Parts\"",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'scrap_count', '${shift_start}'::timestamptz, NOW()) as \"Scrap Parts\"",
           "refId": "A"
         }
       ],
@@ -371,7 +371,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line}', '', '${shift_start}'::timestamptz, NOW()) as \"Stop Count\"",
+          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', '${shift_start}'::timestamptz, NOW()) as \"Stop Count\"",
           "refId": "A"
         }
       ],
@@ -431,7 +431,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  workcell as metric,\n  state,\n  duration_seconds\nFROM v_machine_current_state\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line}'\nORDER BY workcell",
+          "rawSql": "SELECT\n  workcell as metric,\n  state,\n  duration_seconds\nFROM v_machine_current_state\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line:raw}'\nORDER BY workcell",
           "refId": "A"
         }
       ],
@@ -545,7 +545,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  workcell as \"Machine\",\n  reason_name as \"Reason\",\n  category as \"Category\",\n  ROUND(duration_mins::numeric, 1) as \"Duration\",\n  TO_CHAR(start_time, 'HH24:MI') as \"Started\",\n  COALESCE(notes, '-') as \"Notes\"\nFROM v_active_issues\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line}'\nORDER BY duration_mins DESC",
+          "rawSql": "SELECT\n  workcell as \"Machine\",\n  reason_name as \"Reason\",\n  category as \"Category\",\n  ROUND(duration_mins::numeric, 1) as \"Duration\",\n  TO_CHAR(start_time, 'HH24:MI') as \"Started\",\n  COALESCE(notes, '-') as \"Notes\"\nFROM v_active_issues\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line:raw}'\nORDER BY duration_mins DESC",
           "refId": "A"
         }
       ],
@@ -622,7 +622,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  order_id as \"Order\",\n  customer as \"Customer\",\n  part_number as \"Part\",\n  quantity_completed || ' / ' || quantity as \"Completed / Target\",\n  progress_pct as \"Progress\",\n  status as \"Status\"\nFROM v_order_progress\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line}'\n  AND status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY started_at DESC\nLIMIT 5",
+          "rawSql": "SELECT\n  order_id as \"Order\",\n  customer as \"Customer\",\n  part_number as \"Part\",\n  quantity_completed || ' / ' || quantity as \"Completed / Target\",\n  progress_pct as \"Progress\",\n  status as \"Status\"\nFROM v_order_progress\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line:raw}'\n  AND status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY started_at DESC\nLIMIT 5",
           "refId": "A"
         }
       ],
@@ -685,13 +685,13 @@
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
         },
-        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "hide": 0,
         "includeAll": false,
         "label": "Line",
         "name": "line",
         "options": [],
-        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "refresh": 1,
         "type": "query"
       },

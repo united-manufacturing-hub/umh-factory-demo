@@ -40,12 +40,14 @@ buffers:
 recipes:
   - product_id: "FRAME-WELD-A"
     description: "Car body frame - sedan/hatchback platform"
+    cost_per_unit: 180.00
     planned_qty_range: [20, 60]
     overrides:
       3:
         cycle_time_ms: 14000
   - product_id: "FRAME-WELD-B"
     description: "Truck body frame - heavy-duty platform"
+    cost_per_unit: 150.00
     planned_qty_range: [10, 30]
     overrides:
       1:

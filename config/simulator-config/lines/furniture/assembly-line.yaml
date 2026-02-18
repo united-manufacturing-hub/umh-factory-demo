@@ -32,6 +32,7 @@ buffers:
 recipes:
   - product_id: "DESK-OAK-A"
     description: "Oak desk top - 160x80cm with cable management cutout"
+    cost_per_unit: 95.00
     planned_qty_range: [10, 30]
     overrides:
       1:
@@ -40,6 +41,7 @@ recipes:
         cycle_time_ms: 20000
   - product_id: "SHELF-PINE-B"
     description: "Pine shelf unit - 80x30cm with three adjustable shelves"
+    cost_per_unit: 42.00
     planned_qty_range: [15, 50]
     overrides:
       1:
