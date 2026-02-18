@@ -32,6 +32,7 @@ buffers:
 recipes:
   - product_id: "THT-MAIN-A"
     description: "Mainboard - high-power motor controller"
+    cost_per_unit: 22.00
     planned_qty_range: [20, 80]
     overrides:
       1:
@@ -40,6 +41,7 @@ recipes:
         cycle_time_ms: 11000
   - product_id: "THT-SENS-B"
     description: "Sensor board - multi-channel analog input module"
+    cost_per_unit: 18.00
     planned_qty_range: [30, 100]
     overrides:
       1:

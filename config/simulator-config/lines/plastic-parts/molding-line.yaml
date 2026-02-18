@@ -32,6 +32,7 @@ buffers:
 recipes:
   - product_id: "HOUSING-ABS-A"
     description: "ABS electronics housing - IP65 rated enclosure"
+    cost_per_unit: 25.00
     planned_qty_range: [40, 150]
     overrides:
       2:
@@ -40,6 +41,7 @@ recipes:
         cycle_time_ms: 10000
   - product_id: "PIPE-PVC-B"
     description: "PVC pipe fitting - 50mm elbow connector"
+    cost_per_unit: 8.50
     planned_qty_range: [80, 300]
     overrides:
       1:

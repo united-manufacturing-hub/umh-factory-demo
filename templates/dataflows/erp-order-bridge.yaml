@@ -29,8 +29,8 @@ pipeline:
         root.part_number = this.partNumber
         root.part_description = this.partDescription
         root.quantity = this.quantity
-        root.quantity_completed = this.quantityCompleted
-        root.quantity_scrap = this.quantityScrap
+        root.quantity_completed = this.quantityCompleted.or(0)
+        root.quantity_scrap = this.quantityScrap.or(0)
         root.priority = this.priority
         root.status = this.status
         root.due_date = this.dueDate
@@ -122,9 +122,9 @@ output:
         customer VARCHAR(255),
         part_number VARCHAR(255),
         part_description TEXT,
-        quantity INTEGER,
-        quantity_completed INTEGER,
-        quantity_scrap INTEGER,
+        quantity INTEGER NOT NULL DEFAULT 0,
+        quantity_completed INTEGER NOT NULL DEFAULT 0,
+        quantity_scrap INTEGER NOT NULL DEFAULT 0,
         priority INTEGER,
         status VARCHAR(50),
         due_date TIMESTAMPTZ,

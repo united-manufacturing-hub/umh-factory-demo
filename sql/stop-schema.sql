@@ -140,5 +140,18 @@ CREATE INDEX IF NOT EXISTS idx_production_orders_status ON production_orders(sta
 CREATE INDEX IF NOT EXISTS idx_production_orders_started ON production_orders(started_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_production_orders_asset_order ON production_orders(asset_id, order_id);
 
+-- -----------------------------------------------------------------------------
+-- Table: part_scrap_costs
+-- Per-part material cost for scrap loss calculations
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS part_scrap_costs (
+    part_number VARCHAR(50) PRIMARY KEY,
+    cost_per_unit NUMERIC(10,2) NOT NULL DEFAULT 0,
+    description TEXT,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Part scrap costs are seeded from line template YAMLs via generate-historical-data.py
+
 -- Success message
 DO $$ BEGIN RAISE NOTICE 'Stop schema created successfully'; END $$;

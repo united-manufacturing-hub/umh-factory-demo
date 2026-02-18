@@ -40,12 +40,14 @@ buffers:
 recipes:
   - product_id: "DOOR-ASM-A"
     description: "Front door assembly - driver and passenger side"
+    cost_per_unit: 120.00
     planned_qty_range: [30, 80]
     overrides:
       4:
         cycle_time_ms: 18000
   - product_id: "DOOR-ASM-B"
     description: "Rear door assembly - sedan and SUV models"
+    cost_per_unit: 95.00
     planned_qty_range: [20, 60]
     overrides:
       2:
