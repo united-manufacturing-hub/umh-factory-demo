@@ -238,7 +238,7 @@ protocolConverter:
                 msg.meta.historian = "true";
                 msg.meta.timestamp_ms = msg.meta.opcua_server_timestamp;
 
-                // Auto-generated from addressMappings
+                // Auto-generated from CSV table
                 switch(msg.meta.opcua_attr_nodeid) {
                 {{- range .AddressMappings }}
                   case "{{ .Address }}":

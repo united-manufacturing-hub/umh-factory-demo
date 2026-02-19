@@ -1,6 +1,7 @@
 name: "window-frame"
 domain: "window"
 description: "Window frame fabrication and glazing line"
+downtime_cost_per_hour: 300
 machines:
   - stage: 1
     type: "profile_cutter"
@@ -32,6 +33,7 @@ buffers:
 recipes:
   - product_id: "WIN-STD-A"
     description: "Standard window - 120x100cm double-glazed"
+    cost_per_unit: 45.00
     planned_qty_range: [10, 40]
     overrides:
       1:
@@ -40,6 +42,7 @@ recipes:
         cycle_time_ms: 22000
   - product_id: "WIN-LRG-B"
     description: "Large panorama window - 240x180cm triple-glazed"
+    cost_per_unit: 85.00
     planned_qty_range: [5, 15]
     overrides:
       1:

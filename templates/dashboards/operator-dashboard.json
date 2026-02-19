@@ -169,7 +169,7 @@
           },
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(po.order_id, 'No Active Order') as \"Current Order\",\n  COALESCE(po.part_number, '-') as \"Part\",\n  po.quantity_completed::text || ' / ' || po.quantity::text as \"Progress\"\nFROM production_orders po\nJOIN asset a ON a.id = po.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line}'\n  AND po.status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY po.created_at DESC\nLIMIT 1",
+          "rawSql": "SELECT\n  COALESCE(po.order_id, 'No Active Order') as \"Current Order\",\n  COALESCE(po.part_number, '-') as \"Part\",\n  po.quantity_completed::text || ' / ' || po.quantity::text as \"Progress\"\nFROM production_orders po\nJOIN asset a ON a.id = po.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line:raw}'\n  AND po.status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY po.created_at DESC\nLIMIT 1",
           "refId": "A"
         }
       ],
@@ -764,12 +764,12 @@
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
         },
-        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' ORDER BY line",
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' AND workcell != '' ORDER BY line",
         "includeAll": false,
         "label": "Line",
         "name": "line",
         "options": [],
-        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' ORDER BY line",
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' AND workcell != '' ORDER BY line",
         "refresh": 1,
         "type": "query"
       },
@@ -778,12 +778,12 @@
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
         },
-        "definition": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' ORDER BY workcell",
+        "definition": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line:raw}' ORDER BY workcell",
         "includeAll": false,
         "label": "Machine",
         "name": "workcell",
         "options": [],
-        "query": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' ORDER BY workcell",
+        "query": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line:raw}' ORDER BY workcell",
         "refresh": 1,
         "type": "query"
       },
@@ -792,13 +792,13 @@
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
         },
-        "definition": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' AND workcell = '${workcell}' LIMIT 1",
+        "definition": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line:raw}' AND workcell = '${workcell}' LIMIT 1",
         "hide": 2,
         "includeAll": false,
         "label": "Asset ID",
         "name": "asset_id",
         "options": [],
-        "query": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line}' AND workcell = '${workcell}' LIMIT 1",
+        "query": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line:raw}' AND workcell = '${workcell}' LIMIT 1",
         "refresh": 1,
         "type": "query"
       }

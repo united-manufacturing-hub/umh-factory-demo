@@ -1,6 +1,7 @@
 name: "pharma-batch"
 domain: "pharma"
 description: "Pharmaceutical batch processing and filling line"
+downtime_cost_per_hour: 1500
 machines:
   - stage: 1
     type: "reactor_vessel"
@@ -32,6 +33,7 @@ buffers:
 recipes:
   - product_id: "TABLET-BATCH-A"
     description: "Pain reliever tablet batch - 500mg ibuprofen"
+    cost_per_unit: 0.80
     planned_qty_range: [5, 20]
     overrides:
       1:
@@ -40,6 +42,7 @@ recipes:
         cycle_time_ms: 28000
   - product_id: "SYRUP-BATCH-B"
     description: "Cough syrup batch - 200ml bottles"
+    cost_per_unit: 3.50
     planned_qty_range: [5, 15]
     overrides:
       1:

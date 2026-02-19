@@ -1,6 +1,7 @@
 name: "food-beverage-filling"
 domain: "food-beverage"
 description: "High-speed beverage filling and labeling line"
+downtime_cost_per_hour: 600
 machines:
   - stage: 1
     type: "filling_machine"
@@ -32,12 +33,14 @@ buffers:
 recipes:
   - product_id: "JUICE-500ML"
     description: "500ml fruit juice bottles - orange and apple blend"
+    cost_per_unit: 1.20
     planned_qty_range: [200, 1000]
     overrides:
       1:
         cycle_time_ms: 1800
   - product_id: "WATER-1L"
     description: "1 liter purified water bottles"
+    cost_per_unit: 0.50
     planned_qty_range: [300, 1500]
     overrides:
       1:

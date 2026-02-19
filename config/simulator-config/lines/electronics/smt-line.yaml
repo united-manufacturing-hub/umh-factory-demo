@@ -1,6 +1,7 @@
 name: "electronics-smt"
 domain: "electronics"
 description: "Surface-mount technology PCB assembly line"
+downtime_cost_per_hour: 450
 machines:
   - stage: 1
     type: "smt_placement"
@@ -40,6 +41,7 @@ buffers:
 recipes:
   - product_id: "PCB-CTRL-A"
     description: "Controller board - industrial automation module"
+    cost_per_unit: 35.00
     planned_qty_range: [50, 200]
     overrides:
       1:
@@ -48,6 +50,7 @@ recipes:
         cycle_time_ms: 7000
   - product_id: "PCB-PWR-B"
     description: "Power supply board - 24V DC regulated output"
+    cost_per_unit: 28.00
     planned_qty_range: [40, 150]
     overrides:
       1:

@@ -4,26 +4,33 @@ set -euo pipefail
 VERSION="${VERSION:-}"
 BRANCH="${BRANCH:-}"
 REPO="${REPO:-united-manufacturing-hub/umh-factory-demo}"
+LOCAL_TEMPLATES="${LOCAL_TEMPLATES:-}"
 TMP="/tmp/templates-src"
 
-# Auto-resolve latest release if no version specified and no branch override
-if [ -z "$VERSION" ] && [ -z "$BRANCH" ]; then
-    echo "No version specified, fetching latest release..."
-    VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
-        | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
-    VERSION="${VERSION#v}"
-    echo "Resolved latest version: v${VERSION}"
-fi
-
 mkdir -p "$TMP"
-if [ -n "$BRANCH" ]; then
-    echo "Downloading templates (branch: ${BRANCH})..."
-    curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
-      | tar -xz --strip-components=1 -C "$TMP"
+
+if [ -n "$LOCAL_TEMPLATES" ]; then
+    echo "Using local templates from $LOCAL_TEMPLATES..."
+    cp -r "$LOCAL_TEMPLATES/." "$TMP"
 else
-    echo "Downloading templates (v${VERSION})..."
-    curl -fsSL "https://github.com/${REPO}/archive/refs/tags/v${VERSION}.tar.gz" \
-      | tar -xz --strip-components=1 -C "$TMP"
+    # Auto-resolve latest release if no version specified and no branch override
+    if [ -z "$VERSION" ] && [ -z "$BRANCH" ]; then
+        echo "No version specified, fetching latest release..."
+        VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" \
+            | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+        VERSION="${VERSION#v}"
+        echo "Resolved latest version: v${VERSION}"
+    fi
+
+    if [ -n "$BRANCH" ]; then
+        echo "Downloading templates (branch: ${BRANCH})..."
+        curl -fsSL "https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz" \
+          | tar -xz --strip-components=1 -C "$TMP"
+    else
+        echo "Downloading templates (v${VERSION})..."
+        curl -fsSL "https://github.com/${REPO}/archive/refs/tags/v${VERSION}.tar.gz" \
+          | tar -xz --strip-components=1 -C "$TMP"
+    fi
 fi
 
 # New structure: repo root is the templates dir

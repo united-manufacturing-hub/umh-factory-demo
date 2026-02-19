@@ -1,6 +1,7 @@
 name: "electronics-through-hole"
 domain: "electronics"
 description: "Through-hole PCB assembly line for high-reliability boards"
+downtime_cost_per_hour: 350
 machines:
   - stage: 1
     type: "robot_pick_place"
@@ -32,6 +33,7 @@ buffers:
 recipes:
   - product_id: "THT-MAIN-A"
     description: "Mainboard - high-power motor controller"
+    cost_per_unit: 22.00
     planned_qty_range: [20, 80]
     overrides:
       1:
@@ -40,6 +42,7 @@ recipes:
         cycle_time_ms: 11000
   - product_id: "THT-SENS-B"
     description: "Sensor board - multi-channel analog input module"
+    cost_per_unit: 18.00
     planned_qty_range: [30, 100]
     overrides:
       1:
