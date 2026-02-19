@@ -59,7 +59,11 @@
         "minVizHeight": 75,
         "minVizWidth": 75,
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": true,
         "showThresholdMarkers": true,
         "sizing": "auto"
@@ -111,7 +115,11 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value",
         "wideLayout": true
@@ -158,7 +166,11 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value",
         "wideLayout": true
@@ -210,7 +222,11 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value",
         "wideLayout": true
@@ -256,7 +272,11 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value",
         "wideLayout": true
@@ -306,7 +326,11 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value",
         "wideLayout": true
@@ -356,7 +380,11 @@
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value",
         "wideLayout": true
@@ -394,12 +422,46 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" } }, "type": "value" },
-            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" } }, "type": "value" },
-            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINTENANCE" } }, "type": "value" },
-            { "options": { "FAULT": { "color": "red", "index": 4, "text": "FAULT" } }, "type": "value" },
-            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
+            {
+              "options": {
+                "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "MAINTENANCE": {
+                  "color": "blue",
+                  "index": 3,
+                  "text": "MAINTENANCE"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "FAULT": { "color": "red", "index": 4, "text": "FAULT" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "SETUP": { "color": "orange", "index": 5, "text": "SETUP" }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -416,7 +478,11 @@
         "justifyMode": "center",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^state$/", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value_and_name",
         "wideLayout": true
@@ -494,7 +560,10 @@
                   ]
                 }
               },
-              { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "gradient" } },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background", "mode": "gradient" }
+              },
               { "id": "unit", "value": "m" }
             ]
           },
@@ -505,10 +574,24 @@
               {
                 "id": "mappings",
                 "value": [
-                  { "options": { "Unplanned": { "color": "red", "index": 0 } }, "type": "value" },
-                  { "options": { "Planned": { "color": "blue", "index": 1 } }, "type": "value" },
-                  { "options": { "External": { "color": "orange", "index": 2 } }, "type": "value" },
-                  { "options": { "Unknown": { "color": "gray", "index": 3 } }, "type": "value" }
+                  {
+                    "options": { "Unplanned": { "color": "red", "index": 0 } },
+                    "type": "value"
+                  },
+                  {
+                    "options": { "Planned": { "color": "blue", "index": 1 } },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "External": { "color": "orange", "index": 2 }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": { "Unknown": { "color": "gray", "index": 3 } },
+                    "type": "value"
+                  }
                 ]
               },
               { "id": "custom.cellOptions", "value": { "type": "color-text" } }
@@ -516,15 +599,11 @@
           },
           {
             "matcher": { "id": "byName", "options": "Machine" },
-            "properties": [
-              { "id": "custom.width", "value": 180 }
-            ]
+            "properties": [{ "id": "custom.width", "value": 180 }]
           },
           {
             "matcher": { "id": "byName", "options": "Reason" },
-            "properties": [
-              { "id": "custom.width", "value": 150 }
-            ]
+            "properties": [{ "id": "custom.width", "value": 150 }]
           }
         ]
       },
@@ -585,7 +664,10 @@
             "matcher": { "id": "byName", "options": "Progress" },
             "properties": [
               { "id": "unit", "value": "percent" },
-              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "basic" } },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "gauge", "mode": "basic" }
+              },
               { "id": "max", "value": 100 },
               { "id": "custom.width", "value": 200 }
             ]
@@ -596,12 +678,28 @@
               {
                 "id": "mappings",
                 "value": [
-                  { "options": { "COMPLETED": { "color": "green", "index": 0 } }, "type": "value" },
-                  { "options": { "IN_PROGRESS": { "color": "blue", "index": 1 } }, "type": "value" },
-                  { "options": { "PENDING": { "color": "orange", "index": 2 } }, "type": "value" }
+                  {
+                    "options": {
+                      "COMPLETED": { "color": "green", "index": 0 }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "IN_PROGRESS": { "color": "blue", "index": 1 }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": { "PENDING": { "color": "orange", "index": 2 } },
+                    "type": "value"
+                  }
                 ]
               },
-              { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "basic" } }
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background", "mode": "basic" }
+              }
             ]
           }
         ]
@@ -648,7 +746,11 @@
         "type": "datasource"
       },
       {
-        "current": { "selected": false, "text": "UMH-factory", "value": "UMH-factory" },
+        "current": {
+          "selected": false,
+          "text": "UMH-factory",
+          "value": "UMH-factory"
+        },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
@@ -696,7 +798,11 @@
         "type": "query"
       },
       {
-        "current": { "selected": true, "text": "Current Shift", "value": "shift" },
+        "current": {
+          "selected": true,
+          "text": "Current Shift",
+          "value": "shift"
+        },
         "hide": 0,
         "includeAll": false,
         "label": "Time Range",

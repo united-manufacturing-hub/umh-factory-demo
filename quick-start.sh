@@ -12,7 +12,7 @@
 #   bash quick-start.sh --profile=demo-mixed # Use a simulator profile (skip line selection)
 #
 # Prerequisites:
-#   - Docker Engine + Docker Compose v2
+#   - Docker Engine + Docker Compose v2, or Podman + podman-compose
 #   - A docker-compose.yaml with umh-core service (AUTH_TOKEN + LOCATION_0 required)
 #
 # Optional:
@@ -64,8 +64,8 @@ cleanup() {
     if [ $exit_code -ne 0 ]; then
         echo ""
         echo -e "${RED}Setup failed (exit code: $exit_code).${NC}"
-        echo "Check builder logs: docker logs $BUILDER_NAME"
-        echo "To clean up: docker rm -f $BUILDER_NAME 2>/dev/null; rm -rf .builder/"
+        echo "Check builder logs: $CONTAINER_CMD logs $BUILDER_NAME"
+        echo "To clean up: $CONTAINER_CMD rm -f $BUILDER_NAME 2>/dev/null; rm -rf .builder/"
     fi
 }
 trap cleanup EXIT
@@ -76,16 +76,17 @@ echo ""
 # ─── Prerequisite checks ────────────────────────────────────────
 echo "Checking prerequisites..."
 
-if ! command -v docker &>/dev/null; then
-    echo -e "${RED}Error: Docker is not installed.${NC}"
+# Detect container runtime
+if command -v docker &>/dev/null && docker compose version &>/dev/null; then
+    CONTAINER_CMD="docker"
+    COMPOSE_CMD="docker compose"
+elif command -v podman &>/dev/null && podman compose version &>/dev/null; then
+    CONTAINER_CMD="podman"
+    COMPOSE_CMD="podman compose"
+else
+    echo -e "${RED}Error: Neither Docker nor Podman (with compose) is installed.${NC}"
     echo "Install Docker: https://docs.docker.com/get-docker/"
-    exit 1
-fi
-
-if ! docker compose version &>/dev/null; then
-    echo -e "${RED}Error: Docker Compose v2 is not available.${NC}"
-    echo "Docker Compose v2 comes with Docker Desktop, or install the plugin:"
-    echo "  https://docs.docker.com/compose/install/"
+    echo "Install Podman: https://podman.io/getting-started/installation"
     exit 1
 fi
 
@@ -111,7 +112,7 @@ if [ ! -f "$WORK_DIR/docker-compose.yaml" ] && [ ! -f "$WORK_DIR/docker-compose.
     exit 1
 fi
 
-echo -e "${GREEN}  ✓ Docker and Docker Compose v2 available${NC}"
+echo -e "${GREEN}  ✓ Using: $CONTAINER_CMD${NC}"
 echo -e "${GREEN}  ✓ docker-compose.yaml found${NC}"
 
 # ─── Detect host IP ──────────────────────────────────────────────
@@ -126,12 +127,16 @@ IP_LABELS=()
 IP_OPTIONS+=("localhost")
 IP_LABELS+=("localhost (this machine only)")
 
-# 2) Docker bridge network gateway
-DOCKER_BRIDGE_IP=$(docker network inspect bridge 2>/dev/null \
+# 2) Container bridge network gateway
+BRIDGE_IP=$($CONTAINER_CMD network inspect bridge 2>/dev/null \
     | grep -o '"Gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
-if [ -n "$DOCKER_BRIDGE_IP" ]; then
-    IP_OPTIONS+=("$DOCKER_BRIDGE_IP")
-    IP_LABELS+=("$DOCKER_BRIDGE_IP (Docker bridge)")
+if [ -z "$BRIDGE_IP" ]; then
+    BRIDGE_IP=$($CONTAINER_CMD network inspect podman 2>/dev/null \
+        | grep -o '"gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
+fi
+if [ -n "$BRIDGE_IP" ]; then
+    IP_OPTIONS+=("$BRIDGE_IP")
+    IP_LABELS+=("$BRIDGE_IP (container bridge)")
 fi
 
 # 3) Local/LAN IP (Wi-Fi, Ethernet, VPN, etc.)
@@ -149,7 +154,17 @@ if [ -n "$LOCAL_IP" ]; then
     IP_LABELS+=("$LOCAL_IP (LAN)")
 fi
 
-# 4) External/public IP
+# 4) Tailscale IP
+TAILSCALE_IP=""
+if command -v tailscale &>/dev/null; then
+    TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || true)
+fi
+if [ -n "$TAILSCALE_IP" ]; then
+    IP_OPTIONS+=("$TAILSCALE_IP")
+    IP_LABELS+=("$TAILSCALE_IP (Tailscale)")
+fi
+
+# 5) External/public IP
 EXTERNAL_IP=$(curl -s --max-time 3 https://ifconfig.me 2>/dev/null \
     || curl -s --max-time 3 https://api.ipify.org 2>/dev/null || true)
 if [ -n "$EXTERNAL_IP" ]; then
@@ -208,8 +223,8 @@ port_in_use() {
     echo "$ALLOCATED_PORTS" | grep -qw "$1" && return 0
     # Check for active listeners
     (echo >/dev/tcp/localhost/"$1") 2>/dev/null && return 0
-    # Check for Docker containers binding this port (including stopped ones)
-    docker ps -a --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:$1->" && return 0
+    # Check for containers binding this port (including stopped ones)
+    $CONTAINER_CMD ps -a --format '{{.Ports}}' 2>/dev/null | grep -q "0.0.0.0:$1->" && return 0
     return 1
 }
 
@@ -524,13 +539,13 @@ COMPOSE_SERVICES="grafana pgbouncer timescaledb machine-simulator nginx"
 CONFLICTS_FOUND=false
 for svc in $COMPOSE_SERVICES; do
     FULL_NAME="${PROJECT_NAME}-${svc}-1"
-    if docker ps -a --format '{{.Names}}' | grep -qx "$FULL_NAME"; then
+    if $CONTAINER_CMD ps -a --format '{{.Names}}' | grep -qx "$FULL_NAME"; then
         echo -e "${YELLOW}  Container '$FULL_NAME' already exists${NC}"
         CONFLICTS_FOUND=true
     fi
 done
 
-if docker ps -a --format '{{.Names}}' | grep -qx "$BUILDER_NAME"; then
+if $CONTAINER_CMD ps -a --format '{{.Names}}' | grep -qx "$BUILDER_NAME"; then
     echo -e "${YELLOW}  Builder container '$BUILDER_NAME' already exists${NC}"
     CONFLICTS_FOUND=true
 fi
@@ -542,9 +557,9 @@ if $CONFLICTS_FOUND; then
     if [[ -z "$REMOVE_EXISTING" || "$REMOVE_EXISTING" =~ ^[Yy] ]]; then
         for svc in $COMPOSE_SERVICES; do
             FULL_NAME="${PROJECT_NAME}-${svc}-1"
-            docker rm -f "$FULL_NAME" 2>/dev/null || true
+            $CONTAINER_CMD rm -f "$FULL_NAME" 2>/dev/null || true
         done
-        docker rm -f "$BUILDER_NAME" 2>/dev/null || true
+        $CONTAINER_CMD rm -f "$BUILDER_NAME" 2>/dev/null || true
         echo -e "${GREEN}  ✓ Existing containers removed${NC}"
     else
         echo -e "${RED}Aborting to avoid conflicts.${NC}"
@@ -557,15 +572,15 @@ fi
 # ─── Pull and run builder container ──────────────────────────────
 echo ""
 echo -e "${BLUE}Pulling builder image...${NC}"
-docker pull "$BUILDER_IMAGE"
+$CONTAINER_CMD pull "$BUILDER_IMAGE"
 
 echo ""
 echo -e "${BLUE}Starting builder container (Phase 1: generate)...${NC}"
 
 # Remove any existing builder container
-docker rm -f "$BUILDER_NAME" 2>/dev/null || true
+$CONTAINER_CMD rm -f "$BUILDER_NAME" 2>/dev/null || true
 
-docker run -d \
+$CONTAINER_CMD run -d \
     --name "$BUILDER_NAME" \
     -v "$(pwd):/workspace" \
     ${LOCAL_TEMPLATES:+-v "$LOCAL_TEMPLATES:/local-templates:ro"} \
@@ -598,7 +613,7 @@ while [ ! -f ".builder/generate-done" ]; do
     ELAPSED=$((ELAPSED + 2))
     if [ $ELAPSED -ge $TIMEOUT ]; then
         echo -e "${RED}Error: Phase 1 timed out after ${TIMEOUT}s${NC}"
-        echo "Check builder logs: docker logs $BUILDER_NAME"
+        echo "Check builder logs: $CONTAINER_CMD logs $BUILDER_NAME"
         exit 1
     fi
     # Show progress dots every 10 seconds
@@ -612,11 +627,11 @@ echo -e "${GREEN}  ✓ Phase 1 complete - all files generated${NC}"
 # ─── Build and start compose services ────────────────────────────
 echo ""
 echo -e "${BLUE}Building Grafana container (with custom branding)...${NC}"
-docker compose build grafana
+$COMPOSE_CMD build grafana
 
 echo ""
-echo -e "${BLUE}Starting services with docker compose...${NC}"
-docker compose up -d
+echo -e "${BLUE}Starting services...${NC}"
+$COMPOSE_CMD up -d
 
 echo -e "${GREEN}  ✓ Services started${NC}"
 
@@ -624,11 +639,11 @@ echo -e "${GREEN}  ✓ Services started${NC}"
 echo ""
 echo -e "${BLUE}Connecting builder to compose network...${NC}"
 
-# Derive compose network from project name (docker compose convention)
+# Derive compose network from project name (compose convention)
 COMPOSE_PROJECT=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
 COMPOSE_NETWORK="${COMPOSE_PROJECT}_default"
 
-docker network connect "$COMPOSE_NETWORK" "$BUILDER_NAME" 2>/dev/null || true
+$CONTAINER_CMD network connect "$COMPOSE_NETWORK" "$BUILDER_NAME" 2>/dev/null || true
 echo -e "${GREEN}  ✓ Builder connected to network: $COMPOSE_NETWORK${NC}"
 
 # ─── Signal Phase 2 to start ─────────────────────────────────────
@@ -641,8 +656,8 @@ echo -e "${BLUE}Running Phase 2 (post-init): SQL schema, dashboards, historical 
 echo ""
 
 # Stream builder logs in background (from current point onward)
-LAST_LOG_LINE=$(docker logs "$BUILDER_NAME" 2>&1 | wc -l)
-docker logs -f "$BUILDER_NAME" 2>&1 | tail -n +"$((LAST_LOG_LINE + 1))" &
+LAST_LOG_LINE=$($CONTAINER_CMD logs "$BUILDER_NAME" 2>&1 | wc -l)
+$CONTAINER_CMD logs -f "$BUILDER_NAME" 2>&1 | tail -n +"$((LAST_LOG_LINE + 1))" &
 LOG_PID=$!
 
 TIMEOUT=1800
@@ -652,12 +667,12 @@ while [ ! -f ".builder/post-init-done" ]; do
     ELAPSED=$((ELAPSED + 2))
 
     # Check if builder container is still running
-    if ! docker ps --format '{{.Names}}' | grep -q "^${BUILDER_NAME}$"; then
+    if ! $CONTAINER_CMD ps --format '{{.Names}}' | grep -q "^${BUILDER_NAME}$"; then
         kill "$LOG_PID" 2>/dev/null || true
         wait "$LOG_PID" 2>/dev/null || true
         echo ""
         echo -e "${RED}Error: Builder container exited unexpectedly${NC}"
-        echo "Check logs: docker logs $BUILDER_NAME"
+        echo "Check logs: $CONTAINER_CMD logs $BUILDER_NAME"
         exit 1
     fi
 
@@ -666,7 +681,7 @@ while [ ! -f ".builder/post-init-done" ]; do
         wait "$LOG_PID" 2>/dev/null || true
         echo ""
         echo -e "${RED}Error: Phase 2 timed out after ${TIMEOUT}s${NC}"
-        echo "Check builder logs: docker logs $BUILDER_NAME"
+        echo "Check builder logs: $CONTAINER_CMD logs $BUILDER_NAME"
         exit 1
     fi
 done
@@ -681,8 +696,8 @@ echo -e "${GREEN}  ✓ Phase 2 complete${NC}"
 echo ""
 echo -e "${BLUE}Cleaning up builder...${NC}"
 
-docker stop "$BUILDER_NAME" 2>/dev/null || true
-docker rm "$BUILDER_NAME" 2>/dev/null || true
+$CONTAINER_CMD stop "$BUILDER_NAME" 2>/dev/null || true
+$CONTAINER_CMD rm "$BUILDER_NAME" 2>/dev/null || true
 rm -rf .builder/
 
 echo -e "${GREEN}  ✓ Builder removed${NC}"
@@ -707,7 +722,7 @@ fi
 
 echo ""
 echo "Useful commands:"
-echo "  docker compose logs -f        # Watch all service logs"
-echo "  docker compose ps             # Check service status"
-echo "  docker compose down           # Stop all services"
+echo "  $COMPOSE_CMD logs -f        # Watch all service logs"
+echo "  $COMPOSE_CMD ps             # Check service status"
+echo "  $COMPOSE_CMD down           # Stop all services"
 echo "  ./reset-demo                  # Reset and start fresh"

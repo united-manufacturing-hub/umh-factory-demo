@@ -1438,15 +1438,16 @@ DECLARE
     actual numeric;
     target numeric;
 BEGIN
-    actual := get_counter_delta(_enterprise, _site, _area, _line, '', 'good_count', _start_time, _end_time);
-
-    SELECT COALESCE(SUM(po.quantity), 1000) INTO target
+    SELECT COALESCE(SUM(po.quantity_completed), 0),
+           COALESCE(SUM(po.quantity), 0)
+    INTO actual, target
     FROM production_orders po
     JOIN asset a ON a.id = po.asset_id
     WHERE a.enterprise = _enterprise
       AND a.site = _site
       AND (_line = '' OR a.line = _line)
-      AND po.status IN ('IN_PROGRESS', 'RELEASED');
+      AND po.started_at >= _start_time
+      AND po.started_at <= _end_time;
 
     IF target = 0 THEN
         RETURN NULL;

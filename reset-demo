@@ -23,12 +23,18 @@ NC='\033[0m'
 echo -e "${BLUE}=== Reset Demo Folder ===${NC}"
 echo ""
 
-# Check Docker access
-if ! docker ps >/dev/null 2>&1; then
-    echo -e "${RED}Error: Cannot access Docker. Try running with sudo:${NC}"
-    echo "  sudo ./reset-demo"
+# Detect container runtime
+if command -v docker &>/dev/null && docker compose version &>/dev/null; then
+    CONTAINER_CMD="docker"
+    COMPOSE_CMD="docker compose"
+elif command -v podman &>/dev/null && podman compose version &>/dev/null; then
+    CONTAINER_CMD="podman"
+    COMPOSE_CMD="podman compose"
+else
+    echo -e "${RED}Error: Neither Docker nor Podman (with compose) is installed.${NC}"
     exit 1
 fi
+echo -e "${GREEN}  ✓ Using: $CONTAINER_CMD${NC}"
 
 # Check for docker-compose.yaml.backup
 if [ ! -f "$WORK_DIR/docker-compose.yaml.backup" ]; then
@@ -43,15 +49,15 @@ echo ""
 # Stop and remove all containers (compose services + builder)
 if [ -f "$WORK_DIR/docker-compose.yaml" ]; then
     echo -e "${BLUE}Stopping compose services and removing volumes...${NC}"
-    docker compose -f "$WORK_DIR/docker-compose.yaml" down --volumes --remove-orphans 2>/dev/null || true
+    $COMPOSE_CMD -f "$WORK_DIR/docker-compose.yaml" down --volumes --remove-orphans 2>/dev/null || true
 fi
 
 # Remove builder container if present
 DIR_NAME=$(basename "$WORK_DIR" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
 BUILDER_NAME="${DIR_NAME}-umh-builder"
-if docker ps -a --format '{{.Names}}' | grep -q "^${BUILDER_NAME}$"; then
+if $CONTAINER_CMD ps -a --format '{{.Names}}' | grep -q "^${BUILDER_NAME}$"; then
     echo -e "${BLUE}Removing builder container: ${BUILDER_NAME}${NC}"
-    docker rm -f "$BUILDER_NAME" 2>/dev/null || true
+    $CONTAINER_CMD rm -f "$BUILDER_NAME" 2>/dev/null || true
 fi
 echo ""
 
@@ -73,5 +79,8 @@ echo ""
 echo "The folder now contains only:"
 ls -la "$WORK_DIR"
 echo ""
+# Remove this script after successful reset
+rm -f "$0"
+
 echo "Next steps:"
 echo "  Re-run quick-start.sh to set up the demo again."
