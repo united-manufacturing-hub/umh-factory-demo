@@ -225,6 +225,15 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.1 (2026-02-19)
+
+### Other
+- Merge branch 'new-sim' into staging
+- added better check for tailscale vpn and improved reset script.
+- added support for podman. updated some sql and dashboards.
+
+**Full Changelog**: [`v1.3.0...v1.3.1`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.0...v1.3.1)
+
 ## v1.3.0 (2026-02-19)
 
 ### Features
