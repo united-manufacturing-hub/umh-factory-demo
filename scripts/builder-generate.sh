@@ -852,6 +852,9 @@ echo -e "${GREEN}    ✓ production-manager-view.json${NC}"
 cp "$TEMPLATES_DIR/templates/dashboards/andon-board.json" "$WORK_DIR/dashboards/andon-board.json"
 echo -e "${GREEN}    ✓ andon-board.json${NC}"
 
+cp "$TEMPLATES_DIR/templates/dashboards/margin-leakage-dashboard.json" "$WORK_DIR/dashboards/margin-leakage-dashboard.json"
+echo -e "${GREEN}    ✓ margin-leakage-dashboard.json${NC}"
+
 # --- Generate factory line setup dashboard ---
 echo "  Generating factory line setup dashboard..."
 
