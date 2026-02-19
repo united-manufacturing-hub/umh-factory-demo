@@ -79,8 +79,8 @@ echo ""
 echo "The folder now contains only:"
 ls -la "$WORK_DIR"
 echo ""
-# Remove this script after successful reset
-rm -f "$0"
-
 echo "Next steps:"
 echo "  Re-run quick-start.sh to set up the demo again."
+
+# Remove this script after successful reset
+rm -f "$0"

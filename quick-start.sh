@@ -154,10 +154,21 @@ if [ -n "$LOCAL_IP" ]; then
     IP_LABELS+=("$LOCAL_IP (LAN)")
 fi
 
-# 4) Tailscale IP
+# 4) Tailscale IP (try CLI first, then check network interfaces)
 TAILSCALE_IP=""
 if command -v tailscale &>/dev/null; then
     TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || true)
+elif [ -x "/Applications/Tailscale.app/Contents/MacOS/Tailscale" ]; then
+    TAILSCALE_IP=$(/Applications/Tailscale.app/Contents/MacOS/Tailscale ip -4 2>/dev/null || true)
+fi
+if [ -z "$TAILSCALE_IP" ]; then
+    # Fallback: look for 100.x.x.x (CGNAT) on tailscale0 (Linux) or utun interfaces (macOS)
+    if command -v ip &>/dev/null; then
+        TAILSCALE_IP=$(ip -4 addr show tailscale0 2>/dev/null | awk '/inet 100\./{print $2}' | cut -d/ -f1 | head -1)
+    fi
+    if [ -z "$TAILSCALE_IP" ] && command -v ifconfig &>/dev/null; then
+        TAILSCALE_IP=$(ifconfig 2>/dev/null | awk '/inet 100\./{print $2}' | head -1)
+    fi
 fi
 if [ -n "$TAILSCALE_IP" ]; then
     IP_OPTIONS+=("$TAILSCALE_IP")
