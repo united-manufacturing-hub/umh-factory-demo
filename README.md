@@ -225,6 +225,22 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.0 (2026-02-19)
+
+### Features
+- added new dashboard to script
+- trigger release
+
+### Other
+- Merge branch 'dev' into staging
+- updated some comments.
+- added support for local repo
+- Merge branch 'new-sim' into dev
+- updated start script with new image handling.
+- updated with new dashboard. better ip check
+
+**Full Changelog**: [`v1.2.6...v1.3.0`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.2.6...v1.3.0)
+
 ## v1.2.6 (2026-02-17)
 
 ### Other
