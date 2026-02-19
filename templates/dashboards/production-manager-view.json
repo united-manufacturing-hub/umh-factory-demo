@@ -59,7 +59,11 @@
         "minVizHeight": 75,
         "minVizWidth": 75,
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "sizing": "auto"
@@ -111,7 +115,11 @@
         "minVizHeight": 75,
         "minVizWidth": 75,
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "sizing": "auto"
@@ -163,7 +171,11 @@
         "minVizHeight": 75,
         "minVizWidth": 75,
         "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "sizing": "auto"
@@ -209,7 +221,11 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
@@ -255,7 +271,11 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
@@ -302,7 +322,11 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
@@ -348,7 +372,11 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
@@ -386,12 +414,46 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" } }, "type": "value" },
-            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" } }, "type": "value" },
-            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINTENANCE" } }, "type": "value" },
-            { "options": { "FAULT": { "color": "red", "index": 4, "text": "FAULT" } }, "type": "value" },
-            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
+            {
+              "options": {
+                "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "MAINTENANCE": {
+                  "color": "blue",
+                  "index": 3,
+                  "text": "MAINTENANCE"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "FAULT": { "color": "red", "index": 4, "text": "FAULT" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "SETUP": { "color": "orange", "index": 5, "text": "SETUP" }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -408,7 +470,11 @@
         "justifyMode": "center",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "/^state$/", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "/.*/",
+          "values": false
+        },
         "showPercentChange": false,
         "textMode": "value_and_name",
         "wideLayout": true
@@ -485,7 +551,12 @@
         "barWidth": 0.8,
         "fullHighlight": false,
         "groupWidth": 0.7,
-        "legend": { "calcs": [], "displayMode": "hidden", "placement": "bottom", "showLegend": false },
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
         "orientation": "horizontal",
         "showValue": "always",
         "stacking": "none",
@@ -544,7 +615,12 @@
         "bucketOffset": 0,
         "bucketSize": 5,
         "combine": false,
-        "legend": { "calcs": ["count", "mean"], "displayMode": "table", "placement": "bottom", "showLegend": true }
+        "legend": {
+          "calcs": ["count", "mean"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        }
       },
       "pluginVersion": "12.3.0",
       "targets": [
@@ -619,7 +695,12 @@
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
       "id": 11,
       "options": {
-        "legend": { "calcs": ["mean", "max", "min"], "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "legend": {
+          "calcs": ["mean", "max", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
         "tooltip": { "hideZeros": false, "mode": "multi", "sort": "desc" }
       },
       "pluginVersion": "12.3.0",
@@ -664,12 +745,46 @@
             "spanNulls": false
           },
           "mappings": [
-            { "options": { "FAULT": { "color": "red", "index": 0, "text": "Fault" } }, "type": "value" },
-            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "Idle" } }, "type": "value" },
-            { "options": { "RUNNING": { "color": "green", "index": 2, "text": "Running" } }, "type": "value" },
-            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "Maintenance" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "orange", "index": 4, "text": "Stopped" } }, "type": "value" },
-            { "options": { "SETUP": { "color": "purple", "index": 5, "text": "Setup" } }, "type": "value" }
+            {
+              "options": {
+                "FAULT": { "color": "red", "index": 0, "text": "Fault" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "IDLE": { "color": "yellow", "index": 1, "text": "Idle" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "RUNNING": { "color": "green", "index": 2, "text": "Running" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "MAINTENANCE": {
+                  "color": "blue",
+                  "index": 3,
+                  "text": "Maintenance"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "STOPPED": { "color": "orange", "index": 4, "text": "Stopped" }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "SETUP": { "color": "purple", "index": 5, "text": "Setup" }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -682,7 +797,11 @@
       "id": 12,
       "options": {
         "alignValue": "left",
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
         "mergeValues": false,
         "rowHeight": 0.8,
         "showValue": "auto",
@@ -724,7 +843,11 @@
         "type": "datasource"
       },
       {
-        "current": { "selected": false, "text": "UMH-factory", "value": "UMH-factory" },
+        "current": {
+          "selected": false,
+          "text": "UMH-factory",
+          "value": "UMH-factory"
+        },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"

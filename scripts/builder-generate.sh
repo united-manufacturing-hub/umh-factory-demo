@@ -138,6 +138,12 @@ else
 fi
 
 LOCATION_1=$(grep -E '^\s*-\s*LOCATION_1=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*LOCATION_1=//' | tr -d ' "'\' | head -1)
+if [ -z "$LOCATION_1" ]; then
+    LOCATION_1="Cologne"
+    echo -e "${YELLOW}  Warning: LOCATION_1 not found, using default: $LOCATION_1${NC}"
+else
+    echo -e "${GREEN}  ✓ LOCATION_1: $LOCATION_1${NC}"
+fi
 
 AUTH_TOKEN=$(grep -E '^\s*-\s*AUTH_TOKEN=' "$WORK_DIR/docker-compose.yaml" | sed 's/.*AUTH_TOKEN=//' | tr -d ' "'\' | head -1)
 if [ -z "$AUTH_TOKEN" ]; then

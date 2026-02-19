@@ -274,7 +274,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  v.line as \"Line\",\n  COALESCE(SUM(v.good_parts)::int, 0) as \"Actual\",\n  COALESCE(SUM(po.quantity), 0)::int as \"Target\"\nFROM v_oee_by_asset v\nLEFT JOIN production_orders po ON po.asset_id = v.asset_id AND po.status IN ('IN_PROGRESS', 'COMPLETED')\nWHERE v.enterprise = '${enterprise}'\n  AND v.site = '${site}'\n  AND ('${line:raw}' = 'All' OR v.line = '${line:raw}')\nGROUP BY v.line\nORDER BY v.line",
+          "rawSql": "SELECT\n  a.line AS \"Line\",\n  COALESCE(SUM(po.quantity_completed), 0)::int AS \"Actual\",\n  COALESCE(SUM(po.quantity), 0)::int AS \"Target\"\nFROM production_orders po\nJOIN asset a ON a.id = po.asset_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\nGROUP BY a.line\nORDER BY a.line",
           "refId": "A"
         }
       ],
