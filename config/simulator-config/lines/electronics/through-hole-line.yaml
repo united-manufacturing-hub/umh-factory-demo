@@ -1,6 +1,7 @@
 name: "electronics-through-hole"
 domain: "electronics"
 description: "Through-hole PCB assembly line for high-reliability boards"
+downtime_cost_per_hour: 350
 machines:
   - stage: 1
     type: "robot_pick_place"

@@ -1,6 +1,7 @@
 name: "electronics-smt"
 domain: "electronics"
 description: "Surface-mount technology PCB assembly line"
+downtime_cost_per_hour: 450
 machines:
   - stage: 1
     type: "smt_placement"

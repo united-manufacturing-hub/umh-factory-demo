@@ -133,6 +133,7 @@ class LineConfig:
     stages: List[StageConfig]
     buffer_capacity: int
     recipes: List[RecipeConfig]
+    downtime_cost_per_hour: float = 500.0
 
 
 # ---------------------------------------------------------------------------
@@ -680,7 +681,8 @@ def load_line_configs(lines_dir: str) -> Dict[str, LineConfig]:
                     overrides=overrides,
                 ))
 
-            result[name] = LineConfig(name=name, stages=stages, buffer_capacity=buf_cap, recipes=recipes)
+            downtime_cost = data.get("downtime_cost_per_hour", 500.0)
+            result[name] = LineConfig(name=name, stages=stages, buffer_capacity=buf_cap, recipes=recipes, downtime_cost_per_hour=downtime_cost)
     return result
 
 
@@ -1481,11 +1483,15 @@ def insert_production_orders(conn, asset_id: int, orders: List[Dict], batch_size
     return inserted
 
 
-def insert_part_scrap_costs(conn, line_configs: Dict[str, 'LineConfig']) -> int:
-    """Insert per-part scrap costs from line template recipes into part_scrap_costs table."""
+def insert_part_scrap_costs(conn, line_configs: Dict[str, 'LineConfig'],
+                            used_templates: Optional[set] = None) -> int:
+    """Insert per-part scrap costs from line template recipes into part_scrap_costs table.
+    If used_templates is provided, only insert costs for those templates."""
     parts = []
     seen = set()
     for lc in line_configs.values():
+        if used_templates and lc.name not in used_templates:
+            continue
         for recipe in lc.recipes:
             if recipe.cost_per_unit > 0 and recipe.product_id not in seen:
                 parts.append((recipe.product_id, recipe.cost_per_unit, recipe.description))
@@ -1506,6 +1512,50 @@ def insert_part_scrap_costs(conn, line_configs: Dict[str, 'LineConfig']) -> int:
     return inserted
 
 
+def insert_line_downtime_costs(conn, line_configs: Dict[str, 'LineConfig'],
+                               line_template_map: Dict[str, str]) -> int:
+    """Insert per-line downtime costs into line_downtime_costs table.
+
+    line_template_map: {line_instance_name -> template_name}
+    When multiple instances share a template, costs get a small variation (+-5%).
+    """
+    # Group instances by template to apply variation
+    template_instances: Dict[str, List[str]] = {}
+    for line_name, tmpl_name in line_template_map.items():
+        template_instances.setdefault(tmpl_name, []).append(line_name)
+
+    rows = []
+    for tmpl_name, instances in template_instances.items():
+        tmpl = line_configs.get(tmpl_name)
+        if not tmpl:
+            continue
+        base_cost = tmpl.downtime_cost_per_hour
+        if len(instances) == 1:
+            rows.append((instances[0], base_cost))
+        else:
+            # Apply small variation for duplicate line types
+            for i, line_name in enumerate(sorted(instances)):
+                # Spread +-5% around base: e.g. 2 instances -> -2.5%, +2.5%
+                offset = (i - (len(instances) - 1) / 2) * 0.05 / max(len(instances) - 1, 1)
+                varied_cost = round(base_cost * (1 + offset), 2)
+                rows.append((line_name, varied_cost))
+
+    if not rows:
+        return 0
+    cursor = conn.cursor()
+    execute_values(
+        cursor,
+        """INSERT INTO line_downtime_costs (line_name, cost_per_hour)
+        VALUES %s
+        ON CONFLICT (line_name) DO NOTHING""",
+        rows,
+    )
+    inserted = cursor.rowcount
+    conn.commit()
+    cursor.close()
+    return inserted
+
+
 def cleanup_historical_data(conn):
     """Delete all previously generated historical data."""
     cursor = conn.cursor()
@@ -1518,6 +1568,8 @@ def cleanup_historical_data(conn):
         ("machine_stops", "DELETE FROM machine_stops"),
         ("production_orders", "DELETE FROM production_orders WHERE order_id LIKE 'ORD-HIST-%'"),
         ("shifts", "DELETE FROM shifts"),
+        ("part_scrap_costs", "DELETE FROM part_scrap_costs"),
+        ("line_downtime_costs", "DELETE FROM line_downtime_costs"),
     ]
 
     for name, sql in tables:
@@ -1661,10 +1713,6 @@ def main():
 
         cleanup_historical_data(conn)
 
-        if line_templates:
-            cost_count = insert_part_scrap_costs(conn, line_templates)
-            print(f"  Inserted {cost_count} part scrap costs from line templates")
-
     # Generate and insert shifts
     shift_records = generate_shifts(start_time, end_time, args.skip_weekends)
     print(f"  Generated {len(shift_records)} shift records")
@@ -1680,6 +1728,25 @@ def main():
         if key not in lines:
             lines[key] = []
         lines[key].append(wc)
+
+    # Build line_name -> template_name mapping for selected lines only
+    line_template_map: Dict[str, str] = {}
+    used_templates: set = set()
+    for line_name, line_workcells in lines.items():
+        if not line_name:
+            continue
+        machine_list = line_workcells[0].get("line_machines", [])
+        tmpl_name = find_line_template(machine_list, line_templates)
+        if tmpl_name:
+            line_template_map[line_name] = tmpl_name
+            used_templates.add(tmpl_name)
+
+    # Insert costs only for selected lines/products
+    if conn and line_templates and used_templates:
+        cost_count = insert_part_scrap_costs(conn, line_templates, used_templates)
+        print(f"  Inserted {cost_count} part scrap costs from selected line templates")
+        downtime_count = insert_line_downtime_costs(conn, line_templates, line_template_map)
+        print(f"  Inserted {downtime_count} line downtime costs")
 
     total_tags = 0
     total_tag_strings = 0

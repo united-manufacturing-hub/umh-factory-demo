@@ -1,6 +1,7 @@
 name: "metal-parts-fabrication"
 domain: "metal-parts"
 description: "Sheet metal cutting, bending, and finishing line"
+downtime_cost_per_hour: 500
 machines:
   - stage: 1
     type: "laser_cutter"

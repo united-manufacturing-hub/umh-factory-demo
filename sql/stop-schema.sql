@@ -153,5 +153,17 @@ CREATE TABLE IF NOT EXISTS part_scrap_costs (
 
 -- Part scrap costs are seeded from line template YAMLs via generate-historical-data.py
 
+-- -----------------------------------------------------------------------------
+-- Table: line_downtime_costs
+-- Per-line downtime cost for margin calculations
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS line_downtime_costs (
+    line_name VARCHAR(100) PRIMARY KEY,
+    cost_per_hour NUMERIC(10,2) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Line downtime costs are seeded from line template YAMLs via generate-historical-data.py
+
 -- Success message
 DO $$ BEGIN RAISE NOTICE 'Stop schema created successfully'; END $$;

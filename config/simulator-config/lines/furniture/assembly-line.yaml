@@ -1,6 +1,7 @@
 name: "furniture-assembly"
 domain: "furniture"
 description: "Furniture panel machining and assembly line"
+downtime_cost_per_hour: 250
 machines:
   - stage: 1
     type: "cnc_router"

@@ -1,6 +1,7 @@
 name: "pharma-batch"
 domain: "pharma"
 description: "Pharmaceutical batch processing and filling line"
+downtime_cost_per_hour: 1500
 machines:
   - stage: 1
     type: "reactor_vessel"

@@ -1,6 +1,7 @@
 name: "window-frame"
 domain: "window"
 description: "Window frame fabrication and glazing line"
+downtime_cost_per_hour: 300
 machines:
   - stage: 1
     type: "profile_cutter"

@@ -1,6 +1,7 @@
 name: "plastic-parts-molding"
 domain: "plastic-parts"
 description: "Plastic extrusion, injection molding, and trimming line"
+downtime_cost_per_hour: 400
 machines:
   - stage: 1
     type: "extruder"

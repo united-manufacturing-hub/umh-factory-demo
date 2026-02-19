@@ -90,7 +90,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1)\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN (SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1)\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n)\nSELECT\n  ROUND(\n    (get_total_downtime_minutes('${enterprise}','${site}','shopfloor',\n      CASE WHEN '${line:raw}' = 'All' THEN '' ELSE '${line:raw}' END, '',\n      (SELECT t_from FROM tr), (SELECT t_to FROM tr)) / 60.0 * ${downtime_cost_per_hour})\n    +\n    (SELECT COALESCE(SUM(po.quantity_scrap * COALESCE(psc.cost_per_unit, 0)), 0)\n     FROM production_orders po\n     JOIN asset a ON po.asset_id = a.id\n     LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n     WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n       AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n       AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n       AND po.quantity_scrap > 0)\n  ) AS \"value\"",
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),(SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1))\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1), NOW())\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n)\nSELECT\n  ROUND(\n    COALESCE((SELECT SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0))\n     FROM machine_stops ms\n     JOIN asset a ON ms.asset_id = a.id\n     LEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\n     WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n       AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n       AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n    ), 0)\n    +\n    COALESCE((SELECT SUM(po.quantity_scrap * COALESCE(psc.cost_per_unit, 0))\n     FROM production_orders po\n     JOIN asset a ON po.asset_id = a.id\n     LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n     WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n       AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n       AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n       AND po.quantity_scrap > 0\n    ), 0)\n  ) AS \"value\"",
           "refId": "A"
         }
       ],
@@ -185,7 +185,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1)\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN (SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1)\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n),\ndowntime_costs AS (\n  SELECT\n    reason AS \"Reason\",\n    ROUND(duration_mins / 60.0 * ${downtime_cost_per_hour}) AS \"\u20ac Impact\"\n  FROM get_stop_reasons_pareto(\n    '${enterprise}','${site}','shopfloor',\n    CASE WHEN '${line:raw}' = 'All' THEN '' ELSE '${line:raw}' END, '',\n    (SELECT t_from FROM tr), (SELECT t_to FROM tr), 5)\n  WHERE category IN ('Unplanned', 'External')\n),\nscrap_costs AS (\n  SELECT\n    'Scrap: ' || po.part_number AS \"Reason\",\n    SUM(po.quantity_scrap * COALESCE(psc.cost_per_unit, 0)) AS \"\u20ac Impact\"\n  FROM production_orders po\n  JOIN asset a ON po.asset_id = a.id\n  LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n  WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n    AND po.quantity_scrap > 0\n  GROUP BY po.part_number\n)\nSELECT * FROM downtime_costs\nUNION ALL\nSELECT * FROM scrap_costs\nORDER BY \"\u20ac Impact\" DESC\nLIMIT 5",
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),(SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1))\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1), NOW())\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n),\ndowntime_costs AS (\n  SELECT\n    COALESCE(sr.name, 'Unspecified') AS \"Reason\",\n    ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0))) AS \"\u20ac Impact\"\n  FROM machine_stops ms\n  JOIN asset a ON ms.asset_id = a.id\n  JOIN stop_reasons sr ON ms.stop_reason_id = sr.id\n  LEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\n  WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND sr.category IN ('Unplanned', 'External')\n    AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n  GROUP BY sr.name\n),\nscrap_costs AS (\n  SELECT\n    'Scrap: ' || po.part_number AS \"Reason\",\n    SUM(po.quantity_scrap * COALESCE(psc.cost_per_unit, 0)) AS \"\u20ac Impact\"\n  FROM production_orders po\n  JOIN asset a ON po.asset_id = a.id\n  LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n  WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n    AND po.quantity_scrap > 0\n  GROUP BY po.part_number\n)\nSELECT * FROM downtime_costs\nUNION ALL\nSELECT * FROM scrap_costs\nORDER BY \"\u20ac Impact\" DESC\nLIMIT 5",
           "refId": "A"
         }
       ],
@@ -353,11 +353,170 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1)\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN (SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1)\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n)\nSELECT\n  ms.start_time AS \"Timestamp\",\n  a.line AS \"Line\",\n  a.workcell AS \"Machine\",\n  sr.name AS \"Reason\",\n  sr.category AS \"Category\",\n  ROUND(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600\n    * ${downtime_cost_per_hour})::integer AS \"\u20ac Impact\"\nFROM machine_stops ms\nJOIN asset a ON ms.asset_id = a.id\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND sr.category IN ('Unplanned', 'External')\n  AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n\nUNION ALL\n\nSELECT\n  po.started_at AS \"Timestamp\",\n  a.line AS \"Line\",\n  '' AS \"Machine\",\n  'Scrap: ' || po.part_number AS \"Reason\",\n  'Quality' AS \"Category\",\n  (po.quantity_scrap * COALESCE(psc.cost_per_unit, 0))::integer AS \"\u20ac Impact\"\nFROM production_orders po\nJOIN asset a ON po.asset_id = a.id\nLEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n  AND po.quantity_scrap > 0\n\nORDER BY \"Timestamp\" DESC\nLIMIT 50",
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),(SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1))\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1), NOW())\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n)\nSELECT\n  ms.start_time AS \"Timestamp\",\n  a.line AS \"Line\",\n  a.workcell AS \"Machine\",\n  sr.name AS \"Reason\",\n  sr.category AS \"Category\",\n  ROUND(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600\n    * COALESCE(ldc.cost_per_hour, 0))::integer AS \"\u20ac Impact\"\nFROM machine_stops ms\nJOIN asset a ON ms.asset_id = a.id\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nLEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND sr.category IN ('Unplanned', 'External')\n  AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n\nUNION ALL\n\nSELECT\n  po.started_at AS \"Timestamp\",\n  a.line AS \"Line\",\n  '' AS \"Machine\",\n  'Scrap: ' || po.part_number AS \"Reason\",\n  'Quality' AS \"Category\",\n  (po.quantity_scrap * COALESCE(psc.cost_per_unit, 0))::integer AS \"\u20ac Impact\"\nFROM production_orders po\nJOIN asset a ON po.asset_id = a.id\nLEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n  AND po.quantity_scrap > 0\n\nORDER BY \"Timestamp\" DESC\nLIMIT 50",
           "refId": "A"
         }
       ],
       "title": "Evidence Trail",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "\u20ac Impact"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-RdYlGr"
+                }
+              },
+              {
+                "id": "max",
+                "value": 2000
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Category"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "applyToRow": false,
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "options": {
+                      "Unplanned": {
+                        "color": "red",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "External": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    },
+                    "type": "value"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Downtime (min)"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "min"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "\u20ac Impact"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),(SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1))\n    WHEN 'Last Shift' THEN (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN date_trunc('week', NOW())\n    WHEN 'Last Week' THEN date_trunc('week', NOW()) - INTERVAL '7 days'\n    ELSE $__timeFrom()\n  END AS t_from,\n  CASE '${shift}'\n    WHEN 'Current Shift' THEN COALESCE((SELECT end_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1), NOW())\n    WHEN 'Last Shift' THEN (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1)\n    WHEN 'This Week' THEN NOW()\n    WHEN 'Last Week' THEN date_trunc('week', NOW())\n    ELSE $__timeTo()\n  END AS t_to\n)\nSELECT\n  a.line AS \"Line\",\n  a.workcell AS \"Machine\",\n  COALESCE(sr.name, 'Unspecified') AS \"Reason\",\n  sr.category AS \"Category\",\n  COUNT(*) AS \"Stops\",\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0))::integer AS \"Downtime (min)\",\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0)))::integer AS \"\u20ac Impact\"\nFROM machine_stops ms\nJOIN asset a ON ms.asset_id = a.id\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nLEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND sr.category IN ('Unplanned', 'External')\n  AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\nGROUP BY a.line, a.workcell, sr.name, sr.category\nORDER BY \"\u20ac Impact\" DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Cost Breakdown",
       "type": "table"
     },
     {
@@ -428,9 +587,9 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 24,
+        "w": 12,
         "x": 0,
-        "y": 17
+        "y": 27
       },
       "id": 4,
       "options": {
@@ -466,6 +625,114 @@
         }
       ],
       "title": "Scrap Cost Table",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "\u20ac/Hour"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "currencyEUR"
+              },
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Line"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 27
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "Line"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT line_name AS \"Line\", cost_per_hour AS \"\u20ac/Hour\" FROM line_downtime_costs ORDER BY line_name",
+          "refId": "A"
+        }
+      ],
+      "title": "Line Downtime Costs",
       "type": "table"
     }
   ],
@@ -584,23 +851,6 @@
         ],
         "query": "Time picker,Current Shift,Last Shift,This Week,Last Week",
         "type": "custom"
-      },
-      {
-        "current": {
-          "text": "500",
-          "value": "500"
-        },
-        "label": "\u20ac per Hour Downtime",
-        "name": "downtime_cost_per_hour",
-        "options": [
-          {
-            "selected": true,
-            "text": "500",
-            "value": "500"
-          }
-        ],
-        "query": "500",
-        "type": "textbox"
       }
     ]
   },

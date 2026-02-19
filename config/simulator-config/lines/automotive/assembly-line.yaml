@@ -1,6 +1,7 @@
 name: "automotive-assembly"
 domain: "automotive"
 description: "Automotive door assembly and painting line"
+downtime_cost_per_hour: 1200
 machines:
   - stage: 1
     type: "robot_pick_place"

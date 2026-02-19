@@ -1,6 +1,7 @@
 name: "automotive-welding"
 domain: "automotive"
 description: "Automotive body welding line for car and truck frames"
+downtime_cost_per_hour: 800
 machines:
   - stage: 1
     type: "metal_forming"

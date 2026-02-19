@@ -1,6 +1,7 @@
 name: "food-beverage-filling"
 domain: "food-beverage"
 description: "High-speed beverage filling and labeling line"
+downtime_cost_per_hour: 600
 machines:
   - stage: 1
     type: "filling_machine"
