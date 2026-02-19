@@ -17,6 +17,9 @@
 #
 # Optional:
 #   - A logo file (any format: png, jpg, svg) in the current directory
+#
+# Development:
+#   bash quick-start.sh --local=/path/to/repo  # Use local templates (skip GitHub download)
 
 set -euo pipefail
 
@@ -24,13 +27,21 @@ set -euo pipefail
 USE_REPO=""
 CLI_VERSION=""
 SIMULATOR_PROFILE=""
+LOCAL_TEMPLATES=""
 for arg in "$@"; do
     case "$arg" in
         --repo=*) USE_REPO="${arg#--repo=}" ;;
         --version=*) CLI_VERSION="${arg#--version=}" ;;
         --profile=*) SIMULATOR_PROFILE="${arg#--profile=}" ;;
+        --local=*) LOCAL_TEMPLATES="${arg#--local=}" ;;
+        --local) echo "Error: --local requires a path (e.g. --local=/path/to/repo)"; exit 1 ;;
     esac
 done
+
+if [ -n "$LOCAL_TEMPLATES" ] && [ ! -d "$LOCAL_TEMPLATES" ]; then
+    echo -e "${RED:-}Error: --local path does not exist: $LOCAL_TEMPLATES${NC:-}"
+    exit 1
+fi
 
 # ─── Configuration ───────────────────────────────────────────────
 # Resolve template version: --version flag > VERSION env var > auto-detect latest in builder
@@ -557,9 +568,11 @@ docker rm -f "$BUILDER_NAME" 2>/dev/null || true
 docker run -d \
     --name "$BUILDER_NAME" \
     -v "$(pwd):/workspace" \
+    ${LOCAL_TEMPLATES:+-v "$LOCAL_TEMPLATES:/local-templates:ro"} \
     -e PHASE=all \
     ${TEMPLATE_VERSION:+-e "VERSION=${TEMPLATE_VERSION}"} \
     ${USE_REPO:+-e "REPO=${USE_REPO}"} \
+    ${LOCAL_TEMPLATES:+-e "LOCAL_TEMPLATES=/local-templates"} \
     -e "HISTORY_DAYS=${HISTORY_DAYS}" \
     -e "SELECTED_LINES=${SELECTED_LINES}" \
     -e "HOST_IP=${HOST_IP}" \

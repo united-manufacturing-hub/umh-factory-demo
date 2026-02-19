@@ -7,6 +7,7 @@ set -euo pipefail
 REPO="${REPO:-united-manufacturing-hub/umh-factory-demo}"
 USE_DEV=false
 TARGET_VERSION=""
+LOCAL_PATH=""
 
 # Parse only version-related args (everything else passes through)
 for arg in "$@"; do
@@ -14,8 +15,19 @@ for arg in "$@"; do
         --dev) USE_DEV=true ;;
         --version=*) TARGET_VERSION="${arg#--version=}" ;;
         --repo=*) REPO="${arg#--repo=}" ;;
+        --local=*) LOCAL_PATH="${arg#--local=}" ;;
+        --local) echo "Error: --local requires a path (e.g. --local=/path/to/repo)" >&2; exit 1 ;;
     esac
 done
+
+# If --local, skip download and run local quick-start.sh directly
+if [ -n "$LOCAL_PATH" ]; then
+    if [ ! -f "$LOCAL_PATH/quick-start.sh" ]; then
+        echo "Error: $LOCAL_PATH/quick-start.sh not found" >&2; exit 1
+    fi
+    echo "Using local source: $LOCAL_PATH"
+    exec bash "$LOCAL_PATH/quick-start.sh" "$@"
+fi
 
 # Resolve release tag
 if [ -n "$TARGET_VERSION" ]; then
