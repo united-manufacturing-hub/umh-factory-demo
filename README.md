@@ -225,6 +225,16 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.4 (2026-02-20)
+
+### Fixes
+- handle already-renamed umh service on re-runs
+
+### Other
+- Merge dev: handle already-renamed umh service on re-runs
+
+**Full Changelog**: [`v1.3.3...v1.3.4`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.3...v1.3.4)
+
 ## v1.3.3 (2026-02-20)
 
 ### Other
