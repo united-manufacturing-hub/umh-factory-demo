@@ -583,6 +583,7 @@ docker run -d \
     -e "PORT_UMH=${PORT_UMH}" \
     -e "PORT_OPCUA_START=${PORT_OPCUA_START}" \
     -e "PORT_MODBUS=${PORT_MODBUS}" \
+    -e "PROJECT_NAME=${PROJECT_NAME}" \
     "$BUILDER_IMAGE"
 
 echo -e "${GREEN}  ✓ Builder started${NC}"

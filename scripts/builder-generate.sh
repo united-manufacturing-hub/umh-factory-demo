@@ -122,7 +122,43 @@ else
     exit 1
 fi
 
-echo -e "${GREEN}  ✓ docker-compose.yaml found with $UMH_SERVICE service${NC}"
+# Compute project-prefixed service name for multi-demo isolation
+PROJECT_NAME="${PROJECT_NAME:-}"
+if [ -n "$PROJECT_NAME" ]; then
+    NEW_UMH_SERVICE="${PROJECT_NAME}-${UMH_SERVICE}"
+else
+    NEW_UMH_SERVICE="$UMH_SERVICE"
+fi
+
+# Rename the service key in docker-compose.yaml if project-prefixed
+if [ "$NEW_UMH_SERVICE" != "$UMH_SERVICE" ]; then
+    echo "  Renaming service '$UMH_SERVICE' -> '$NEW_UMH_SERVICE'..."
+    python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+with open('$WORK_DIR/docker-compose.yaml') as f:
+    compose = yaml.load(f)
+services = compose['services']
+old_name = '$UMH_SERVICE'
+new_name = '$NEW_UMH_SERVICE'
+if old_name in services:
+    # Preserve insertion order: rebuild with new key
+    from ruamel.yaml.comments import CommentedMap
+    new_services = CommentedMap()
+    for k, v in services.items():
+        if k == old_name:
+            new_services[new_name] = v
+        else:
+            new_services[k] = v
+    compose['services'] = new_services
+with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
+    yaml.dump(compose, f)
+"
+    echo -e "${GREEN}  ✓ Service renamed to $NEW_UMH_SERVICE${NC}"
+fi
+
+echo -e "${GREEN}  ✓ docker-compose.yaml found with $UMH_SERVICE service (using as: $NEW_UMH_SERVICE)${NC}"
 
 # ============================================================
 # Step 2: Extract configuration from docker-compose.yaml
@@ -370,16 +406,10 @@ if [ -d "$WORK_DIR/grafana-provisioning/dashboards" ]; then
     cp "$TEMPLATES_DIR/config/grafana-provisioning/dashboards/default.yaml" "$WORK_DIR/grafana-provisioning/dashboards/default.yaml"
 fi
 
-# Update nginx config for umh service name
-if [ -f "$WORK_DIR/configs/nginx.conf" ] && [ "$UMH_SERVICE" = "umh-core" ]; then
-    sed -i 's|http://umh:|http://umh-core:|g' "$WORK_DIR/configs/nginx.conf"
-    echo -e "${GREEN}  ✓ Updated nginx.conf to use service name: $UMH_SERVICE${NC}"
-fi
-
-# Update docker-compose.yaml webhook URLs
-if [ "$UMH_SERVICE" = "umh-core" ]; then
-    sed -i 's|http://umh:|http://umh-core:|g' "$WORK_DIR/docker-compose.yaml"
-    echo -e "${GREEN}  ✓ Updated docker-compose.yaml webhook URLs to use service name: $UMH_SERVICE${NC}"
+# Substitute __UMH_SERVICE__ placeholder in nginx config with the actual service name
+if [ -f "$WORK_DIR/configs/nginx.conf" ]; then
+    sed -i "s|__UMH_SERVICE__|${NEW_UMH_SERVICE}|g" "$WORK_DIR/configs/nginx.conf"
+    echo -e "${GREEN}  ✓ Updated nginx.conf to use service name: $NEW_UMH_SERVICE${NC}"
 fi
 
 # ============================================================
@@ -997,7 +1027,7 @@ else:
         env.append(env_name + '=' + count)
 
 # Add webhook env vars pointing to erp-receiver inside umh-core
-umh_service = '$UMH_SERVICE'
+umh_service = '$NEW_UMH_SERVICE'
 env.append(f'SIMULATOR_WEBHOOK_ENABLED=true')
 env.append(f'SIMULATOR_WEBHOOK_TARGET_URL=http://{umh_service}:8090/api/v1/')
 
