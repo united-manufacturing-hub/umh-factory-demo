@@ -225,6 +225,16 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.3 (2026-02-20)
+
+### Other
+- Merge dev: remove container_name on umh-core rename
+- fixed renaming
+- fixed missing --dev flag
+- added renaming of umh-core to allow multiple demos on the same host.
+
+**Full Changelog**: [`v1.3.2...v1.3.3`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.2...v1.3.3)
+
 ## v1.3.2 (2026-02-20)
 
 ### Other
