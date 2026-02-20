@@ -47,8 +47,17 @@ fi
 
 echo "Using release: ${TAG}"
 
+# Build passthrough args, replacing --dev/--version with the resolved version
+PASSTHROUGH_ARGS=("--version=${TAG#v}")
+for arg in "$@"; do
+    case "$arg" in
+        --dev|--version=*) ;; # already resolved
+        *) PASSTHROUGH_ARGS+=("$arg") ;;
+    esac
+done
+
 # Download and run the version-specific quick-start.sh
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/quick-start.sh"
 curl -fsSL "$DOWNLOAD_URL" -o quick-start.sh
 chmod +x quick-start.sh
-exec bash quick-start.sh "$@"
+exec bash quick-start.sh "${PASSTHROUGH_ARGS[@]}"
