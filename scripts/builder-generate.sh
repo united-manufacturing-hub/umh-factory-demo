@@ -111,27 +111,33 @@ if [ ! -f "$WORK_DIR/docker-compose.yaml" ]; then
     exit 1
 fi
 
-# Check if umh or umh-core service exists
+# Check if umh or umh-core service exists (also handle already-renamed services from previous runs)
+PROJECT_NAME="${PROJECT_NAME:-}"
 UMH_SERVICE=""
 if grep -q "^\s*umh:" "$WORK_DIR/docker-compose.yaml"; then
     UMH_SERVICE="umh"
 elif grep -q "^\s*umh-core:" "$WORK_DIR/docker-compose.yaml"; then
     UMH_SERVICE="umh-core"
+elif [ -n "$PROJECT_NAME" ] && grep -q "^\s*${PROJECT_NAME}-umh-core:" "$WORK_DIR/docker-compose.yaml"; then
+    # Already renamed from a previous run
+    UMH_SERVICE="umh-core"
+elif [ -n "$PROJECT_NAME" ] && grep -q "^\s*${PROJECT_NAME}-umh:" "$WORK_DIR/docker-compose.yaml"; then
+    # Already renamed from a previous run
+    UMH_SERVICE="umh"
 else
     echo -e "${RED}Error: 'umh' or 'umh-core' service not found in docker-compose.yaml${NC}"
     exit 1
 fi
 
 # Compute project-prefixed service name for multi-demo isolation
-PROJECT_NAME="${PROJECT_NAME:-}"
 if [ -n "$PROJECT_NAME" ]; then
     NEW_UMH_SERVICE="${PROJECT_NAME}-${UMH_SERVICE}"
 else
     NEW_UMH_SERVICE="$UMH_SERVICE"
 fi
 
-# Rename the service key in docker-compose.yaml if project-prefixed
-if [ "$NEW_UMH_SERVICE" != "$UMH_SERVICE" ]; then
+# Rename the service key in docker-compose.yaml if needed
+if ! grep -q "^\s*${NEW_UMH_SERVICE}:" "$WORK_DIR/docker-compose.yaml"; then
     echo "  Renaming service '$UMH_SERVICE' -> '$NEW_UMH_SERVICE'..."
     python3 -c "
 from ruamel.yaml import YAML
@@ -149,7 +155,7 @@ if old_name in services:
     for k, v in services.items():
         if k == old_name:
             new_services[new_name] = v
-            # Remove or rename container_name to avoid conflicts between demos
+            # Remove container_name to avoid conflicts between demos
             if 'container_name' in v:
                 del v['container_name']
         else:
@@ -159,6 +165,21 @@ with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
     yaml.dump(compose, f)
 "
     echo -e "${GREEN}  ✓ Service renamed to $NEW_UMH_SERVICE${NC}"
+else
+    echo -e "${GREEN}  ✓ Service already named $NEW_UMH_SERVICE${NC}"
+    # Still remove container_name if present (from older runs)
+    python3 -c "
+from ruamel.yaml import YAML
+yaml = YAML()
+yaml.preserve_quotes = True
+with open('$WORK_DIR/docker-compose.yaml') as f:
+    compose = yaml.load(f)
+svc = compose['services'].get('$NEW_UMH_SERVICE', {})
+if 'container_name' in svc:
+    del svc['container_name']
+    with open('$WORK_DIR/docker-compose.yaml', 'w') as f:
+        yaml.dump(compose, f)
+"
 fi
 
 echo -e "${GREEN}  ✓ docker-compose.yaml found with $UMH_SERVICE service (using as: $NEW_UMH_SERVICE)${NC}"
