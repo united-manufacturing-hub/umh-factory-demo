@@ -225,6 +225,14 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.2 (2026-02-20)
+
+### Other
+- fixed missing --dev flag
+- added renaming of umh-core to allow multiple demos on the same host.
+
+**Full Changelog**: [`v1.3.1...v1.3.2`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.1...v1.3.2)
+
 ## v1.3.1 (2026-02-19)
 
 ### Other
