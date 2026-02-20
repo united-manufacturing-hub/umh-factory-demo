@@ -149,6 +149,9 @@ if old_name in services:
     for k, v in services.items():
         if k == old_name:
             new_services[new_name] = v
+            # Remove or rename container_name to avoid conflicts between demos
+            if 'container_name' in v:
+                del v['container_name']
         else:
             new_services[k] = v
     compose['services'] = new_services
