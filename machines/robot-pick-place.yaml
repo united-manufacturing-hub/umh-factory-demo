@@ -227,7 +227,7 @@ protocolConverter:
             - "ns=1;i=21"
             - "ns=1;i=22"
           pollRate: 1000
-          subscribeEnabled: false
+          subscribeEnabled: true
       pipeline:
         processors:
           - tag_processor:

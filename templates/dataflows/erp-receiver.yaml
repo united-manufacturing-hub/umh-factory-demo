@@ -46,10 +46,11 @@ pipeline:
                   type: "order_progress"
               };
           } else if (eventType === 'order.closed') {
-              // order.closed data is the full Order struct: {id, good_qty, scrap_qty, ...}
+              // order.closed data is the full Order struct: {id, good_qty, scrap_qty, planned_qty, ...}
               msg.meta.umh_topic = "umh.v1.__ENTERPRISE__.__SITE__._erp.orders";
               msg.payload = {
                   orderId: data.id || data.order_id || '',
+                  quantity: data.planned_qty || 0,
                   quantityCompleted: data.good_qty || 0,
                   quantityScrap: data.scrap_qty || 0,
                   status: 'COMPLETED',

@@ -13,6 +13,7 @@ Path Options:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from io import StringIO
@@ -55,6 +56,19 @@ def load_factory_setup(setup_path):
 # ---------------------------------------------------------------------------
 # Template assembly
 # ---------------------------------------------------------------------------
+
+def get_dataflow_requirements(df_file):
+    """Parse '# requires: ...' comments from a dataflow YAML header."""
+    requires = set()
+    with open(df_file) as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped.startswith('#'):
+                break
+            if stripped.startswith('# requires:'):
+                requires.update(r.strip() for r in stripped.split(':', 1)[1].split(','))
+    return requires
+
 
 def build_dataflow_entry(df_file, enterprise, site):
     """Load a dataflow YAML, substitute placeholders, wrap in dataFlow entry."""
@@ -149,7 +163,7 @@ def get_docker_compose_values(output_dir):
 # Main config generation
 # ---------------------------------------------------------------------------
 
-def generate_config(factory_setup, machines, templates_dir, output_dir):
+def generate_config(factory_setup, machines, templates_dir, output_dir, skip_features=None):
     """Generate the complete config.yaml."""
     yaml = YAML()
     yaml.preserve_quotes = True
@@ -227,10 +241,15 @@ def generate_config(factory_setup, machines, templates_dir, output_dir):
     config['templates'] = {'protocolConverter': pc_templates}
 
     # --- Dataflows ---
+    skip = skip_features or set()
     dataflows_dir = templates_dir / 'dataflows'
     if dataflows_dir.exists():
         df_entries = []
         for df_file in sorted(dataflows_dir.glob('*.yaml')):
+            reqs = get_dataflow_requirements(df_file)
+            if reqs & skip:
+                print(f"  Skipping dataflow: {df_file.stem} (requires: {', '.join(reqs & skip)})")
+                continue
             print(f"  Adding dataflow: {df_file.stem}")
             df_entries.append(build_dataflow_entry(df_file, enterprise, site))
         if df_entries:
@@ -329,8 +348,13 @@ def main():
 
     print(f"\nGenerating config for: {factory_setup.get('enterprise', '?')}/{factory_setup.get('site', '?')}")
 
+    # Determine features to skip based on env vars
+    skip_features = set()
+    if os.environ.get('NO_HISTORIAN', 'false').lower() == 'true':
+        skip_features.add('historian')
+
     # Generate umh-core config
-    generate_config(factory_setup, machines, templates_dir, output_dir)
+    generate_config(factory_setup, machines, templates_dir, output_dir, skip_features=skip_features)
 
     print("\nDone.")
 

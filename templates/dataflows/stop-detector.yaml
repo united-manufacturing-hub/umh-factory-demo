@@ -1,6 +1,7 @@
 # Stop Detector Dataflow
 # Monitors machine State tag and detects stops (state != 2)
 # Creates/closes stop records in machine_stops table
+# requires: historian
 
 input:
   uns:
@@ -10,10 +11,10 @@ input:
 pipeline:
   processors:
     - bloblang: |-
-        # Only process State tag with historian=true
+        # Only process state tag with historian=true (lowercase from machine configs)
         let tag_name = meta("tag_name").or("")
         let historian = meta("historian").or("false")
-        root = if $tag_name == "State" && $historian == "true" {
+        root = if ($tag_name == "state" || $tag_name == "State") && $historian == "true" {
           root
         } else {
           deleted()

@@ -101,7 +101,8 @@ CREATE TABLE IF NOT EXISTS shifts (
     asset_id INTEGER,  -- NULL = applies to all assets
     created_at TIMESTAMPTZ DEFAULT NOW(),
 
-    CONSTRAINT shifts_time_check CHECK (end_time > start_time)
+    CONSTRAINT shifts_time_check CHECK (end_time > start_time),
+    UNIQUE (asset_id, shift_name, start_time)
 );
 
 CREATE INDEX IF NOT EXISTS idx_shifts_time ON shifts(start_time, end_time);

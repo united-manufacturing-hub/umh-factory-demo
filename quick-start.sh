@@ -10,6 +10,11 @@
 #   bash quick-start.sh --repo=user/repo    # Use a different template repo
 #   bash quick-start.sh --version=1.0.0     # Use a specific version
 #   bash quick-start.sh --profile=demo-mixed # Use a simulator profile (skip line selection)
+#   bash quick-start.sh --no-grafana        # Skip Grafana and Nginx containers
+#   bash quick-start.sh --no-historian      # Skip TimescaleDB, pgbouncer, Grafana, and Nginx
+#   bash quick-start.sh --ip=192.168.1.10   # Set host IP (skip IP selection prompt)
+#   bash quick-start.sh --fixed-demo        # Use standard demo lines (1,4,7,9)
+#   bash quick-start.sh --ip=10.0.0.5 --no-historian --fixed-demo  # Fully non-interactive
 #
 # Prerequisites:
 #   - Docker Engine + Docker Compose v2, or Podman + podman-compose
@@ -28,6 +33,10 @@ USE_REPO=""
 CLI_VERSION=""
 SIMULATOR_PROFILE=""
 LOCAL_TEMPLATES=""
+NO_GRAFANA=false
+NO_HISTORIAN=false
+CLI_IP=""
+FIXED_DEMO=false
 for arg in "$@"; do
     case "$arg" in
         --repo=*) USE_REPO="${arg#--repo=}" ;;
@@ -35,8 +44,18 @@ for arg in "$@"; do
         --profile=*) SIMULATOR_PROFILE="${arg#--profile=}" ;;
         --local=*) LOCAL_TEMPLATES="${arg#--local=}" ;;
         --local) echo "Error: --local requires a path (e.g. --local=/path/to/repo)"; exit 1 ;;
+        --no-grafana) NO_GRAFANA=true ;;
+        --no-historian) NO_HISTORIAN=true; NO_GRAFANA=true ;;
+        --ip=*) CLI_IP="${arg#--ip=}" ;;
+        --fixed-demo) FIXED_DEMO=true ;;
     esac
 done
+
+# When --ip and --no-historian are both set, skip all interactive prompts
+SKIP_PROMPTS=false
+if [ -n "$CLI_IP" ] && $NO_HISTORIAN; then
+    SKIP_PROMPTS=true
+fi
 
 if [ -n "$LOCAL_TEMPLATES" ] && [ ! -d "$LOCAL_TEMPLATES" ]; then
     echo -e "${RED:-}Error: --local path does not exist: $LOCAL_TEMPLATES${NC:-}"
@@ -117,109 +136,115 @@ echo -e "${GREEN}  ✓ docker-compose.yaml found${NC}"
 
 # ─── Detect host IP ──────────────────────────────────────────────
 echo ""
-echo -e "${BLUE}Detecting host IP address...${NC}"
-
-# Collect candidate IPs
-IP_OPTIONS=()
-IP_LABELS=()
-
-# 1) localhost (always available)
-IP_OPTIONS+=("localhost")
-IP_LABELS+=("localhost (this machine only)")
-
-# 2) Container bridge network gateway
-BRIDGE_IP=$($CONTAINER_CMD network inspect bridge 2>/dev/null \
-    | grep -o '"Gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
-if [ -z "$BRIDGE_IP" ]; then
-    BRIDGE_IP=$($CONTAINER_CMD network inspect podman 2>/dev/null \
-        | grep -o '"gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
-fi
-if [ -n "$BRIDGE_IP" ]; then
-    IP_OPTIONS+=("$BRIDGE_IP")
-    IP_LABELS+=("$BRIDGE_IP (container bridge)")
-fi
-
-# 3) Local/LAN IP (Wi-Fi, Ethernet, VPN, etc.)
-LOCAL_IP=""
-if command -v ip &>/dev/null; then
-    LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
-elif command -v ifconfig &>/dev/null; then
-    LOCAL_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1)
-fi
-if [ -z "$LOCAL_IP" ]; then
-    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
-fi
-if [ -n "$LOCAL_IP" ]; then
-    IP_OPTIONS+=("$LOCAL_IP")
-    IP_LABELS+=("$LOCAL_IP (LAN)")
-fi
-
-# 4) Tailscale IP (try CLI first, then check network interfaces)
-TAILSCALE_IP=""
-if command -v tailscale &>/dev/null; then
-    TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || true)
-elif [ -x "/Applications/Tailscale.app/Contents/MacOS/Tailscale" ]; then
-    TAILSCALE_IP=$(/Applications/Tailscale.app/Contents/MacOS/Tailscale ip -4 2>/dev/null || true)
-fi
-if [ -z "$TAILSCALE_IP" ]; then
-    # Fallback: look for 100.x.x.x (CGNAT) on tailscale0 (Linux) or utun interfaces (macOS)
-    if command -v ip &>/dev/null; then
-        TAILSCALE_IP=$(ip -4 addr show tailscale0 2>/dev/null | awk '/inet 100\./{print $2}' | cut -d/ -f1 | head -1)
-    fi
-    if [ -z "$TAILSCALE_IP" ] && command -v ifconfig &>/dev/null; then
-        TAILSCALE_IP=$(ifconfig 2>/dev/null | awk '/inet 100\./{print $2}' | head -1)
-    fi
-fi
-if [ -n "$TAILSCALE_IP" ]; then
-    IP_OPTIONS+=("$TAILSCALE_IP")
-    IP_LABELS+=("$TAILSCALE_IP (Tailscale)")
-fi
-
-# 5) External/public IP
-EXTERNAL_IP=$(curl -s --max-time 3 https://ifconfig.me 2>/dev/null \
-    || curl -s --max-time 3 https://api.ipify.org 2>/dev/null || true)
-if [ -n "$EXTERNAL_IP" ]; then
-    IP_OPTIONS+=("$EXTERNAL_IP")
-    IP_LABELS+=("$EXTERNAL_IP (external/public)")
-fi
-
-echo ""
-echo "  Dashboards will use this IP for API calls (e.g., form panels)."
-echo "  Use 'localhost' only if accessing Grafana from this same machine."
-echo ""
-
-for i in "${!IP_OPTIONS[@]}"; do
-    echo "    $((i + 1))) ${IP_LABELS[$i]}"
-done
-echo "    $((${#IP_OPTIONS[@]} + 1))) Enter manually"
-echo ""
-
-# Default to LAN IP if available, otherwise localhost
-DEFAULT_IDX=1
-if [ -n "${LOCAL_IP:-}" ]; then
-    for i in "${!IP_OPTIONS[@]}"; do
-        if [ "${IP_OPTIONS[$i]}" = "$LOCAL_IP" ]; then
-            DEFAULT_IDX=$((i + 1))
-            break
-        fi
-    done
-fi
-
-read -p "  Select IP [${DEFAULT_IDX}]: " IP_CHOICE
-IP_CHOICE="${IP_CHOICE:-$DEFAULT_IDX}"
-
-MANUAL_IDX=$((${#IP_OPTIONS[@]} + 1))
-if [ "$IP_CHOICE" -eq "$MANUAL_IDX" ] 2>/dev/null; then
-    read -p "  Enter IP or hostname: " HOST_IP
-    HOST_IP="${HOST_IP:-localhost}"
-elif [ "$IP_CHOICE" -ge 1 ] 2>/dev/null && [ "$IP_CHOICE" -le "${#IP_OPTIONS[@]}" ] 2>/dev/null; then
-    HOST_IP="${IP_OPTIONS[$((IP_CHOICE - 1))]}"
+if [ -n "$CLI_IP" ]; then
+    HOST_IP="$CLI_IP"
+    echo -e "${BLUE}Host IP set via --ip flag${NC}"
+    echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
 else
-    echo -e "${YELLOW}  Invalid selection, using default${NC}"
-    HOST_IP="${IP_OPTIONS[$((DEFAULT_IDX - 1))]}"
-fi
+    echo -e "${BLUE}Detecting host IP address...${NC}"
 
-echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
+    # Collect candidate IPs
+    IP_OPTIONS=()
+    IP_LABELS=()
+
+    # 1) localhost (always available)
+    IP_OPTIONS+=("localhost")
+    IP_LABELS+=("localhost (this machine only)")
+
+    # 2) Container bridge network gateway
+    BRIDGE_IP=$($CONTAINER_CMD network inspect bridge 2>/dev/null \
+        | grep -o '"Gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
+    if [ -z "$BRIDGE_IP" ]; then
+        BRIDGE_IP=$($CONTAINER_CMD network inspect podman 2>/dev/null \
+            | grep -o '"gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
+    fi
+    if [ -n "$BRIDGE_IP" ]; then
+        IP_OPTIONS+=("$BRIDGE_IP")
+        IP_LABELS+=("$BRIDGE_IP (container bridge)")
+    fi
+
+    # 3) Local/LAN IP (Wi-Fi, Ethernet, VPN, etc.)
+    LOCAL_IP=""
+    if command -v ip &>/dev/null; then
+        LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
+    elif command -v ifconfig &>/dev/null; then
+        LOCAL_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1)
+    fi
+    if [ -z "$LOCAL_IP" ]; then
+        LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
+    fi
+    if [ -n "$LOCAL_IP" ]; then
+        IP_OPTIONS+=("$LOCAL_IP")
+        IP_LABELS+=("$LOCAL_IP (LAN)")
+    fi
+
+    # 4) Tailscale IP (try CLI first, then check network interfaces)
+    TAILSCALE_IP=""
+    if command -v tailscale &>/dev/null; then
+        TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || true)
+    elif [ -x "/Applications/Tailscale.app/Contents/MacOS/Tailscale" ]; then
+        TAILSCALE_IP=$(/Applications/Tailscale.app/Contents/MacOS/Tailscale ip -4 2>/dev/null || true)
+    fi
+    if [ -z "$TAILSCALE_IP" ]; then
+        # Fallback: look for 100.x.x.x (CGNAT) on tailscale0 (Linux) or utun interfaces (macOS)
+        if command -v ip &>/dev/null; then
+            TAILSCALE_IP=$(ip -4 addr show tailscale0 2>/dev/null | awk '/inet 100\./{print $2}' | cut -d/ -f1 | head -1)
+        fi
+        if [ -z "$TAILSCALE_IP" ] && command -v ifconfig &>/dev/null; then
+            TAILSCALE_IP=$(ifconfig 2>/dev/null | awk '/inet 100\./{print $2}' | head -1)
+        fi
+    fi
+    if [ -n "$TAILSCALE_IP" ]; then
+        IP_OPTIONS+=("$TAILSCALE_IP")
+        IP_LABELS+=("$TAILSCALE_IP (Tailscale)")
+    fi
+
+    # 5) External/public IP
+    EXTERNAL_IP=$(curl -s --max-time 3 https://ifconfig.me 2>/dev/null \
+        || curl -s --max-time 3 https://api.ipify.org 2>/dev/null || true)
+    if [ -n "$EXTERNAL_IP" ]; then
+        IP_OPTIONS+=("$EXTERNAL_IP")
+        IP_LABELS+=("$EXTERNAL_IP (external/public)")
+    fi
+
+    echo ""
+    echo "  Dashboards will use this IP for API calls (e.g., form panels)."
+    echo "  Use 'localhost' only if accessing Grafana from this same machine."
+    echo ""
+
+    for i in "${!IP_OPTIONS[@]}"; do
+        echo "    $((i + 1))) ${IP_LABELS[$i]}"
+    done
+    echo "    $((${#IP_OPTIONS[@]} + 1))) Enter manually"
+    echo ""
+
+    # Default to LAN IP if available, otherwise localhost
+    DEFAULT_IDX=1
+    if [ -n "${LOCAL_IP:-}" ]; then
+        for i in "${!IP_OPTIONS[@]}"; do
+            if [ "${IP_OPTIONS[$i]}" = "$LOCAL_IP" ]; then
+                DEFAULT_IDX=$((i + 1))
+                break
+            fi
+        done
+    fi
+
+    read -p "  Select IP [${DEFAULT_IDX}]: " IP_CHOICE
+    IP_CHOICE="${IP_CHOICE:-$DEFAULT_IDX}"
+
+    MANUAL_IDX=$((${#IP_OPTIONS[@]} + 1))
+    if [ "$IP_CHOICE" -eq "$MANUAL_IDX" ] 2>/dev/null; then
+        read -p "  Enter IP or hostname: " HOST_IP
+        HOST_IP="${HOST_IP:-localhost}"
+    elif [ "$IP_CHOICE" -ge 1 ] 2>/dev/null && [ "$IP_CHOICE" -le "${#IP_OPTIONS[@]}" ] 2>/dev/null; then
+        HOST_IP="${IP_OPTIONS[$((IP_CHOICE - 1))]}"
+    else
+        echo -e "${YELLOW}  Invalid selection, using default${NC}"
+        HOST_IP="${IP_OPTIONS[$((DEFAULT_IDX - 1))]}"
+    fi
+
+    echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
+fi
 
 # ─── Port scanning and selection ─────────────────────────────────
 echo ""
@@ -314,7 +339,13 @@ if [ ${#CONFLICTS[@]} -gt 0 ]; then
         echo "  $conflict"
     done
     echo ""
-    read -p "Accept these ports? [Y/n]: " ACCEPT_PORTS
+
+    if $SKIP_PROMPTS; then
+        ACCEPT_PORTS="Y"
+        echo -e "${GREEN}  Auto-accepting port remappings (non-interactive mode)${NC}"
+    else
+        read -p "Accept these ports? [Y/n]: " ACCEPT_PORTS
+    fi
 
     if [[ -n "$ACCEPT_PORTS" && ! "$ACCEPT_PORTS" =~ ^[Yy] ]]; then
         # Per-service prompts for each conflicted port
@@ -411,22 +442,29 @@ fi
 # ─── Historical data prompt ──────────────────────────────────────
 echo ""
 HISTORY_DAYS=0
-read -p "Generate historical data? [y/N]: " GENERATE_HISTORY
-if [[ "$GENERATE_HISTORY" =~ ^[Yy] ]]; then
-    read -p "  Number of days (1-7, default: 7): " HISTORY_DAYS
-    HISTORY_DAYS=${HISTORY_DAYS:-7}
-    if [ "$HISTORY_DAYS" -gt 7 ] 2>/dev/null; then
-        echo -e "${YELLOW}  Capping to 7 days${NC}"
-        HISTORY_DAYS=7
+if $SKIP_PROMPTS; then
+    echo -e "${GREEN}  ✓ Skipping historical data (non-interactive mode)${NC}"
+else
+    read -p "Generate historical data? [y/N]: " GENERATE_HISTORY
+    if [[ "$GENERATE_HISTORY" =~ ^[Yy] ]]; then
+        read -p "  Number of days (1-7, default: 7): " HISTORY_DAYS
+        HISTORY_DAYS=${HISTORY_DAYS:-7}
+        if [ "$HISTORY_DAYS" -gt 7 ] 2>/dev/null; then
+            echo -e "${YELLOW}  Capping to 7 days${NC}"
+            HISTORY_DAYS=7
+        fi
+        echo -e "${GREEN}  ✓ Will generate $HISTORY_DAYS days of history${NC}"
     fi
-    echo -e "${GREEN}  ✓ Will generate $HISTORY_DAYS days of history${NC}"
 fi
 
 # ─── Production line selection ────────────────────────────────────
 echo ""
 SELECTED_LINES=""
 
-if [ -n "$SIMULATOR_PROFILE" ]; then
+if $FIXED_DEMO; then
+    SELECTED_LINES="automotive-welding:1,electronics-through-hole:1,window-frame:1,metal-parts-fabrication:1"
+    echo -e "${GREEN}  ✓ Using fixed demo lines: automotive-welding, electronics-through-hole, window-frame, metal-parts-fabrication${NC}"
+elif [ -n "$SIMULATOR_PROFILE" ]; then
     echo -e "${GREEN}  ✓ Using simulator profile: $SIMULATOR_PROFILE${NC}"
     SELECTED_LINES="__profile__:${SIMULATOR_PROFILE}"
 else
@@ -495,50 +533,58 @@ fi
 
 # ─── Logo / branding image ─────────────────────────────────────────
 echo ""
-echo -e "${BLUE}Checking for custom logo...${NC}"
+if $NO_GRAFANA; then
+    echo -e "${BLUE}Skipping logo check (Grafana disabled)${NC}"
+else
+    echo -e "${BLUE}Checking for custom logo...${NC}"
 
-LOGO_FOUND=false
-for f in "$WORK_DIR"/logo.{png,jpg,jpeg,svg} "$WORK_DIR"/img/logo.{png,jpg,jpeg,svg}; do
-    if [ -f "$f" ]; then
-        echo -e "${GREEN}  ✓ Found logo: $f${NC}"
-        LOGO_FOUND=true
-        break
-    fi
-done
-
-# Also check for any image file in workspace root (the builder accepts any image)
-if ! $LOGO_FOUND; then
-    for f in "$WORK_DIR"/*.png "$WORK_DIR"/*.jpg "$WORK_DIR"/*.jpeg "$WORK_DIR"/*.svg; do
+    LOGO_FOUND=false
+    for f in "$WORK_DIR"/logo.{png,jpg,jpeg,svg} "$WORK_DIR"/img/logo.{png,jpg,jpeg,svg}; do
         if [ -f "$f" ]; then
-            echo -e "${GREEN}  ✓ Found image: $(basename "$f")${NC}"
+            echo -e "${GREEN}  ✓ Found logo: $f${NC}"
             LOGO_FOUND=true
             break
         fi
     done
-fi
 
-if ! $LOGO_FOUND; then
-    echo -e "${YELLOW}  No logo image found in current directory.${NC}"
-    echo "  The builder will use the default UMH logo unless you provide one."
-    echo ""
-    read -p "  Paste a URL to a logo image (or press Enter to skip): " LOGO_URL
+    # Also check for any image file in workspace root (the builder accepts any image)
+    if ! $LOGO_FOUND; then
+        for f in "$WORK_DIR"/*.png "$WORK_DIR"/*.jpg "$WORK_DIR"/*.jpeg "$WORK_DIR"/*.svg; do
+            if [ -f "$f" ]; then
+                echo -e "${GREEN}  ✓ Found image: $(basename "$f")${NC}"
+                LOGO_FOUND=true
+                break
+            fi
+        done
+    fi
 
-    if [ -n "$LOGO_URL" ]; then
-        # Derive filename from URL, fallback to logo.png
-        LOGO_FILENAME=$(basename "$LOGO_URL" | sed 's/[?#].*//')
-        case "$LOGO_FILENAME" in
-            *.png|*.jpg|*.jpeg|*.svg) ;; # keep extension
-            *) LOGO_FILENAME="logo.png" ;;
-        esac
-
-        echo "  Downloading logo..."
-        if curl -fsSL --max-time 15 "$LOGO_URL" -o "$WORK_DIR/$LOGO_FILENAME"; then
-            echo -e "${GREEN}  ✓ Saved as $LOGO_FILENAME${NC}"
+    if ! $LOGO_FOUND; then
+        if $SKIP_PROMPTS; then
+            echo "  Using default UMH logo (non-interactive mode)."
         else
-            echo -e "${YELLOW}  Download failed — continuing with default logo${NC}"
+            echo -e "${YELLOW}  No logo image found in current directory.${NC}"
+            echo "  The builder will use the default UMH logo unless you provide one."
+            echo ""
+            read -p "  Paste a URL to a logo image (or press Enter to skip): " LOGO_URL
+
+            if [ -n "$LOGO_URL" ]; then
+                # Derive filename from URL, fallback to logo.png
+                LOGO_FILENAME=$(basename "$LOGO_URL" | sed 's/[?#].*//')
+                case "$LOGO_FILENAME" in
+                    *.png|*.jpg|*.jpeg|*.svg) ;; # keep extension
+                    *) LOGO_FILENAME="logo.png" ;;
+                esac
+
+                echo "  Downloading logo..."
+                if curl -fsSL --max-time 15 "$LOGO_URL" -o "$WORK_DIR/$LOGO_FILENAME"; then
+                    echo -e "${GREEN}  ✓ Saved as $LOGO_FILENAME${NC}"
+                else
+                    echo -e "${YELLOW}  Download failed — continuing with default logo${NC}"
+                fi
+            else
+                echo "  Skipping — will use default UMH logo."
+            fi
         fi
-    else
-        echo "  Skipping — will use default UMH logo."
     fi
 fi
 
@@ -546,7 +592,13 @@ fi
 echo ""
 echo -e "${BLUE}Checking for container name conflicts...${NC}"
 
-COMPOSE_SERVICES="grafana pgbouncer timescaledb machine-simulator nginx"
+COMPOSE_SERVICES="machine-simulator"
+if ! $NO_HISTORIAN; then
+    COMPOSE_SERVICES="$COMPOSE_SERVICES pgbouncer timescaledb"
+fi
+if ! $NO_GRAFANA; then
+    COMPOSE_SERVICES="$COMPOSE_SERVICES grafana nginx"
+fi
 CONFLICTS_FOUND=false
 for svc in $COMPOSE_SERVICES; do
     FULL_NAME="${PROJECT_NAME}-${svc}-1"
@@ -563,8 +615,13 @@ fi
 
 if $CONFLICTS_FOUND; then
     echo ""
-    echo -e "${YELLOW}Existing containers found from a previous run.${NC}"
-    read -p "Remove them and continue? [Y/n]: " REMOVE_EXISTING
+    if $SKIP_PROMPTS; then
+        REMOVE_EXISTING="Y"
+        echo -e "${GREEN}  Auto-removing conflicting containers (non-interactive mode)${NC}"
+    else
+        echo -e "${YELLOW}Existing containers found from a previous run.${NC}"
+        read -p "Remove them and continue? [Y/n]: " REMOVE_EXISTING
+    fi
     if [[ -z "$REMOVE_EXISTING" || "$REMOVE_EXISTING" =~ ^[Yy] ]]; then
         for svc in $COMPOSE_SERVICES; do
             FULL_NAME="${PROJECT_NAME}-${svc}-1"
@@ -610,6 +667,8 @@ $CONTAINER_CMD run -d \
     -e "PORT_OPCUA_START=${PORT_OPCUA_START}" \
     -e "PORT_MODBUS=${PORT_MODBUS}" \
     -e "PROJECT_NAME=${PROJECT_NAME}" \
+    -e "NO_GRAFANA=${NO_GRAFANA}" \
+    -e "NO_HISTORIAN=${NO_HISTORIAN}" \
     "$BUILDER_IMAGE"
 
 echo -e "${GREEN}  ✓ Builder started${NC}"
@@ -638,8 +697,10 @@ echo -e "${GREEN}  ✓ Phase 1 complete - all files generated${NC}"
 
 # ─── Build and start compose services ────────────────────────────
 echo ""
-echo -e "${BLUE}Building Grafana container (with custom branding)...${NC}"
-$COMPOSE_CMD build grafana
+if ! $NO_GRAFANA; then
+    echo -e "${BLUE}Building Grafana container (with custom branding)...${NC}"
+    $COMPOSE_CMD build grafana
+fi
 
 echo ""
 echo -e "${BLUE}Starting services...${NC}"
@@ -719,11 +780,15 @@ echo ""
 echo -e "${GREEN}=== Setup Complete ===${NC}"
 echo ""
 echo "Access points:"
-echo "  Grafana:           http://${HOST_IP}:${PORT_GRAFANA}  (admin/admin)"
+if ! $NO_GRAFANA; then
+    echo "  Grafana:           http://${HOST_IP}:${PORT_GRAFANA}  (admin/admin)"
+    echo "  Nginx:             http://${HOST_IP}:${PORT_NGINX}"
+fi
 echo "  Machine Simulator: http://${HOST_IP}:${PORT_SIMULATOR}"
 echo "  UMH Core:          http://${HOST_IP}:${PORT_UMH}"
-echo "  PostgreSQL:        ${HOST_IP}:${PORT_PGBOUNCER}  (postgres/postgres)"
-echo "  Nginx:             http://${HOST_IP}:${PORT_NGINX}"
+if ! $NO_HISTORIAN; then
+    echo "  PostgreSQL:        ${HOST_IP}:${PORT_PGBOUNCER}  (postgres/postgres)"
+fi
 echo "  OPC-UA:            ${HOST_IP}:${PORT_OPCUA_START}-${OPCUA_END}"
 echo "  Modbus TCP:        ${HOST_IP}:${PORT_MODBUS}"
 

@@ -1,0 +1,49 @@
+# Shift Generator Dataflow
+# Generates shift schedule (Morning 06:00-14:00, Afternoon 14:00-22:00)
+# and publishes to UNS _erp.shifts topic for the shift-bridge to consume.
+# Runs once on startup and then every 24 hours.
+# requires: historian
+
+input:
+  generate:
+    interval: 24h
+    count: 0
+    mapping: root = ""
+
+pipeline:
+  processors:
+    - nodered_js:
+        code: |
+          const now = new Date();
+          const shifts = [];
+          for (let d = -1; d <= 7; d++) {
+            const day = new Date(now.getTime());
+            day.setUTCDate(now.getUTCDate() + d);
+            day.setUTCHours(0, 0, 0, 0);
+
+            const ms = new Date(day.getTime()); ms.setUTCHours(6);
+            const me = new Date(day.getTime()); me.setUTCHours(14);
+            shifts.push({
+              shift: "Morning",
+              start: ms.toISOString(),
+              end: me.toISOString(),
+              timestamp_ms: Date.now()
+            });
+
+            const as2 = new Date(day.getTime()); as2.setUTCHours(14);
+            const ae = new Date(day.getTime()); ae.setUTCHours(22);
+            shifts.push({
+              shift: "Afternoon",
+              start: as2.toISOString(),
+              end: ae.toISOString(),
+              timestamp_ms: Date.now()
+            });
+          }
+          msg.payload = shifts;
+          return msg;
+    - unarchive:
+        format: json_array
+
+output:
+  uns:
+    umh_topic: umh.v1.__ENTERPRISE__.__SITE__._erp.shifts

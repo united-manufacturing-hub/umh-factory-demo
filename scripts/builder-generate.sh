@@ -34,6 +34,9 @@ PORT_UMH="${PORT_UMH:-8090}"
 PORT_OPCUA_START="${PORT_OPCUA_START:-4840}"
 PORT_MODBUS="${PORT_MODBUS:-502}"
 SELECTED_LINES="${SELECTED_LINES:-automotive-welding:1}"
+NO_GRAFANA="${NO_GRAFANA:-false}"
+NO_HISTORIAN="${NO_HISTORIAN:-false}"
+export NO_HISTORIAN
 
 DEFAULT_PORT_NGINX=80
 DEFAULT_PORT_GRAFANA=8080
@@ -330,8 +333,17 @@ echo -e "${GREEN}Factory configuration: ${#LINE_NAMES[@]} lines, $TOTAL_MACHINES
 echo ""
 echo -e "${BLUE}Step 4: Merging additional services into docker-compose.yaml...${NC}"
 
+# Build list of services to add based on flags
+ALL_SERVICES="machine-simulator"
+if [ "$NO_HISTORIAN" != "true" ]; then
+    ALL_SERVICES="$ALL_SERVICES pgbouncer timescaledb"
+fi
+if [ "$NO_GRAFANA" != "true" ]; then
+    ALL_SERVICES="$ALL_SERVICES grafana nginx"
+fi
+
 SERVICES_TO_ADD=()
-for svc in grafana pgbouncer timescaledb machine-simulator nginx; do
+for svc in $ALL_SERVICES; do
     if ! grep -q "^\s*$svc:" "$WORK_DIR/docker-compose.yaml"; then
         SERVICES_TO_ADD+=("$svc")
     else
@@ -411,33 +423,33 @@ echo ""
 echo -e "${BLUE}Step 6: Copying required runtime directories...${NC}"
 
 # Copy grafana-provisioning from config/
-if [ -d "$TEMPLATES_DIR/config/grafana-provisioning" ]; then
+if [ "$NO_GRAFANA" != "true" ] && [ -d "$TEMPLATES_DIR/config/grafana-provisioning" ]; then
     mkdir -p "$WORK_DIR/grafana-provisioning"
     cp -r "$TEMPLATES_DIR/config/grafana-provisioning/"* "$WORK_DIR/grafana-provisioning/"
     echo -e "${GREEN}  ✓ Copied: grafana-provisioning/${NC}"
 fi
 
 # Copy nginx config from config/
-if [ -f "$TEMPLATES_DIR/config/nginx.conf" ]; then
+if [ "$NO_GRAFANA" != "true" ] && [ -f "$TEMPLATES_DIR/config/nginx.conf" ]; then
     mkdir -p "$WORK_DIR/configs"
     cp "$TEMPLATES_DIR/config/nginx.conf" "$WORK_DIR/configs/nginx.conf"
     echo -e "${GREEN}  ✓ Copied: configs/nginx.conf${NC}"
 fi
 
 # Copy SQL files
-if [ -d "$TEMPLATES_DIR/sql" ]; then
+if [ "$NO_HISTORIAN" != "true" ] && [ -d "$TEMPLATES_DIR/sql" ]; then
     mkdir -p "$WORK_DIR/sql"
     cp "$TEMPLATES_DIR/sql/"*.sql "$WORK_DIR/sql/"
     echo -e "${GREEN}  ✓ Copied: sql/${NC}"
 fi
 
 # Update dashboard provisioning (disable file-based, use API import)
-if [ -d "$WORK_DIR/grafana-provisioning/dashboards" ]; then
+if [ "$NO_GRAFANA" != "true" ] && [ -d "$WORK_DIR/grafana-provisioning/dashboards" ]; then
     cp "$TEMPLATES_DIR/config/grafana-provisioning/dashboards/default.yaml" "$WORK_DIR/grafana-provisioning/dashboards/default.yaml"
 fi
 
 # Substitute __UMH_SERVICE__ placeholder in nginx config with the actual service name
-if [ -f "$WORK_DIR/configs/nginx.conf" ]; then
+if [ "$NO_GRAFANA" != "true" ] && [ -f "$WORK_DIR/configs/nginx.conf" ]; then
     sed -i "s|__UMH_SERVICE__|${NEW_UMH_SERVICE}|g" "$WORK_DIR/configs/nginx.conf"
     echo -e "${GREEN}  ✓ Updated nginx.conf to use service name: $NEW_UMH_SERVICE${NC}"
 fi
@@ -450,11 +462,15 @@ echo -e "${BLUE}Step 7: Creating required directories...${NC}"
 
 mkdir -p "$WORK_DIR/umh-core-data/backups"
 mkdir -p "$WORK_DIR/umh-config/backups"
-mkdir -p "$WORK_DIR/grafana"
-mkdir -p "$WORK_DIR/grafana-data"
-mkdir -p "$WORK_DIR/timescaledb-data"
+if [ "$NO_GRAFANA" != "true" ]; then
+    mkdir -p "$WORK_DIR/grafana"
+    mkdir -p "$WORK_DIR/grafana-data"
+    mkdir -p "$WORK_DIR/dashboards"
+fi
+if [ "$NO_HISTORIAN" != "true" ]; then
+    mkdir -p "$WORK_DIR/timescaledb-data"
+fi
 mkdir -p "$WORK_DIR/simulator-data"
-mkdir -p "$WORK_DIR/dashboards"
 mkdir -p "$WORK_DIR/simulator-config"
 echo -e "${GREEN}  ✓ All directories created${NC}"
 
@@ -479,6 +495,9 @@ fi
 # Step 8: Setup Grafana branding
 # ============================================================
 echo ""
+if [ "$NO_GRAFANA" = "true" ]; then
+    echo -e "${BLUE}Step 8: Skipping Grafana branding (--no-grafana)${NC}"
+else
 echo -e "${BLUE}Step 8: Setting up Grafana branding...${NC}"
 
 # Image conversion helpers (using local imagemagick, not Docker)
@@ -912,7 +931,11 @@ echo -e "${GREEN}    ✓ production-manager-view.json${NC}"
 cp "$TEMPLATES_DIR/templates/dashboards/andon-board.json" "$WORK_DIR/dashboards/andon-board.json"
 echo -e "${GREEN}    ✓ andon-board.json${NC}"
 
-cp "$TEMPLATES_DIR/templates/dashboards/margin-leakage-dashboard.json" "$WORK_DIR/dashboards/margin-leakage-dashboard.json"
+sed \
+    -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+    -e "s|__SITE__|${LOCATION_1}|g" \
+    "$TEMPLATES_DIR/templates/dashboards/margin-leakage-dashboard.json" \
+    > "$WORK_DIR/dashboards/margin-leakage-dashboard.json"
 echo -e "${GREEN}    ✓ margin-leakage-dashboard.json${NC}"
 
 # --- Generate factory line setup dashboard ---
@@ -982,6 +1005,9 @@ jq --slurpfile targets "$WORK_DIR/dashboards/.targets_tmp.json" \
 rm -f "$WORK_DIR/dashboards/factory-line-setup-dashboard.json.tmp"
 rm -f "$WORK_DIR/dashboards/.targets_tmp.json"
 echo -e "${GREEN}    ✓ factory-line-setup-dashboard.json${NC}"
+
+# End of NO_GRAFANA conditional (Step 8 + 8b)
+fi
 
 # ============================================================
 # Step 9c: Apply port remappings to docker-compose.yaml
@@ -1073,22 +1099,26 @@ API_BASE_URL="http://${HOST_IP}:${PORT_NGINX}"
 
 # Generate stop-reason and operator dashboards (need API_BASE_URL)
 echo ""
-echo -e "${BLUE}Step 9d: Generating API-dependent dashboards...${NC}"
-for dashboard in stop-reason-admin.json operator-dashboard.json; do
-    if [ -f "$TEMPLATES_DIR/templates/dashboards/$dashboard" ]; then
-        sed \
-            -e "s|__API_BASE_URL__|${API_BASE_URL}|g" \
-            -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
-            -e "s|__SITE__|${LOCATION_1}|g" \
-            -e "s|__AREA__|shopfloor|g" \
-            -e "s|__LINE__||g" \
-            "$TEMPLATES_DIR/templates/dashboards/$dashboard" \
-            > "$WORK_DIR/dashboards/$dashboard"
-        echo -e "${GREEN}  ✓ $dashboard${NC}"
-    fi
-done
+if [ "$NO_GRAFANA" = "true" ]; then
+    echo -e "${BLUE}Step 9d: Skipping dashboard generation (--no-grafana)${NC}"
+else
+    echo -e "${BLUE}Step 9d: Generating API-dependent dashboards...${NC}"
+    for dashboard in stop-reason-admin.json operator-dashboard.json; do
+        if [ -f "$TEMPLATES_DIR/templates/dashboards/$dashboard" ]; then
+            sed \
+                -e "s|__API_BASE_URL__|${API_BASE_URL}|g" \
+                -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+                -e "s|__SITE__|${LOCATION_1}|g" \
+                -e "s|__AREA__|shopfloor|g" \
+                -e "s|__LINE__||g" \
+                "$TEMPLATES_DIR/templates/dashboards/$dashboard" \
+                > "$WORK_DIR/dashboards/$dashboard"
+            echo -e "${GREEN}  ✓ $dashboard${NC}"
+        fi
+    done
 
-echo -e "${GREEN}  ✓ All dashboards generated${NC}"
+    echo -e "${GREEN}  ✓ All dashboards generated${NC}"
+fi
 
 # ============================================================
 # Step 13: Generate factory setup file and new config
