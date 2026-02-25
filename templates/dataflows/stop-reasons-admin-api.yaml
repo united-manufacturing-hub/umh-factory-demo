@@ -1,5 +1,6 @@
 # Stop Reasons Admin API Dataflow
 # CRUD API for managing stop reasons
+# requires: historian
 # POST /api/v1/stop-reasons - Create new reason
 # PUT /api/v1/stop-reasons - Update existing reason
 # DELETE /api/v1/stop-reasons - Delete reason

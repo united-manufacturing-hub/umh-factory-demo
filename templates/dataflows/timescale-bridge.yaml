@@ -1,5 +1,6 @@
 # Timescale Bridge Dataflow
 # Consumes historian data from UNS and writes to TimescaleDB (tag/tag_string tables)
+# requires: historian
 
 input:
   uns:

@@ -1,6 +1,7 @@
 # Stop Reason API Dataflow
 # HTTP API to update stop reasons for machine stops
 # POST /api/v1/stop-reason with { stop_id, reason_id }
+# requires: historian
 
 input:
   http_server:

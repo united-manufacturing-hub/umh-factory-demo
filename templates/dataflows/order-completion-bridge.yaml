@@ -1,6 +1,7 @@
 # Order Completion Bridge Dataflow
 # Monitors GoodParts/ScrapParts tags and updates production_orders.quantity_completed
 # Marks orders as COMPLETED when quantity_completed >= quantity
+# requires: historian
 
 input:
   uns:
@@ -10,10 +11,10 @@ input:
 pipeline:
   processors:
     - bloblang: |-
-        # Only process GoodParts tag with historian=true
+        # Only process good_count tag with historian=true (lowercase from machine configs)
         let tag_name = meta("tag_name").or("")
         let historian = meta("historian").or("false")
-        root = if $tag_name == "GoodParts" && $historian == "true" {
+        root = if ($tag_name == "good_count" || $tag_name == "GoodParts") && $historian == "true" {
           root
         } else {
           deleted()

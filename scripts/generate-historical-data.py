@@ -1610,6 +1610,8 @@ def parse_args():
     parser.add_argument("--batch-size", type=int, default=5000, help="Batch size for inserts")
     parser.add_argument("--dry-run", action="store_true", help="Print stats without inserting")
     parser.add_argument("--skip-weekends", action="store_true", help="Skip weekend days")
+    parser.add_argument("--seed-only", action="store_true",
+                        help="Only seed reference tables (shifts, costs) without generating historical tag data")
     return parser.parse_args()
 
 

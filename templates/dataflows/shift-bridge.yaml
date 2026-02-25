@@ -1,9 +1,10 @@
 # Shift Bridge Dataflow
 # Consumes shift data from UNS and writes to PostgreSQL
+# requires: historian
 
 input:
   uns:
-    consumer_group: shiftbridgev1
+    consumer_group: shiftbridgev2
     umh_topic: ^umh\.v1(?:\.[^.]+){0,8}\._erp\.shifts$
 
 pipeline:
@@ -19,11 +20,6 @@ pipeline:
     - bloblang: root = this.catch(deleted())
       label: validate_json
     - bloblang: |-
-        root.timestamp = if this.timestamp_ms != null {
-          (this.timestamp_ms / 1000).ts_format(tz: "UTC")
-        } else {
-          now().ts_format(tz: "UTC")
-        }
         root.shift_name = this.shift.or(this.shiftName).or("unknown")
         root.start_time = this.start.or(this.startTime)
         root.end_time = this.end.or(this.endTime)
@@ -93,14 +89,12 @@ output:
   sql_insert:
     args_mapping: |
       root = [
-        this.timestamp,
         this.asset_id,
         this.shift_name,
         this.start_time,
         this.end_time
       ]
     columns:
-      - timestamp
       - asset_id
       - shift_name
       - start_time
@@ -110,12 +104,13 @@ output:
     init_statement: |
       CREATE TABLE IF NOT EXISTS shifts (
         id SERIAL PRIMARY KEY,
-        timestamp TIMESTAMPTZ NOT NULL,
-        asset_id INTEGER REFERENCES asset(id),
         shift_name VARCHAR(50) NOT NULL,
-        start_time TIMESTAMPTZ,
-        end_time TIMESTAMPTZ,
-        UNIQUE (asset_id, shift_name, start_time)
+        start_time TIMESTAMPTZ NOT NULL,
+        end_time TIMESTAMPTZ NOT NULL,
+        asset_id INTEGER REFERENCES asset(id),
+        created_at TIMESTAMPTZ DEFAULT now(),
+        UNIQUE (asset_id, shift_name, start_time),
+        CHECK (end_time > start_time)
       );
     suffix: ON CONFLICT (asset_id, shift_name, start_time) DO NOTHING
     table: shifts

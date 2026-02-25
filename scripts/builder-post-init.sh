@@ -27,6 +27,8 @@ NC='\033[0m'
 
 HISTORY_DAYS="${HISTORY_DAYS:-0}"
 PORT_GRAFANA="${PORT_GRAFANA:-8080}"
+NO_GRAFANA="${NO_GRAFANA:-false}"
+NO_HISTORIAN="${NO_HISTORIAN:-false}"
 
 echo -e "${BLUE}=== Builder Phase 2: Post-Init ===${NC}"
 echo ""
@@ -81,35 +83,39 @@ wait_for_assets() {
 # ============================================================
 # Step 1: Initialize SQL schema
 # ============================================================
-echo -e "${BLUE}Step 1: Initializing SQL schema...${NC}"
+if [ "$NO_HISTORIAN" = "true" ]; then
+    echo -e "${BLUE}Step 1: Skipping SQL schema (--no-historian)${NC}"
+else
+    echo -e "${BLUE}Step 1: Initializing SQL schema...${NC}"
 
-if ! wait_for_timescaledb; then
-    echo -e "${RED}  Cannot proceed without TimescaleDB${NC}"
-    exit 1
-fi
+    if ! wait_for_timescaledb; then
+        echo -e "${RED}  Cannot proceed without TimescaleDB${NC}"
+        exit 1
+    fi
 
-# Wait a moment for DB to be fully ready
-sleep 2
+    # Wait a moment for DB to be fully ready
+    sleep 2
 
-# Run init-functions.sql first
-if [ -f "$WORK_DIR/sql/init-functions.sql" ]; then
-    PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/init-functions.sql" 2>/dev/null || true
-    echo -e "${GREEN}  ✓ Asset helper functions initialized${NC}"
-fi
+    # Run init-functions.sql first
+    if [ -f "$WORK_DIR/sql/init-functions.sql" ]; then
+        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/init-functions.sql" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ Asset helper functions initialized${NC}"
+    fi
 
-# Run stop schema
-if [ -f "$WORK_DIR/sql/stop-schema.sql" ]; then
-    PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/stop-schema.sql" 2>/dev/null || true
-    echo -e "${GREEN}  ✓ SQL schema initialized${NC}"
+    # Run stop schema
+    if [ -f "$WORK_DIR/sql/stop-schema.sql" ]; then
+        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/stop-schema.sql" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ SQL schema initialized${NC}"
+    fi
 fi
 
 # ============================================================
 # Step 2: Import dashboards into Grafana via API
 # ============================================================
 echo ""
-echo -e "${BLUE}Step 2: Importing dashboards into Grafana...${NC}"
-
-if wait_for_grafana; then
+if [ "$NO_GRAFANA" = "true" ]; then
+    echo -e "${BLUE}Step 2: Skipping dashboard import (--no-grafana)${NC}"
+elif wait_for_grafana; then
     # Create dashboard folders
     create_folder() {
         local folder_name="$1"
@@ -188,23 +194,30 @@ fi
 # Step 3: Create SQL views (needs asset table from UMH Core)
 # ============================================================
 echo ""
-echo -e "${BLUE}Step 3: Creating SQL views for dashboards...${NC}"
-
-if wait_for_assets; then
-    if [ -f "$WORK_DIR/sql/views.sql" ]; then
-        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/views.sql" 2>/dev/null || true
-        VIEW_COUNT=$(PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -tAc "SELECT COUNT(*) FROM pg_views WHERE schemaname = 'public' AND viewname LIKE 'v_%'" 2>/dev/null || echo "0")
-        echo -e "${GREEN}  ✓ SQL views created (${VIEW_COUNT} views)${NC}"
-    fi
+if [ "$NO_HISTORIAN" = "true" ]; then
+    echo -e "${BLUE}Step 3: Skipping SQL views (--no-historian)${NC}"
 else
-    echo -e "${YELLOW}  Warning: Assets not found - views not created${NC}"
-    echo "  Run manually: psql -h localhost -U postgres -d umh < sql/views.sql"
+    echo -e "${BLUE}Step 3: Creating SQL views for dashboards...${NC}"
+
+    if wait_for_assets; then
+        if [ -f "$WORK_DIR/sql/views.sql" ]; then
+            PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/views.sql" 2>/dev/null || true
+            VIEW_COUNT=$(PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -tAc "SELECT COUNT(*) FROM pg_views WHERE schemaname = 'public' AND viewname LIKE 'v_%'" 2>/dev/null || echo "0")
+            echo -e "${GREEN}  ✓ SQL views created (${VIEW_COUNT} views)${NC}"
+        fi
+    else
+        echo -e "${YELLOW}  Warning: Assets not found - views not created${NC}"
+        echo "  Run manually: psql -h localhost -U postgres -d umh < sql/views.sql"
+    fi
 fi
 
 # ============================================================
 # Step 4: Generate historical data (optional)
 # ============================================================
-if [ "$HISTORY_DAYS" -gt 0 ] 2>/dev/null; then
+if [ "$NO_HISTORIAN" = "true" ]; then
+    echo ""
+    echo -e "${BLUE}Step 4: Skipping historical data (--no-historian)${NC}"
+elif [ "$HISTORY_DAYS" -gt 0 ] 2>/dev/null; then
     echo ""
     echo -e "${BLUE}Step 4: Generating historical data ($HISTORY_DAYS days)...${NC}"
 

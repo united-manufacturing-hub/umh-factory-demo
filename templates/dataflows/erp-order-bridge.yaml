@@ -1,5 +1,6 @@
 # ERP Order Bridge Dataflow
 # Consumes production orders from UNS and writes to PostgreSQL
+# requires: historian
 
 input:
   uns:

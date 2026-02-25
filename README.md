@@ -13,7 +13,7 @@ Factory demo environment for the United Manufacturing Hub (UMH). Sets up a compl
 ```yaml
 services:
   umh-core:
-    image: management.umh.app/oci/united-manufacturing-hub/umh-core:0.7.5
+    image: management.umh.app/oci/united-manufacturing-hub/umh-core:v0.44.8
     restart: unless-stopped
     environment:
       - AUTH_TOKEN=your-auth-token-here
@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factor
 
 ## Machine Simulator
 
-The simulator (`dh2k/machine-simulator-2:v1.0.0`) provides a realistic factory environment with an interactive web UI and full protocol support.
+The simulator (`dh2k/machine-simulator-2:v1.1.0`) provides a realistic factory environment with an interactive web UI and full protocol support.
 
 ### Interactive Web UI
 
@@ -153,10 +153,44 @@ Place a logo file (any format: PNG, JPG, SVG) in your directory before running `
 
 ## Configuration
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--version=X.Y.Z` | — | Template version to download (highest priority) |
-| `VERSION` env var | 1.0.0 | Template version to download |
+### Install Flags
+
+These flags can be passed to `install.sh` or `quick-start.sh`:
+
+| Flag | Description |
+|------|-------------|
+| `--dev` | Use the latest dev prerelease |
+| `--version=X.Y.Z` | Use a specific template version |
+| `--repo=owner/repo` | Use a custom GitHub repository |
+| `--local=/path/to/repo` | Use local templates (skip GitHub download) |
+| `--no-grafana` | Skip Grafana and Nginx containers |
+| `--no-historian` | Skip TimescaleDB, pgbouncer, Grafana, and Nginx (implies `--no-grafana`) |
+| `--ip=<address>` | Set host IP upfront (skip IP selection prompt) |
+| `--fixed-demo` | Use standard demo lines: automotive-welding, electronics-through-hole, window-frame, metal-parts-fabrication |
+
+When `--ip` and `--no-historian` are both set, the setup runs fully non-interactive (unless a port conflict requires resolution).
+
+**Examples:**
+
+```bash
+# Standard interactive setup
+bash install.sh
+
+# Fully automated demo (no prompts)
+bash install.sh --ip=10.0.0.5 --no-historian --fixed-demo
+
+# Development with local templates
+bash install.sh --local=/path/to/umh-simulator --ip=192.168.1.10
+
+# Headless deployment (no UI, just simulator + UMH Core)
+bash install.sh --no-historian --ip=10.0.0.5 --fixed-demo
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VERSION` | 1.0.0 | Template version to download |
 | `BUILDER_IMAGE` | dh2k/demo-builder:v1.0.0 | Builder Docker image |
 | `SELECTED_LINES` | automotive-welding:1 | Line templates and instance counts |
 

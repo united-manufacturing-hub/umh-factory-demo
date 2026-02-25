@@ -763,36 +763,36 @@
       },
       {
         "current": {
-          "text": "Expensive-stuff",
-          "value": "Expensive-stuff"
+          "text": "__ENTERPRISE__",
+          "value": "__ENTERPRISE__"
         },
         "label": "Enterprise",
         "name": "enterprise",
         "options": [
           {
             "selected": true,
-            "text": "Expensive-stuff",
-            "value": "Expensive-stuff"
+            "text": "__ENTERPRISE__",
+            "value": "__ENTERPRISE__"
           }
         ],
-        "query": "Expensive-stuff",
+        "query": "__ENTERPRISE__",
         "type": "textbox"
       },
       {
         "current": {
-          "text": "Brazil",
-          "value": "Brazil"
+          "text": "__SITE__",
+          "value": "__SITE__"
         },
         "label": "Site",
         "name": "site",
         "options": [
           {
             "selected": true,
-            "text": "Brazil",
-            "value": "Brazil"
+            "text": "__SITE__",
+            "value": "__SITE__"
           }
         ],
-        "query": "Brazil",
+        "query": "__SITE__",
         "type": "textbox"
       },
       {
