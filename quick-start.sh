@@ -154,6 +154,11 @@ else
     IP_OPTIONS+=("localhost")
     IP_LABELS+=("localhost (this machine only)")
 
+    # Temporarily disable pipefail for IP detection — these pipelines include
+    # commands (grep, ip, ifconfig, curl) that legitimately return non-zero
+    # when there is no match or no interface, which is expected, not an error.
+    set +o pipefail
+
     # 2) Container bridge network gateway
     BRIDGE_IP=$($CONTAINER_CMD network inspect bridge 2>/dev/null \
         | grep -o '"Gateway": *"[^"]*"' | head -1 | cut -d'"' -f4 || true)
@@ -169,9 +174,9 @@ else
     # 3) Local/LAN IP (Wi-Fi, Ethernet, VPN, etc.)
     LOCAL_IP=""
     if command -v ip &>/dev/null; then
-        LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1)
+        LOCAL_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -1 || true)
     elif command -v ifconfig &>/dev/null; then
-        LOCAL_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1)
+        LOCAL_IP=$(ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2}' | head -1 || true)
     fi
     if [ -z "$LOCAL_IP" ]; then
         LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || true)
@@ -191,10 +196,10 @@ else
     if [ -z "$TAILSCALE_IP" ]; then
         # Fallback: look for 100.x.x.x (CGNAT) on tailscale0 (Linux) or utun interfaces (macOS)
         if command -v ip &>/dev/null; then
-            TAILSCALE_IP=$(ip -4 addr show tailscale0 2>/dev/null | awk '/inet 100\./{print $2}' | cut -d/ -f1 | head -1)
+            TAILSCALE_IP=$(ip -4 addr show tailscale0 2>/dev/null | awk '/inet 100\./{print $2}' | cut -d/ -f1 | head -1 || true)
         fi
         if [ -z "$TAILSCALE_IP" ] && command -v ifconfig &>/dev/null; then
-            TAILSCALE_IP=$(ifconfig 2>/dev/null | awk '/inet 100\./{print $2}' | head -1)
+            TAILSCALE_IP=$(ifconfig 2>/dev/null | awk '/inet 100\./{print $2}' | head -1 || true)
         fi
     fi
     if [ -n "$TAILSCALE_IP" ]; then
@@ -209,6 +214,9 @@ else
         IP_OPTIONS+=("$EXTERNAL_IP")
         IP_LABELS+=("$EXTERNAL_IP (external/public)")
     fi
+
+    # Re-enable pipefail now that IP detection is done
+    set -o pipefail
 
     echo ""
     echo "  Dashboards will use this IP for API calls (e.g., form panels)."
