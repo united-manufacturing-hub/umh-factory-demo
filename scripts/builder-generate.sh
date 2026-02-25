@@ -358,26 +358,31 @@ if [ ${#SERVICES_TO_ADD[@]} -gt 0 ]; then
     cp "$WORK_DIR/docker-compose.yaml" "$WORK_DIR/docker-compose.yaml.backup"
     echo -e "${BLUE}  Backup created: docker-compose.yaml.backup${NC}"
 
-    # YAML-aware merge using Python
+    # YAML-aware merge using Python (only add services from SERVICES_TO_ADD)
     python3 -c "
 from ruamel.yaml import YAML
 yaml = YAML()
 yaml.preserve_quotes = True
+
+allowed = set('${SERVICES_TO_ADD[*]}'.split())
 
 with open('$WORK_DIR/docker-compose.yaml') as f:
     user = yaml.load(f)
 with open('$TEMPLATES_DIR/config/docker-compose.yaml') as f:
     template = yaml.load(f)
 
-# Merge services
+# Merge only allowed services
 if 'services' not in user:
     user['services'] = {}
 for svc, cfg in template.get('services', {}).items():
-    if svc not in user['services']:
+    if svc in allowed and svc not in user['services']:
         user['services'][svc] = cfg
 
-# Merge networks
+# Merge networks (only add timescaledb-network if historian is enabled)
+no_historian = '$NO_HISTORIAN'
 for net, cfg in template.get('networks', {}).items():
+    if net == 'timescaledb-network' and no_historian == 'true':
+        continue
     if 'networks' not in user:
         user['networks'] = {}
     if net not in user['networks']:
