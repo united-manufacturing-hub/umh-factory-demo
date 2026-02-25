@@ -273,6 +273,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.9 (2026-02-25)
+
+### Other
+- fixed pipefail on missing ethernet interface.
+
+**Full Changelog**: [`v1.3.8...v1.3.9`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.8...v1.3.9)
+
 ## v1.3.8 (2026-02-25)
 
 ### Other
