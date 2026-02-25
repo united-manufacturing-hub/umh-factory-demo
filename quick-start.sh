@@ -309,9 +309,14 @@ DEFAULT_PORT_OPCUA_START=4840
 DEFAULT_PORT_MODBUS=502
 OPCUA_COUNT=41  # Up to 41 ports for dynamic line selection (4840-4880)
 
-find_available_port $DEFAULT_PORT_NGINX;    PORT_NGINX=$FOUND_PORT
-find_available_port $DEFAULT_PORT_GRAFANA;  PORT_GRAFANA=$FOUND_PORT
-find_available_port $DEFAULT_PORT_PGBOUNCER; PORT_PGBOUNCER=$FOUND_PORT
+# Only check ports for services that will actually be deployed
+if ! $NO_GRAFANA; then
+    find_available_port $DEFAULT_PORT_NGINX;    PORT_NGINX=$FOUND_PORT
+    find_available_port $DEFAULT_PORT_GRAFANA;  PORT_GRAFANA=$FOUND_PORT
+fi
+if ! $NO_HISTORIAN; then
+    find_available_port $DEFAULT_PORT_PGBOUNCER; PORT_PGBOUNCER=$FOUND_PORT
+fi
 find_available_port $DEFAULT_PORT_SIMULATOR; PORT_SIMULATOR=$FOUND_PORT
 find_available_port $DEFAULT_PORT_UMH;      PORT_UMH=$FOUND_PORT
 find_available_port $DEFAULT_PORT_MODBUS;   PORT_MODBUS=$FOUND_PORT
@@ -320,12 +325,16 @@ OPCUA_END=$((PORT_OPCUA_START + OPCUA_COUNT - 1))
 
 # Check for conflicts
 CONFLICTS=()
-[ "$PORT_NGINX" != "$DEFAULT_PORT_NGINX" ] && \
-    CONFLICTS+=("Nginx:             $DEFAULT_PORT_NGINX -> $PORT_NGINX")
-[ "$PORT_GRAFANA" != "$DEFAULT_PORT_GRAFANA" ] && \
-    CONFLICTS+=("Grafana:           $DEFAULT_PORT_GRAFANA -> $PORT_GRAFANA")
-[ "$PORT_PGBOUNCER" != "$DEFAULT_PORT_PGBOUNCER" ] && \
-    CONFLICTS+=("PostgreSQL:        $DEFAULT_PORT_PGBOUNCER -> $PORT_PGBOUNCER")
+if ! $NO_GRAFANA; then
+    [ "$PORT_NGINX" != "$DEFAULT_PORT_NGINX" ] && \
+        CONFLICTS+=("Nginx:             $DEFAULT_PORT_NGINX -> $PORT_NGINX")
+    [ "$PORT_GRAFANA" != "$DEFAULT_PORT_GRAFANA" ] && \
+        CONFLICTS+=("Grafana:           $DEFAULT_PORT_GRAFANA -> $PORT_GRAFANA")
+fi
+if ! $NO_HISTORIAN; then
+    [ "$PORT_PGBOUNCER" != "$DEFAULT_PORT_PGBOUNCER" ] && \
+        CONFLICTS+=("PostgreSQL:        $DEFAULT_PORT_PGBOUNCER -> $PORT_PGBOUNCER")
+fi
 [ "$PORT_SIMULATOR" != "$DEFAULT_PORT_SIMULATOR" ] && \
     CONFLICTS+=("Machine Simulator: $DEFAULT_PORT_SIMULATOR -> $PORT_SIMULATOR")
 [ "$PORT_UMH" != "$DEFAULT_PORT_UMH" ] && \
@@ -702,10 +711,11 @@ echo -e "${GREEN}  ✓ Phase 1 complete - all files generated${NC}"
 # The builder runs as root, so all generated files are root-owned.
 # Fix ownership so the host user can write (e.g., signal files)
 # and services can write to their data dirs.
-docker run --rm -v "$(pwd):/workspace" alpine sh -c \
-    "chown -R $(id -u):$(id -g) /workspace/.builder \
-     && chown -R 472:0 /workspace/grafana-data \
-     && chown -R 1000:1000 /workspace/umh-core-data"
+CHOWN_CMDS="chown -R $(id -u):$(id -g) /workspace/.builder && chown -R 1000:1000 /workspace/umh-core-data"
+if ! $NO_GRAFANA; then
+    CHOWN_CMDS="$CHOWN_CMDS && chown -R 472:0 /workspace/grafana-data"
+fi
+docker run --rm -v "$(pwd):/workspace" alpine sh -c "$CHOWN_CMDS"
 
 # ─── Build and start compose services ────────────────────────────
 echo ""
