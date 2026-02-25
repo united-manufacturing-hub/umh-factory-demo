@@ -273,6 +273,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.8 (2026-02-25)
+
+### Other
+- fixed default port values.
+
+**Full Changelog**: [`v1.3.7...v1.3.8`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.7...v1.3.8)
+
 ## v1.3.7 (2026-02-25)
 
 ### Other
