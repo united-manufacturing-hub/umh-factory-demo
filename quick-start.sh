@@ -51,9 +51,9 @@ for arg in "$@"; do
     esac
 done
 
-# When --ip and --no-historian are both set, skip all interactive prompts
+# When --no-historian is set, skip all interactive prompts (IP defaults to localhost)
 SKIP_PROMPTS=false
-if [ -n "$CLI_IP" ] && $NO_HISTORIAN; then
+if $NO_HISTORIAN; then
     SKIP_PROMPTS=true
 fi
 
