@@ -273,6 +273,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.7 (2026-02-25)
+
+### Other
+- added skip for chown for grafana when running headless install.
+
+**Full Changelog**: [`v1.3.6...v1.3.7`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.6...v1.3.7)
+
 ## v1.3.6 (2026-02-25)
 
 ### Other
