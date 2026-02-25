@@ -30,6 +30,11 @@ services:
 curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh
 ```
 
+**Latest stable. Headless deployment , fixed demo, no historian, no grafana**
+```bash
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --no-historian --fixed-demo
+```
+
 **Latest dev:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --dev
@@ -166,9 +171,18 @@ These flags can be passed to `install.sh` or `quick-start.sh`:
 | `--no-grafana` | Skip Grafana and Nginx containers |
 | `--no-historian` | Skip TimescaleDB, pgbouncer, Grafana, and Nginx (implies `--no-grafana`) |
 | `--ip=<address>` | Set host IP upfront (skip IP selection prompt) |
-| `--fixed-demo` | Use standard demo lines: automotive-welding, electronics-through-hole, window-frame, metal-parts-fabrication |
+| `--fixed-demo` | Use standard demo lines (see below) |
 
-When `--ip` and `--no-historian` are both set, the setup runs fully non-interactive (unless a port conflict requires resolution).
+**`--fixed-demo` deploys 4 lines with 15 machines:**
+
+| Line | Machines |
+|------|----------|
+| Automotive Welding | Laser Cutter, Robot Welder, Spot Welder, Trimming Press |
+| Electronics Through-Hole | Wave Solder, AOI Inspection, Labeling |
+| Window Frame | Profile Cutter, Corner Welder, Glass Setter, Sealing |
+| Metal Parts Fabrication | Metal Forming, Press Brake, Deburring, Labeling |
+
+When `--no-historian` are set, the setup runs fully non-interactive (unless a port conflict requires resolution).
 
 **Examples:**
 
@@ -182,8 +196,8 @@ bash install.sh --ip=10.0.0.5 --no-historian --fixed-demo
 # Development with local templates
 bash install.sh --local=/path/to/umh-simulator --ip=192.168.1.10
 
-# Headless deployment (no UI, just simulator + UMH Core)
-bash install.sh --no-historian --ip=10.0.0.5 --fixed-demo
+# Headless deployment (no grafana, but simulator + UMH Core + historian)
+bash install.sh --no-grafana --ip=localhost --fixed-demo
 ```
 
 ### Environment Variables

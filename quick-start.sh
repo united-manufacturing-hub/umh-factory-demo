@@ -139,6 +139,9 @@ echo ""
 if [ -n "$CLI_IP" ]; then
     HOST_IP="$CLI_IP"
     echo -e "${BLUE}Host IP set via --ip flag${NC}"
+elif $NO_HISTORIAN; then
+    HOST_IP="localhost"
+    echo -e "${BLUE}Host IP defaulting to localhost (--no-historian)${NC}"
     echo -e "${GREEN}  ✓ Using: $HOST_IP${NC}"
 else
     echo -e "${BLUE}Detecting host IP address...${NC}"
