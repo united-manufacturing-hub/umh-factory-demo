@@ -55,7 +55,7 @@ curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factor
 
 ## Machine Simulator
 
-The simulator (`dh2k/machine-simulator-2:v1.0.0`) provides a realistic factory environment with an interactive web UI and full protocol support.
+The simulator (`dh2k/machine-simulator-2:v1.1.0`) provides a realistic factory environment with an interactive web UI and full protocol support.
 
 ### Interactive Web UI
 
