@@ -273,6 +273,21 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.5 (2026-02-25)
+
+### Other
+- updated readme, fixed ip-skip for --no-historian
+- Merge branch 'dev' into staging
+- bumped machine simulator version to v1.1.0
+- updated builder script.
+- updated readme
+- added new shift generator, change opc-ua to subscription, added skip for historian, grafana, added standard demo for dev.
+- Merge dev: handle already-renamed umh service on re-runs
+- Merge dev: remove container_name on umh-core rename
+- Merge dev: umh-core service renaming + install.sh --dev fix
+
+**Full Changelog**: [`v1.3.4...v1.3.5`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.4...v1.3.5)
+
 ## v1.3.4 (2026-02-20)
 
 ### Fixes
