@@ -273,6 +273,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.6 (2026-02-25)
+
+### Other
+- fixed missing skip och historical data when using --no-historian
+
+**Full Changelog**: [`v1.3.5...v1.3.6`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.5...v1.3.6)
+
 ## v1.3.5 (2026-02-25)
 
 ### Other
