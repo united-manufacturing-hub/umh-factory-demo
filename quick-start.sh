@@ -309,6 +309,11 @@ DEFAULT_PORT_OPCUA_START=4840
 DEFAULT_PORT_MODBUS=502
 OPCUA_COUNT=41  # Up to 41 ports for dynamic line selection (4840-4880)
 
+# Initialize port variables with defaults (needed even when skipped due to set -u)
+PORT_NGINX=$DEFAULT_PORT_NGINX
+PORT_GRAFANA=$DEFAULT_PORT_GRAFANA
+PORT_PGBOUNCER=$DEFAULT_PORT_PGBOUNCER
+
 # Only check ports for services that will actually be deployed
 if ! $NO_GRAFANA; then
     find_available_port $DEFAULT_PORT_NGINX;    PORT_NGINX=$FOUND_PORT
