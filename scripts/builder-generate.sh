@@ -505,11 +505,16 @@ if [ "$NO_GRAFANA" = "true" ]; then
 else
 echo -e "${BLUE}Step 8: Setting up Grafana branding...${NC}"
 
-# Image conversion helpers (using local imagemagick, not Docker)
+# Image conversion helpers
 convert_svg_to_png() {
     local input="$1"
     local output="$2"
-    convert "$input" -resize 512x512 -background none "$output" 2>/dev/null
+    # Prefer rsvg-convert (reliable SVG rendering), fall back to ImageMagick
+    if command -v rsvg-convert &>/dev/null; then
+        rsvg-convert -w 512 -h 512 "$input" -o "$output" 2>/dev/null
+    else
+        convert "$input" -resize 512x512 -background none "$output" 2>/dev/null
+    fi
 }
 
 convert_to_png() {
@@ -658,7 +663,7 @@ COPY logo.svg /usr/share/grafana/public/build/img/grafana_icon.svg
 RUN find /usr/share/grafana/public/build/static/img -name 'grafana_icon*.svg' -exec cp /usr/share/grafana/public/build/img/grafana_icon.svg {} \;
 EOF
 
-# Generate favicon and touch-icon using local imagemagick
+# Generate favicon and touch-icon
 echo "  Generating favicon and touch-icon..."
 if [ -f "$WORK_DIR/grafana/logo.png" ]; then
     convert "$WORK_DIR/grafana/logo.png" -resize 32x32 "$WORK_DIR/grafana/fav32.png" 2>/dev/null \
@@ -666,8 +671,14 @@ if [ -f "$WORK_DIR/grafana/logo.png" ]; then
     convert "$WORK_DIR/grafana/logo.png" -resize 180x180 "$WORK_DIR/grafana/apple-touch-icon.png" 2>/dev/null \
         || cp "$WORK_DIR/grafana/logo.png" "$WORK_DIR/grafana/apple-touch-icon.png"
 else
-    convert "$WORK_DIR/grafana/logo.svg" -resize 32x32 "$WORK_DIR/grafana/fav32.png" 2>/dev/null || true
-    convert "$WORK_DIR/grafana/logo.svg" -resize 180x180 "$WORK_DIR/grafana/apple-touch-icon.png" 2>/dev/null || true
+    # SVG source only — use rsvg-convert if available, fall back to ImageMagick
+    if command -v rsvg-convert &>/dev/null; then
+        rsvg-convert -w 32 -h 32 "$WORK_DIR/grafana/logo.svg" -o "$WORK_DIR/grafana/fav32.png" 2>/dev/null || true
+        rsvg-convert -w 180 -h 180 "$WORK_DIR/grafana/logo.svg" -o "$WORK_DIR/grafana/apple-touch-icon.png" 2>/dev/null || true
+    else
+        convert "$WORK_DIR/grafana/logo.svg" -resize 32x32 "$WORK_DIR/grafana/fav32.png" 2>/dev/null || true
+        convert "$WORK_DIR/grafana/logo.svg" -resize 180x180 "$WORK_DIR/grafana/apple-touch-icon.png" 2>/dev/null || true
+    fi
 fi
 
 # Ensure favicon files exist (create minimal placeholder if needed)

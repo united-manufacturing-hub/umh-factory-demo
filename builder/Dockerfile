@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    jq curl bash postgresql-client imagemagick \
+    jq curl bash postgresql-client imagemagick librsvg2-bin \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir ruamel.yaml psycopg2-binary pyyaml
