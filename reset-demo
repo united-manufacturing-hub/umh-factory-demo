@@ -65,8 +65,13 @@ echo ""
 echo -e "${BLUE}Saving docker-compose.yaml.backup...${NC}"
 cp "$WORK_DIR/docker-compose.yaml.backup" /tmp/docker-compose.yaml.restore
 
+# Remove container-owned files (root/other UIDs) via a throwaway container
+# On Linux VMs, bind-mounted volumes are owned by the container's UID, not the host user
+echo -e "${BLUE}Removing container-owned directories...${NC}"
+$CONTAINER_CMD run --rm -v "$WORK_DIR:/cleanup" alpine sh -c "rm -rf /cleanup/timescaledb-data /cleanup/grafana-data /cleanup/grafana-provisioning /cleanup/config /cleanup/simulator-data /cleanup/simulator-config /cleanup/sql /cleanup/configs /cleanup/grafana" 2>/dev/null || true
+
 # Delete everything except this script and the backup in /tmp
-echo -e "${BLUE}Deleting all files and folders...${NC}"
+echo -e "${BLUE}Deleting remaining files and folders...${NC}"
 find "$WORK_DIR" -mindepth 1 -maxdepth 1 ! -name "$(basename "$0")" -exec rm -rf {} \;
 
 # Restore docker-compose.yaml from backup
