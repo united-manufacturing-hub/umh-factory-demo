@@ -831,6 +831,48 @@ EXCEPTION WHEN undefined_object THEN NULL;
 END $$;
 
 -- =============================================================================
+-- MATERIALIZED VIEW: mv_runtime_hourly
+-- Pre-computes hourly RUNNING minutes per asset from tag_string state events.
+-- Uses LEAD() window function which can't be in a continuous aggregate.
+-- Refresh: REFRESH MATERIALIZED VIEW CONCURRENTLY mv_runtime_hourly;
+-- =============================================================================
+
+DROP MATERIALIZED VIEW IF EXISTS mv_runtime_hourly;
+
+CREATE MATERIALIZED VIEW mv_runtime_hourly AS
+WITH state_events AS (
+    SELECT
+        asset_id,
+        timestamp,
+        value,
+        LEAD(timestamp) OVER (PARTITION BY asset_id ORDER BY timestamp) AS next_ts
+    FROM tag_string
+    WHERE name = 'state'
+)
+SELECT
+    time_bucket('1 hour', se.timestamp) AS bucket,
+    se.asset_id,
+    COALESCE(SUM(
+        EXTRACT(EPOCH FROM (
+            LEAST(
+                COALESCE(se.next_ts, NOW()),
+                time_bucket('1 hour', se.timestamp) + INTERVAL '1 hour'
+            ) - GREATEST(se.timestamp, time_bucket('1 hour', se.timestamp))
+        )) / 60.0
+    ) FILTER (WHERE se.value = 'RUNNING'), 0) AS running_minutes,
+    COUNT(*) AS event_count
+FROM state_events se
+GROUP BY time_bucket('1 hour', se.timestamp), se.asset_id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_runtime_hourly_pk
+    ON mv_runtime_hourly (asset_id, bucket);
+
+DO $$ BEGIN
+    EXECUTE 'GRANT SELECT ON mv_runtime_hourly TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- =============================================================================
 -- LAYER 1: PRIMITIVE FUNCTIONS
 -- These are the building blocks called by dashboard panels and composite functions
 -- =============================================================================
@@ -851,18 +893,51 @@ CREATE OR REPLACE FUNCTION get_counter_delta(
     _start_time timestamptz,
     _end_time timestamptz
 ) RETURNS numeric AS $func$
+DECLARE
+    _start_bucket timestamptz := time_bucket('1 hour', _start_time);
+    _end_bucket   timestamptz := time_bucket('1 hour', _end_time);
 BEGIN
+    -- Uses cagg_counter_hourly for complete hours + raw tag for boundary hours.
+    -- For monotonic counters (good_count, scrap_count), MAX(value) WHERE timestamp <= T
+    -- equals the max across all hourly max_values up to T.
     RETURN COALESCE((
         SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0))
         FROM (
             SELECT
                 asset_id,
                 origin,
-                MAX(value) FILTER (WHERE timestamp <= _end_time) AS end_v,
-                MAX(value) FILTER (WHERE timestamp < _start_time) AS start_v
-            FROM tag
-            WHERE name = _tag_name
-              AND asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                MAX(value) FILTER (WHERE ts_marker <= _end_time) AS end_v,
+                MAX(value) FILTER (WHERE ts_marker < _start_time) AS start_v
+            FROM (
+                -- Complete hourly buckets from cagg (use end-of-bucket as time marker)
+                SELECT c.asset_id, c.origin, c.max_value AS value,
+                       c.bucket + INTERVAL '1 hour' - INTERVAL '1 microsecond' AS ts_marker
+                FROM cagg_counter_hourly c
+                WHERE c.name = _tag_name
+                  AND c.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND c.bucket >= _start_bucket - INTERVAL '1 hour'
+                  AND c.bucket < _end_bucket
+
+                UNION ALL
+
+                -- Raw data for partial start boundary hour
+                SELECT t.asset_id, t.origin, t.value, t.timestamp AS ts_marker
+                FROM tag t
+                WHERE t.name = _tag_name
+                  AND t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND t.timestamp >= _start_bucket
+                  AND t.timestamp < _start_bucket + INTERVAL '1 hour'
+
+                UNION ALL
+
+                -- Raw data for partial end boundary hour
+                SELECT t.asset_id, t.origin, t.value, t.timestamp AS ts_marker
+                FROM tag t
+                WHERE t.name = _tag_name
+                  AND t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND t.timestamp >= _end_bucket
+                  AND t.timestamp <= _end_time
+            ) combined
             GROUP BY asset_id, origin
         ) sub
     ), 0);
@@ -959,39 +1034,78 @@ CREATE OR REPLACE FUNCTION get_runtime_minutes(
     _start_time timestamptz,
     _end_time timestamptz
 ) RETURNS numeric AS $func$
+DECLARE
+    _start_bucket timestamptz := time_bucket('1 hour', _start_time);
+    _end_bucket   timestamptz := time_bucket('1 hour', _end_time);
+    _planned numeric;
+    _runtime numeric := 0;
+    _boundary_runtime numeric := 0;
 BEGIN
-    RETURN (
-        WITH shift_periods AS (
-            SELECT
-                GREATEST(s.start_time, _start_time) AS period_start,
-                LEAST(s.end_time, _end_time) AS period_end
-            FROM shifts s
-            WHERE s.start_time < _end_time
-              AND s.end_time > _start_time
-        ),
-        state_changes AS (
-            SELECT
-                timestamp,
-                value,
-                LEAD(timestamp) OVER (ORDER BY timestamp) AS next_ts
-            FROM tag_string
-            WHERE name = 'state'
-              AND asset_id = _asset_id
-        )
-        SELECT CASE WHEN (SELECT COUNT(*) FROM shift_periods) > 0
-            THEN COALESCE(SUM(
+    -- Check if any shifts overlap
+    SELECT CASE WHEN COUNT(*) > 0
+        THEN SUM(EXTRACT(EPOCH FROM (
+            LEAST(s.end_time, _end_time) - GREATEST(s.start_time, _start_time)
+        )) / 60.0)
+        ELSE NULL
+    END INTO _planned
+    FROM shifts s
+    WHERE s.start_time < _end_time AND s.end_time > _start_time;
+
+    IF _planned IS NULL THEN
+        RETURN NULL;
+    END IF;
+
+    -- Sum pre-computed running minutes from mv_runtime_hourly for complete hours
+    SELECT COALESCE(SUM(mv.running_minutes), 0) INTO _runtime
+    FROM mv_runtime_hourly mv
+    WHERE mv.asset_id = _asset_id
+      AND mv.bucket >= _start_bucket + INTERVAL '1 hour'  -- first complete bucket after start
+      AND mv.bucket < _end_bucket;                          -- last complete bucket before end
+
+    -- Add boundary hours from raw tag_string (only 2 partial hours max)
+    SELECT COALESCE(SUM(
+        EXTRACT(EPOCH FROM (
+            LEAST(COALESCE(sc.next_ts, _end_time), _end_time) -
+            GREATEST(sc.timestamp, _start_time)
+        )) / 60.0
+    ), 0) INTO _boundary_runtime
+    FROM (
+        SELECT timestamp, value,
+               LEAD(timestamp) OVER (ORDER BY timestamp) AS next_ts
+        FROM tag_string
+        WHERE name = 'state' AND asset_id = _asset_id
+          AND timestamp < _start_bucket + INTERVAL '1 hour'  -- events that overlap start boundary
+          AND (timestamp >= _start_bucket OR TRUE)            -- include pre-boundary for LEAD
+    ) sc
+    WHERE sc.value = 'RUNNING'
+      AND sc.timestamp < LEAST(_start_bucket + INTERVAL '1 hour', _end_time)
+      AND COALESCE(sc.next_ts, _end_time) > _start_time;
+
+    -- End boundary (only if start and end are in different hours)
+    IF _start_bucket != _end_bucket THEN
+        _boundary_runtime := _boundary_runtime + COALESCE((
+            SELECT SUM(
                 EXTRACT(EPOCH FROM (
-                    LEAST(COALESCE(sc.next_ts, sp.period_end), sp.period_end) -
-                    GREATEST(sc.timestamp, sp.period_start)
+                    LEAST(COALESCE(sc.next_ts, _end_time), _end_time) -
+                    GREATEST(sc.timestamp, _end_bucket)
                 )) / 60.0
-            ), 0)
-            ELSE NULL
-        END
-        FROM state_changes sc, shift_periods sp
-        WHERE sc.value = 'RUNNING'
-          AND sc.timestamp < sp.period_end
-          AND COALESCE(sc.next_ts, sp.period_end) > sp.period_start
-    );
+            )
+            FROM (
+                SELECT timestamp, value,
+                       LEAD(timestamp) OVER (ORDER BY timestamp) AS next_ts
+                FROM tag_string
+                WHERE name = 'state' AND asset_id = _asset_id
+                  AND timestamp >= _end_bucket - INTERVAL '1 hour'
+                  AND timestamp <= _end_time
+            ) sc
+            WHERE sc.value = 'RUNNING'
+              AND sc.timestamp < _end_time
+              AND COALESCE(sc.next_ts, _end_time) > _end_bucket
+        ), 0);
+    END IF;
+
+    -- Constrain by shift periods: cap at planned minutes
+    RETURN LEAST(_runtime + _boundary_runtime, _planned);
 END;
 $func$ LANGUAGE plpgsql STABLE;
 
@@ -1015,16 +1129,65 @@ CREATE OR REPLACE FUNCTION get_cycle_time_avg(
     _start_time timestamptz DEFAULT NULL,
     _end_time timestamptz DEFAULT NULL
 ) RETURNS numeric AS $func$
+DECLARE
+    _start_bucket timestamptz;
+    _end_bucket timestamptz;
 BEGIN
+    -- Uses cagg_tag_stats_hourly for complete hours, raw tag for boundary hours.
+    -- Weighted average: SUM(sum_value) / SUM(sample_count) gives exact AVG across buckets.
+    IF _start_time IS NULL OR _end_time IS NULL THEN
+        -- All-time average from cagg only
+        RETURN (
+            SELECT SUM(c.sum_value) / NULLIF(SUM(c.sample_count), 0) / 1000.0
+            FROM cagg_tag_stats_hourly c
+            WHERE c.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+              AND c.name = 'cycle_time_ms'
+              AND c.avg_value > 0
+              AND c.max_value < 300000
+        );
+    END IF;
+
+    _start_bucket := time_bucket('1 hour', _start_time);
+    _end_bucket := time_bucket('1 hour', _end_time);
+
     RETURN (
-        SELECT AVG(t.value) / 1000.0
-        FROM tag t
-        WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
-          AND t.name = 'cycle_time_ms'
-          AND t.value > 0
-          AND t.value < 300000
-          AND (_start_time IS NULL OR t.timestamp >= _start_time)
-          AND (_end_time IS NULL OR t.timestamp <= _end_time)
+        SELECT total_sum / NULLIF(total_count, 0) / 1000.0
+        FROM (
+            SELECT SUM(s) AS total_sum, SUM(c) AS total_count
+            FROM (
+                -- Complete hourly buckets from cagg
+                SELECT c.sum_value AS s, c.sample_count AS c
+                FROM cagg_tag_stats_hourly c
+                WHERE c.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND c.name = 'cycle_time_ms'
+                  AND c.bucket >= _start_bucket + INTERVAL '1 hour'
+                  AND c.bucket < _end_bucket
+                  AND c.avg_value > 0
+                  AND c.max_value < 300000
+
+                UNION ALL
+
+                -- Raw data for partial start boundary hour
+                SELECT SUM(t.value), COUNT(*)
+                FROM tag t
+                WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND t.name = 'cycle_time_ms'
+                  AND t.value > 0 AND t.value < 300000
+                  AND t.timestamp >= _start_time
+                  AND t.timestamp < _start_bucket + INTERVAL '1 hour'
+
+                UNION ALL
+
+                -- Raw data for partial end boundary hour
+                SELECT SUM(t.value), COUNT(*)
+                FROM tag t
+                WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND t.name = 'cycle_time_ms'
+                  AND t.value > 0 AND t.value < 300000
+                  AND t.timestamp >= _end_bucket
+                  AND t.timestamp <= _end_time
+            ) combined
+        ) totals
     );
 END;
 $func$ LANGUAGE plpgsql STABLE;

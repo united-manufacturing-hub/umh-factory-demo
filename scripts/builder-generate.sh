@@ -1119,7 +1119,7 @@ if [ "$NO_GRAFANA" = "true" ]; then
     echo -e "${BLUE}Step 9d: Skipping dashboard generation (--no-grafana)${NC}"
 else
     echo -e "${BLUE}Step 9d: Generating API-dependent dashboards...${NC}"
-    for dashboard in stop-reason-admin.json operator-dashboard.json; do
+    for dashboard in stop-reason-admin.json operator-dashboard.json operator-dashboard-2.json; do
         if [ -f "$TEMPLATES_DIR/templates/dashboards/$dashboard" ]; then
             sed \
                 -e "s|__API_BASE_URL__|${API_BASE_URL}|g" \
@@ -1132,6 +1132,36 @@ else
             echo -e "${GREEN}  ✓ $dashboard${NC}"
         fi
     done
+
+    # Generate markdown info dashboards (inject file content via Python for safe JSON escaping)
+    python3 -c "
+import json, sys
+mappings = {
+    'database-info.json': 'DATABASE.md',
+    'demo-info.json': 'README.md'
+}
+templates_dir = sys.argv[1]
+work_dir = sys.argv[2]
+for dash_file, md_file in mappings.items():
+    tpl_path = templates_dir + '/templates/dashboards/' + dash_file
+    md_path = templates_dir + '/' + md_file
+    out_path = work_dir + '/dashboards/' + dash_file
+    try:
+        with open(tpl_path) as f:
+            dashboard = json.load(f)
+        with open(md_path) as f:
+            content = f.read()
+        if md_file == 'README.md':
+            idx = content.find('## Documentation')
+            if idx > 0:
+                content = content[:idx].rstrip()
+        dashboard['panels'][0]['options']['content'] = content
+        with open(out_path, 'w') as f:
+            json.dump(dashboard, f, indent=2)
+        print('  ✓ ' + dash_file + ' (from ' + md_file + ')')
+    except Exception as e:
+        print('  ✗ ' + dash_file + ': ' + str(e), file=sys.stderr)
+" "$TEMPLATES_DIR" "$WORK_DIR"
 
     echo -e "${GREEN}  ✓ All dashboards generated${NC}"
 fi

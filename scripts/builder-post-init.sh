@@ -141,6 +141,7 @@ elif wait_for_grafana; then
     }
 
     ADMIN_FOLDER_UID=$(create_folder "Admin")
+    INFO_FOLDER_UID=$(create_folder "Info")
     LINES_FOLDER_UID=$(create_folder "Lines")
     MACHINES_FOLDER_UID=$(create_folder "Machines")
 
@@ -153,6 +154,8 @@ elif wait_for_grafana; then
             FOLDER_UID=""
             if [[ "$dashboard_name" == "stop-reason-admin" ]] && [ -n "$ADMIN_FOLDER_UID" ]; then
                 FOLDER_UID="$ADMIN_FOLDER_UID"
+            elif [[ "$dashboard_name" == "database-info" || "$dashboard_name" == "demo-info" ]] && [ -n "$INFO_FOLDER_UID" ]; then
+                FOLDER_UID="$INFO_FOLDER_UID"
             elif [[ "$dashboard_name" == *"-oee-dashboard" ]] && [ -n "$LINES_FOLDER_UID" ]; then
                 FOLDER_UID="$LINES_FOLDER_UID"
             elif [[ "$dashboard_name" == *"-L"*"-dashboard" ]] && [ -n "$MACHINES_FOLDER_UID" ]; then

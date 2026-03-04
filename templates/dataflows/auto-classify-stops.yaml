@@ -1,0 +1,34 @@
+# Auto-Classify Stops Dataflow
+# Simulates operator feedback by classifying old unclassified stops with random reasons.
+# Runs every hour. Keeps max 2 most recent unclassified stops per machine.
+
+input:
+  generate:
+    interval: "1h"
+    mapping: 'root.trigger = "classify"'
+
+pipeline:
+  processors:
+    - sql_raw:
+        driver: postgres
+        dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+        query: |
+          WITH unclassified AS (
+            SELECT id, asset_id,
+                   ROW_NUMBER() OVER (PARTITION BY asset_id ORDER BY start_time DESC) AS rn
+            FROM machine_stops
+            WHERE stop_reason_id = 1
+              AND end_time IS NOT NULL
+          ),
+          to_classify AS (
+            SELECT id FROM unclassified WHERE rn > 2
+          )
+          UPDATE machine_stops
+          SET stop_reason_id = 2 + floor(random() * 9)::int,
+              updated_at = NOW(),
+              updated_by = 'auto-classifier'
+          WHERE id IN (SELECT id FROM to_classify)
+        unsafe_dynamic_query: false
+
+output:
+  drop: {}
