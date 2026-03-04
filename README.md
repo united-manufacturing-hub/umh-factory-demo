@@ -273,6 +273,14 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.11 (2026-03-04)
+
+### Other
+- Merge branch 'new-sim' into staging
+- added hypertable script execution.
+
+**Full Changelog**: [`v1.3.10...v1.3.11`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.10...v1.3.11)
+
 ## v1.3.10 (2026-03-04)
 
 ### Other
