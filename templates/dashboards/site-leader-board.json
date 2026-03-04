@@ -173,10 +173,10 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "orange", "value": 7 },
-              { "color": "yellow", "value": 30 },
-              { "color": "green", "value": 90 }
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 1 },
+              { "color": "orange", "value": 5 },
+              { "color": "red", "value": 10 }
             ]
           }
         },
@@ -202,11 +202,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(\n  EXTRACT(DAY FROM (NOW() - MAX(ts.timestamp)))::integer,\n  999\n) as \"Safety Days\"\nFROM tag_string ts\nJOIN asset a ON a.id = ts.asset_id\nWHERE ts.name = 'state'\n  AND ts.value = 'FAULT'\n  AND a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')",
+          "rawSql": "SELECT 0 as \"Incidents\"",
           "refId": "A"
         }
       ],
-      "title": "Days Since Last Fault",
+      "title": "Safety Incidents",
       "type": "stat"
     },
     {
@@ -312,7 +312,7 @@
             "mode": "absolute",
             "steps": [{ "color": "green", "value": 0 }]
           },
-          "unit": "percent"
+          "unit": "m"
         },
         "overrides": []
       },
@@ -338,11 +338,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(sr.name, 'Unspecified') as \"Reason\",\n  COUNT(*)::int as \"Count\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nLEFT JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time > NOW() - INTERVAL '7 days'\nGROUP BY sr.name\nORDER BY COUNT(*) DESC\nLIMIT 10",
+          "rawSql": "SELECT\n  COALESCE(sr.name, 'Unspecified') as \"Reason\",\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0))::int as \"Duration (min)\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nLEFT JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time BETWEEN $__timeFrom() AND $__timeTo()\nGROUP BY sr.name\nORDER BY SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time))) DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
-      "title": "Top Downtime Reasons (Pareto)",
+      "title": "Top Downtime Reasons",
       "type": "barchart"
     },
     {
@@ -450,10 +450,10 @@
           }
         ]
       },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 26 },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 26 },
       "id": 8,
       "options": {
-        "cellHeight": "md",
+        "cellHeight": "sm",
         "showHeader": true,
         "sortBy": [{ "displayName": "Line", "desc": false }]
       },

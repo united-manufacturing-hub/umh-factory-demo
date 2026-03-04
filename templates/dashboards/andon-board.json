@@ -26,7 +26,9 @@
       "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 100,
       "panels": [],
-      "title": "KPIs - ${line} (${shift_mode})",
+      "repeat": "line",
+      "repeatDirection": "v",
+      "title": "${line}",
       "type": "row"
     },
     {
@@ -53,7 +55,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 4, "w": 5, "x": 0, "y": 1 },
       "id": 1,
       "options": {
         "minVizHeight": 75,
@@ -64,7 +66,7 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": true,
+        "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "sizing": "auto"
       },
@@ -107,59 +109,8 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "gridPos": { "h": 2, "w": 2, "x": 5, "y": 1 },
       "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "horizontal",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": ["lastNotNull"],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "value",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', NOW() - INTERVAL '1 hour', NOW()) as \"Actual Cycle Time\"",
-          "refId": "A"
-        }
-      ],
-      "title": "Actual Cycle Time (1h avg)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": 0 }]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
-      "id": 3,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -185,11 +136,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', NULL, NULL), 10.0) as \"Planned Cycle Time\"",
+          "rawSql": "SELECT get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', NOW() - INTERVAL '1 hour', NOW()) as \"Cycle Time\"",
           "refId": "A"
         }
       ],
-      "title": "Planned Cycle Time",
+      "title": "Cycle Time",
       "type": "stat"
     },
     {
@@ -214,11 +165,11 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "gridPos": { "h": 2, "w": 2, "x": 7, "y": 1 },
       "id": 4,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "center",
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
@@ -241,11 +192,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_total_downtime_minutes('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', '${shift_start}'::timestamptz, NOW()) as \"Total Downtime\"",
+          "rawSql": "SELECT get_total_downtime_minutes('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', '${shift_start}'::timestamptz, NOW()) as \"Downtime\"",
           "refId": "A"
         }
       ],
-      "title": "Total Downtime",
+      "title": "Downtime",
       "type": "stat"
     },
     {
@@ -264,7 +215,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 5 },
+      "gridPos": { "h": 2, "w": 2, "x": 9, "y": 1 },
       "id": 5,
       "options": {
         "colorMode": "value",
@@ -291,11 +242,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'good_count', '${shift_start}'::timestamptz, NOW()) as \"Good Parts\"",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'good_count', '${shift_start}'::timestamptz, NOW()) as \"Good\"",
           "refId": "A"
         }
       ],
-      "title": "Good Parts",
+      "title": "Good",
       "type": "stat"
     },
     {
@@ -318,7 +269,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 5 },
+      "gridPos": { "h": 2, "w": 2, "x": 9, "y": 3 },
       "id": 6,
       "options": {
         "colorMode": "value",
@@ -345,11 +296,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'scrap_count', '${shift_start}'::timestamptz, NOW()) as \"Scrap Parts\"",
+          "rawSql": "SELECT get_counter_delta('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', 'scrap_count', '${shift_start}'::timestamptz, NOW()) as \"Scrap\"",
           "refId": "A"
         }
       ],
-      "title": "Scrap Parts",
+      "title": "Scrap",
       "type": "stat"
     },
     {
@@ -372,7 +323,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 5 },
+      "gridPos": { "h": 2, "w": 2, "x": 7, "y": 3 },
       "id": 7,
       "options": {
         "colorMode": "value",
@@ -399,20 +350,12 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', '${shift_start}'::timestamptz, NOW()) as \"Stop Count\"",
+          "rawSql": "SELECT get_stop_count('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', '${shift_start}'::timestamptz, NOW()) as \"Stops\"",
           "refId": "A"
         }
       ],
-      "title": "Stop Count",
+      "title": "Stops",
       "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
-      "id": 101,
-      "panels": [],
-      "title": "Current Line Status",
-      "type": "row"
     },
     {
       "datasource": {
@@ -422,46 +365,12 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            {
-              "options": {
-                "RUNNING": { "color": "green", "index": 0, "text": "RUNNING" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "STOPPED": { "color": "orange", "index": 2, "text": "STOPPED" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "MAINTENANCE": {
-                  "color": "blue",
-                  "index": 3,
-                  "text": "MAINTENANCE"
-                }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "FAULT": { "color": "red", "index": 4, "text": "FAULT" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "SETUP": { "color": "orange", "index": 5, "text": "SETUP" }
-              },
-              "type": "value"
-            }
+            { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUN" } }, "type": "value" },
+            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
+            { "options": { "STOPPED": { "color": "orange", "index": 2, "text": "STOP" } }, "type": "value" },
+            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINT" } }, "type": "value" },
+            { "options": { "FAULT": { "color": "red", "index": 4, "text": "FAULT" } }, "type": "value" },
+            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
           ],
           "thresholds": {
             "mode": "absolute",
@@ -470,7 +379,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 10 },
+      "gridPos": { "h": 3, "w": 11, "x": 0, "y": 5 },
       "id": 8,
       "options": {
         "colorMode": "background",
@@ -513,6 +422,57 @@
           }
         }
       ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": 0 }]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 2, "w": 2, "x": 5, "y": 3 },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(get_cycle_time_avg('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', NULL, NULL), 10.0) as \"Planned CT\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Planned CT",
       "type": "stat"
     },
     {
@@ -574,24 +534,10 @@
               {
                 "id": "mappings",
                 "value": [
-                  {
-                    "options": { "Unplanned": { "color": "red", "index": 0 } },
-                    "type": "value"
-                  },
-                  {
-                    "options": { "Planned": { "color": "blue", "index": 1 } },
-                    "type": "value"
-                  },
-                  {
-                    "options": {
-                      "External": { "color": "orange", "index": 2 }
-                    },
-                    "type": "value"
-                  },
-                  {
-                    "options": { "Unknown": { "color": "gray", "index": 3 } },
-                    "type": "value"
-                  }
+                  { "options": { "Unplanned": { "color": "red", "index": 0 } }, "type": "value" },
+                  { "options": { "Planned": { "color": "blue", "index": 1 } }, "type": "value" },
+                  { "options": { "External": { "color": "orange", "index": 2 } }, "type": "value" },
+                  { "options": { "Unknown": { "color": "gray", "index": 3 } }, "type": "value" }
                 ]
               },
               { "id": "custom.cellOptions", "value": { "type": "color-text" } }
@@ -599,18 +545,22 @@
           },
           {
             "matcher": { "id": "byName", "options": "Machine" },
-            "properties": [{ "id": "custom.width", "value": 180 }]
+            "properties": [{ "id": "custom.width", "value": 140 }]
           },
           {
             "matcher": { "id": "byName", "options": "Reason" },
             "properties": [{ "id": "custom.width", "value": 150 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Line" },
+            "properties": [{ "id": "custom.width", "value": 100 }]
           }
         ]
       },
       "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
       "id": 9,
       "options": {
-        "cellHeight": "md",
+        "cellHeight": "sm",
         "showHeader": true,
         "sortBy": [{ "displayName": "Duration", "desc": true }]
       },
@@ -624,7 +574,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  workcell as \"Machine\",\n  reason_name as \"Reason\",\n  category as \"Category\",\n  ROUND(duration_mins::numeric, 1) as \"Duration\",\n  TO_CHAR(start_time, 'HH24:MI') as \"Started\",\n  COALESCE(notes, '-') as \"Notes\"\nFROM v_active_issues\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line:raw}'\nORDER BY duration_mins DESC",
+          "rawSql": "SELECT\n  line as \"Line\",\n  workcell as \"Machine\",\n  reason_name as \"Reason\",\n  category as \"Category\",\n  ROUND(duration_mins::numeric, 1) as \"Duration\",\n  TO_CHAR(start_time, 'HH24:MI') as \"Started\",\n  COALESCE(notes, '-') as \"Notes\"\nFROM v_active_issues\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\nORDER BY duration_mins DESC",
           "refId": "A"
         }
       ],
@@ -664,10 +614,7 @@
             "matcher": { "id": "byName", "options": "Progress" },
             "properties": [
               { "id": "unit", "value": "percent" },
-              {
-                "id": "custom.cellOptions",
-                "value": { "type": "gauge", "mode": "basic" }
-              },
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "basic" } },
               { "id": "max", "value": 100 },
               { "id": "custom.width", "value": 200 }
             ]
@@ -678,28 +625,12 @@
               {
                 "id": "mappings",
                 "value": [
-                  {
-                    "options": {
-                      "COMPLETED": { "color": "green", "index": 0 }
-                    },
-                    "type": "value"
-                  },
-                  {
-                    "options": {
-                      "IN_PROGRESS": { "color": "blue", "index": 1 }
-                    },
-                    "type": "value"
-                  },
-                  {
-                    "options": { "PENDING": { "color": "orange", "index": 2 } },
-                    "type": "value"
-                  }
+                  { "options": { "COMPLETED": { "color": "green", "index": 0 } }, "type": "value" },
+                  { "options": { "IN_PROGRESS": { "color": "blue", "index": 1 } }, "type": "value" },
+                  { "options": { "PENDING": { "color": "orange", "index": 2 } }, "type": "value" }
                 ]
               },
-              {
-                "id": "custom.cellOptions",
-                "value": { "type": "color-background", "mode": "basic" }
-              }
+              { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "basic" } }
             ]
           }
         ]
@@ -720,7 +651,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  order_id as \"Order\",\n  customer as \"Customer\",\n  part_number as \"Part\",\n  quantity_completed || ' / ' || quantity as \"Completed / Target\",\n  progress_pct as \"Progress\",\n  status as \"Status\"\nFROM v_order_progress\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND line = '${line:raw}'\n  AND status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY started_at DESC\nLIMIT 5",
+          "rawSql": "SELECT\n  line as \"Line\",\n  order_id as \"Order\",\n  customer as \"Customer\",\n  part_number as \"Part\",\n  quantity_completed || ' / ' || quantity as \"Completed / Target\",\n  progress_pct as \"Progress\",\n  status as \"Status\"\nFROM v_order_progress\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND status IN ('IN_PROGRESS', 'RELEASED', 'CREATED')\nORDER BY line, started_at DESC",
           "refId": "A"
         }
       ],
@@ -782,14 +713,16 @@
         "type": "query"
       },
       {
-        "current": { "selected": false, "text": "line1", "value": "line1" },
+        "allValue": "All",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
         },
         "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
-        "hide": 0,
-        "includeAll": false,
+        "hide": 2,
+        "includeAll": true,
+        "multi": true,
         "label": "Line",
         "name": "line",
         "options": [],

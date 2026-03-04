@@ -51,7 +51,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 1 },
       "id": 1,
       "options": {
         "colorMode": "background",
@@ -102,7 +102,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 1 },
       "id": 2,
       "options": {
         "colorMode": "value",
@@ -147,7 +147,7 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 1 },
       "id": 10,
       "options": {
         "colorMode": "value",
@@ -177,298 +177,11 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "yellow", "value": 60 },
-              { "color": "green", "value": 85 }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 6, "w": 4, "x": 18, "y": 1 },
-      "id": 11,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(oee_pct, 0) as \"OEE\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
-          "refId": "A"
-        }
-      ],
-      "title": "OEE (24h)",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "max": 150,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "orange", "value": 70 },
-              { "color": "yellow", "value": 90 },
-              { "color": "green", "value": 100 }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 6, "w": 2, "x": 22, "y": 1 },
-      "id": 21,
-      "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "WITH produced AS (\n  SELECT COALESCE(\n    GREATEST(\n      (SELECT MAX(value) FROM tag WHERE asset_id = ${asset_id} AND name = 'good_count' AND timestamp <= NOW()) -\n      (SELECT COALESCE(MAX(value), 0) FROM tag WHERE asset_id = ${asset_id} AND name = 'good_count' AND timestamp < DATE_TRUNC('day', NOW())),\n      0\n    ), 0\n  ) as actual\n),\nplanned AS (\n  SELECT COALESCE(\n    (SELECT po.quantity FROM production_orders po WHERE po.asset_id = ${asset_id} AND po.status IN ('IN_PROGRESS', 'RELEASED') ORDER BY po.created_at DESC LIMIT 1),\n    500\n  ) as target\n)\nSELECT ROUND((p.actual * 100.0 / NULLIF(pl.target, 0))::numeric, 1) as \"vs Plan\"\nFROM produced p, planned pl",
-          "refId": "A"
-        }
-      ],
-      "title": "vs Plan",
-      "type": "gauge"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": 0 }]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 7 },
-      "id": 14,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(good_parts, 0)::int as \"Good Parts\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
-          "refId": "A"
-        }
-      ],
-      "title": "Good Parts (24h)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 5 },
-              { "color": "red", "value": 10 }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 7 },
-      "id": 15,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(scrap_parts, 0)::int as \"Scrap Parts\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
-          "refId": "A"
-        }
-      ],
-      "title": "Scrap Parts (24h)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": 0 }]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 7 },
-      "id": 16,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(availability_pct, 0) as \"Availability\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
-          "refId": "A"
-        }
-      ],
-      "title": "Availability (24h)",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "thresholds" },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "blue", "value": 0 }]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 7 },
-      "id": 17,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COALESCE(quality_pct, 0) as \"Quality\"\nFROM v_oee_by_asset\nWHERE asset_id = ${asset_id}",
-          "refId": "A"
-        }
-      ],
-      "title": "Quality (24h)",
-      "type": "stat"
-    },
-    {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
       "id": 101,
       "panels": [],
-      "title": "Change Machine State",
+      "title": "State Timeline",
       "type": "row"
     },
     {
@@ -476,33 +189,66 @@
         "type": "grafana-postgresql-datasource",
         "uid": "${DS_POSTGRESQL}"
       },
-      "description": "Click a button to change the machine state",
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 12 },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 8 },
       "id": 20,
       "options": {
-        "afterRender": "const buttons = context.element.querySelectorAll('button[data-state]');\nbuttons.forEach(btn => {\n  btn.style.opacity = '0.6';\n  btn.style.cursor = 'default';\n  btn.title = 'Machine state control (display only)';\n});",
-        "content": "<div style=\"display: flex; justify-content: center; align-items: center; gap: 16px; height: 100%; flex-wrap: wrap; padding: 8px;\">\n  <button data-state=\"RUNNING\" style=\"background-color: #73BF69; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">▶ RUNNING</button>\n  <button data-state=\"IDLE\" style=\"background-color: #FADE2A; color: black; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⏸ IDLE</button>\n  <button data-state=\"SETUP\" style=\"background-color: #FF9830; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⚙ SETUP</button>\n  <button data-state=\"PLANNED STOP\" style=\"background-color: #5794F2; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">📅 PLANNED</button>\n  <button data-state=\"UNPLANNED STOP\" style=\"background-color: #F2495C; color: white; border: none; padding: 16px 32px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; min-width: 140px;\">⚠ UNPLANNED</button>\n</div>",
-        "defaultContent": "Loading...",
-        "editors": ["afterRender"],
-        "externalStyles": [],
-        "helpers": "",
-        "renderMode": "everyRow",
-        "status": "default",
-        "styles": "",
-        "wrap": true
+        "add100Percentage": true,
+        "centerAlignContent": false,
+        "overflow": "visible",
+        "SVGBaseFix": true,
+        "cspPolicies": {
+          "style": "'unsafe-inline'",
+          "script": "'unsafe-eval' 'unsafe-inline'"
+        },
+        "html": "<div class=\"tl-container\">\n  <div class=\"tl-rows\"></div>\n  <div class=\"tl-axis\"></div>\n  <div class=\"tl-legend\"></div>\n  <div class=\"tl-tooltip\"></div>\n</div>",
+        "css": "* { box-sizing: border-box; }\n.tl-container { padding:8px; font-family:Inter,-apple-system,sans-serif; height:100%; width:100%; display:flex; flex-direction:column; color:#e0e0e0; position:relative; overflow:hidden; }\n.tl-rows { flex:1; overflow-y:auto; }\n.tl-row { display:flex; align-items:center; margin-bottom:3px; }\n.tl-label { width:160px; font-size:11px; color:#ccc; text-align:right; padding-right:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }\n.tl-bar { flex:1; height:48px; position:relative; background:#1a1a2e; border-radius:4px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3); }\n.tl-seg { position:absolute; top:0; height:100%; transition:opacity 0.15s; cursor:default; }\n.tl-seg:hover { opacity:0.8; }\n.tl-unclass { position:absolute; top:0; height:100%; cursor:pointer; border:2px solid #fff; border-radius:2px; background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,0.25) 3px,rgba(255,255,255,0.25) 6px); z-index:2; transition:border-color 0.2s; }\n.tl-unclass:hover { border-color:#3b82f6; }\n.tl-unclass.selected { border-color:#3b82f6; }\n.tl-axis { display:flex; justify-content:space-between; padding:4px 0 0 160px; font-size:10px; color:#888; flex-shrink:0; }\n.tl-legend { display:flex; flex-wrap:wrap; gap:12px; padding:6px 0 0 0; flex-shrink:0; }\n.tl-legend-item { display:flex; align-items:center; gap:4px; font-size:11px; color:#ccc; }\n.tl-legend-dot { width:12px; height:12px; border-radius:3px; }\n.tl-tooltip { display:none; position:absolute; background:#252538; border:1px solid #444; border-radius:6px; padding:10px 14px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.4); white-space:nowrap; }",
+        "onInit": "var STATE_COLORS = {\n  'RUNNING': '#73BF69', 'IDLE': '#FADE2A', 'STOPPED': '#FF9830',\n  'MAINTENANCE': '#5794F2', 'FAULT': '#F2495C', 'SETUP': '#B877D9',\n  'PLANNED STOP': '#5794F2', 'UNPLANNED STOP': '#F2495C'\n};\nhtmlNode._STATE_COLORS = STATE_COLORS;\nhtmlNode._state = { selectedStopId: null, machines: {}, unclassified: [], classifiedStops: [], stopReasons: [], tMin: 0, tMax: 0 };\nhtmlNode._formatTime = function(ms) { var d = new Date(ms); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); };\nhtmlNode._formatDuration = function(ms) { var h = Math.floor(ms / 3600000); var m = Math.floor((ms % 3600000) / 60000); var s = Math.floor((ms % 60000) / 1000); if (h > 0) return h + 'h ' + m + 'm'; if (m > 0) return m + 'm ' + s + 's'; return s + 's'; };\nvar container = htmlNode.querySelector('.tl-container');\nvar tooltip = htmlNode.querySelector('.tl-tooltip');\ncontainer.addEventListener('mousemove', function(e) {\n  var uc = e.target.closest('.tl-unclass');\n  var seg = e.target.closest('.tl-seg');\n  if (!seg && !uc) { tooltip.style.display = 'none'; return; }\n  var html = '';\n  if (uc) {\n    var stopId = uc.dataset.stopId;\n    var s = parseInt(uc.dataset.start);\n    var en = parseInt(uc.dataset.visualEnd || uc.dataset.start);\n    html = '<div style=\"font-weight:600;color:#ff6b6b;\">Unclassified Stop #' + stopId + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + uc.dataset.machine + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + htmlNode._formatTime(s) + ' - ' + htmlNode._formatTime(en) + '</div>' +\n      '<div style=\"color:#888;font-size:10px;\">' + htmlNode._formatDuration(en - s) + '</div>' +\n      '<div style=\"color:#3b82f6;font-size:10px;margin-top:4px;\">Click to assign reason</div>';\n  } else {\n    var st = seg.dataset.state;\n    var s = parseInt(seg.dataset.start);\n    var en = parseInt(seg.dataset.end);\n    html = '<div style=\"font-weight:600;color:' + (STATE_COLORS[st] || '#fff') + ';\">' + st + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + seg.dataset.machine + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + htmlNode._formatTime(s) + ' - ' + htmlNode._formatTime(en) + '</div>' +\n      '<div style=\"color:#888;font-size:10px;\">' + htmlNode._formatDuration(en - s) + '</div>';\n    var classified = htmlNode._state.classifiedStops;\n    for (var ci = 0; ci < classified.length; ci++) {\n      var cs = classified[ci];\n      if (cs.start >= s && cs.start < en) {\n        html += '<div style=\"color:#22c55e;font-size:11px;margin-top:4px;\">Stop #' + cs.id + ': ' + cs.reason + '</div>';\n      }\n    }\n  }\n  tooltip.innerHTML = html;\n  tooltip.style.display = 'block';\n  var rect = container.getBoundingClientRect();\n  var tx = e.clientX - rect.left + 12;\n  var ty = e.clientY - rect.top + 12;\n  if (tx + 200 > rect.width) tx = e.clientX - rect.left - 200;\n  if (ty + 100 > rect.height) ty = e.clientY - rect.top - 100;\n  tooltip.style.left = tx + 'px';\n  tooltip.style.top = ty + 'px';\n});\ncontainer.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });\ncontainer.addEventListener('click', function(e) {\n  var uc = e.target.closest('.tl-unclass');\n  if (!uc) return;\n  e.stopPropagation();\n  var state = htmlNode._state;\n  var stopId = parseInt(uc.dataset.stopId);\n  var machine = uc.dataset.machine;\n  state.selectedStopId = stopId;\n  htmlNode.querySelectorAll('.tl-unclass').forEach(function(u) { u.style.borderColor = parseInt(u.dataset.stopId) === stopId ? '#3b82f6' : '#fff'; });\n  var existing = document.querySelector('.stop-assign-backdrop');\n  if (existing) existing.remove();\n  existing = document.querySelector('.stop-assign-modal');\n  if (existing) existing.remove();\n  var backdrop = document.createElement('div');\n  backdrop.className = 'stop-assign-backdrop';\n  backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;';\n  var modal = document.createElement('div');\n  modal.className = 'stop-assign-modal';\n  modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:24px 32px;z-index:10000;min-width:440px;box-shadow:0 8px 32px rgba(0,0,0,0.6);';\n  var opts = '<option value=\"\">-- Select Reason --</option>';\n  state.stopReasons.forEach(function(r) { opts += '<option value=\"' + r.id + '\">' + r.name + '</option>'; });\n  modal.innerHTML = '<div style=\"color:#fff;margin-bottom:16px;font-weight:600;font-size:16px;\">Assign Stop Reason</div>' +\n    '<div style=\"color:#888;margin-bottom:16px;font-size:13px;\">Stop #' + stopId + ' on ' + machine + '<br>' +\n    htmlNode._formatTime(parseInt(uc.dataset.start)) + ' - ' + htmlNode._formatTime(parseInt(uc.dataset.visualEnd || Date.now())) + '</div>' +\n    '<select size=\"' + Math.min(state.stopReasons.length + 1, 10) + '\" style=\"width:100%;padding:6px;background:#252538;color:#e0e0e0;border:1px solid #555;border-radius:6px;margin-bottom:16px;font-size:14px;line-height:2;\">' + opts + '</select>' +\n    '<div style=\"display:flex;gap:12px;justify-content:flex-end;\">' +\n    '<button class=\"modal-cancel\" style=\"padding:10px 20px;background:#444;color:#ccc;border:none;border-radius:6px;cursor:pointer;font-size:13px;\">Cancel</button>' +\n    '<button class=\"modal-submit\" style=\"padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;\">Submit</button></div>';\n  function closeModal() { backdrop.remove(); modal.remove(); state.selectedStopId = null; }\n  backdrop.addEventListener('click', closeModal);\n  modal.querySelector('.modal-cancel').addEventListener('click', closeModal);\n  modal.querySelector('.modal-submit').addEventListener('click', function() {\n    var rid = modal.querySelector('select').value;\n    if (!rid) return;\n    var submitBtn = modal.querySelector('.modal-submit');\n    submitBtn.disabled = true;\n    submitBtn.textContent = 'Saving...';\n    fetch('/api/ds/query', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ queries: [{ refId: 'A', datasource: { uid: 'df9o2whw2o7wgb' }, rawSql: 'UPDATE machine_stops SET stop_reason_id = ' + Number(rid) + ' WHERE id = ' + Number(stopId), format: 'table', rawQuery: true }], from: 'now-1h', to: 'now' })\n    }).then(function(resp) {\n      if (resp.ok) {\n        var reasonName = modal.querySelector('select').selectedOptions[0].text;\n        state.unclassified = state.unclassified.filter(function(s) { return s.id !== stopId; });\n        state.classifiedStops.push({ id: stopId, start: parseInt(uc.dataset.start), end: parseInt(uc.dataset.visualEnd || 0), reason: reasonName });\n        var overlay = htmlNode.querySelector('.tl-unclass[data-stop-id=\"' + stopId + '\"]');\n        if (overlay) overlay.remove();\n        closeModal();\n      }\n      else { submitBtn.disabled = false; submitBtn.textContent = 'Submit'; }\n    }).catch(function() { submitBtn.disabled = false; submitBtn.textContent = 'Submit'; });\n  });\n  document.body.appendChild(backdrop);\n  document.body.appendChild(modal);\n});",
+        "onRender": "var state = htmlNode._state;\nvar STATE_COLORS = htmlNode._STATE_COLORS;\nvar formatTime = htmlNode._formatTime;\nvar rowsDiv = htmlNode.querySelector('.tl-rows');\nvar axisDiv = htmlNode.querySelector('.tl-axis');\nvar legendDiv = htmlNode.querySelector('.tl-legend');\nif (!data || !data.series || !data.series.length) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No data</div>'; return; }\nvar seriesA = data.series[0];\nif (!seriesA || !seriesA.fields) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No timeline data</div>'; return; }\nvar timeField = seriesA.fields.find(function(f) { return f.name === 'time'; });\nvar valueField = seriesA.fields.find(function(f) { return f.name === 'value'; });\nvar metricField = seriesA.fields.find(function(f) { return f.name === 'metric'; });\nif (!timeField || !valueField || !metricField) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">Missing fields</div>'; return; }\n// Parse Query B: Unclassified Stops (store raw null end)\nstate.unclassified = [];\nif (data.series.length > 1 && data.series[1] && data.series[1].fields) {\n  var dB = data.series[1];\n  var idF = dB.fields.find(function(f) { return f.name === 'id'; });\n  var stF = dB.fields.find(function(f) { return f.name === 'start_time'; });\n  var enF = dB.fields.find(function(f) { return f.name === 'end_time'; });\n  var wcF = dB.fields.find(function(f) { return f.name === 'workcell'; });\n  if (idF && stF && wcF) {\n    for (var bi = 0; bi < idF.values.length; bi++) {\n      var rawEnd = enF ? enF.values[bi] : null;\n      var endMs = (rawEnd && rawEnd !== '' && rawEnd !== null) ? new Date(rawEnd).getTime() : 0;\n      if (isNaN(endMs) || endMs < 1000000000000) endMs = 0;\n      state.unclassified.push({ id: idF.values[bi], start: new Date(stF.values[bi]).getTime(), end: endMs, workcell: wcF.values[bi] });\n    }\n  }\n}\n// Parse Query C: Stop Reasons\nstate.stopReasons = [];\nif (data.series.length > 2 && data.series[2] && data.series[2].fields) {\n  var dC = data.series[2];\n  var riF = dC.fields.find(function(f) { return f.name === 'id'; });\n  var rnF = dC.fields.find(function(f) { return f.name === 'name'; });\n  if (riF && rnF) { for (var ci = 0; ci < riF.values.length; ci++) { state.stopReasons.push({ id: riF.values[ci], name: rnF.values[ci] }); } }\n}\n// Parse Query D: Classified Stops\nstate.classifiedStops = [];\nif (data.series.length > 3 && data.series[3] && data.series[3].fields) {\n  var dD = data.series[3];\n  var diF = dD.fields.find(function(f) { return f.name === 'id'; });\n  var dsF = dD.fields.find(function(f) { return f.name === 'start_time'; });\n  var deF = dD.fields.find(function(f) { return f.name === 'end_time'; });\n  var drF = dD.fields.find(function(f) { return f.name === 'reason'; });\n  if (diF && dsF && drF) {\n    for (var di = 0; di < diF.values.length; di++) {\n      state.classifiedStops.push({ id: diF.values[di], start: new Date(dsF.values[di]).getTime(), end: deF && deF.values[di] ? new Date(deF.values[di]).getTime() : 0, reason: drF.values[di] });\n    }\n  }\n}\n// Build segments per machine\nvar machines = {};\nfor (var i = 0; i < timeField.values.length; i++) {\n  var m = metricField.values[i];\n  if (!machines[m]) machines[m] = [];\n  machines[m].push({ time: new Date(timeField.values[i]).getTime(), value: valueField.values[i] });\n}\nvar allTimes = [];\nfor (var mk in machines) { machines[mk].forEach(function(d) { allTimes.push(d.time); }); }\nif (!allTimes.length) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No data</div>'; return; }\nvar tMin = Math.min.apply(null, allTimes);\nvar tMax = Math.max.apply(null, allTimes.concat([Date.now()]));\nvar tRange = tMax - tMin || 1;\nstate.machines = machines; state.tMin = tMin; state.tMax = tMax;\n// Render\nrowsDiv.innerHTML = '';\nvar usedStates = {};\nvar sortedMachines = Object.keys(machines).sort();\nfor (var mi = 0; mi < sortedMachines.length; mi++) {\n  var machine = sortedMachines[mi];\n  var points = machines[machine].sort(function(a, b) { return a.time - b.time; });\n  var row = document.createElement('div'); row.className = 'tl-row';\n  var label = document.createElement('div'); label.className = 'tl-label'; label.textContent = machine; row.appendChild(label);\n  var bar = document.createElement('div'); bar.className = 'tl-bar'; bar.dataset.machine = machine;\n  for (var pi = 0; pi < points.length; pi++) {\n    var segStart = points[pi].time;\n    var segEnd = pi + 1 < points.length ? points[pi + 1].time : tMax;\n    var leftPct = ((segStart - tMin) / tRange) * 100;\n    var widthPct = ((segEnd - segStart) / tRange) * 100;\n    if (widthPct < 0.05) continue;\n    usedStates[points[pi].value] = true;\n    var seg = document.createElement('div'); seg.className = 'tl-seg';\n    seg.style.left = leftPct + '%'; seg.style.width = widthPct + '%';\n    seg.style.background = STATE_COLORS[points[pi].value] || '#6b7280';\n    seg.dataset.state = points[pi].value; seg.dataset.start = segStart; seg.dataset.end = segEnd; seg.dataset.machine = machine;\n    bar.appendChild(seg);\n  }\n  // Unclassified stop overlays - compute visual end from state transitions\n  var machineStops = state.unclassified.filter(function(s) { return s.workcell === machine; });\n  machineStops.sort(function(a, b) { return a.start - b.start; });\n  for (var si = 0; si < machineStops.length; si++) {\n    var stop = machineStops[si];\n    var visualEnd = 0;\n    if (stop.end > 0) { visualEnd = stop.end; }\n    else {\n      for (var vi = 0; vi < points.length; vi++) {\n        if (points[vi].time > stop.start && points[vi].value === 'RUNNING') { visualEnd = points[vi].time; break; }\n      }\n    }\n    if (!visualEnd || visualEnd <= stop.start) visualEnd = stop.start + 60000;\n    if (si + 1 < machineStops.length && visualEnd > machineStops[si + 1].start) { visualEnd = machineStops[si + 1].start; }\n    if (visualEnd <= stop.start) visualEnd = stop.start + 10000;\n    var oLeft = ((Math.max(stop.start, tMin) - tMin) / tRange) * 100;\n    var oWidth = ((Math.min(visualEnd, tMax) - Math.max(stop.start, tMin)) / tRange) * 100;\n    if (oWidth < 0.3) oWidth = 0.3;\n    var overlay = document.createElement('div');\n    overlay.className = 'tl-unclass' + (state.selectedStopId === stop.id ? ' selected' : '');\n    overlay.style.left = oLeft + '%'; overlay.style.width = oWidth + '%';\n    if (state.selectedStopId === stop.id) overlay.style.borderColor = '#3b82f6';\n    overlay.dataset.stopId = stop.id; overlay.dataset.start = stop.start; overlay.dataset.visualEnd = visualEnd; overlay.dataset.machine = machine;\n    bar.appendChild(overlay);\n  }\n  row.appendChild(bar); rowsDiv.appendChild(row);\n}\n// Time axis\naxisDiv.innerHTML = '';\nfor (var ai = 0; ai <= 5; ai++) { var span = document.createElement('span'); span.textContent = formatTime(tMin + (tRange * ai / 5)); axisDiv.appendChild(span); }\n// Legend\nlegendDiv.innerHTML = '';\nvar stateKeys = Object.keys(usedStates);\nfor (var li = 0; li < stateKeys.length; li++) {\n  var st = stateKeys[li]; var item = document.createElement('div'); item.className = 'tl-legend-item';\n  var dot = document.createElement('div'); dot.className = 'tl-legend-dot'; dot.style.background = STATE_COLORS[st] || '#6b7280';\n  item.appendChild(dot); item.appendChild(document.createTextNode(st)); legendDiv.appendChild(item);\n}\nif (state.unclassified.length > 0) {\n  var ucItem = document.createElement('div'); ucItem.className = 'tl-legend-item';\n  var ucDot = document.createElement('div'); ucDot.className = 'tl-legend-dot';\n  ucDot.style.cssText = 'border:2px solid #fff;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(255,255,255,0.25) 2px,rgba(255,255,255,0.25) 4px);';\n  ucItem.appendChild(ucDot); ucItem.appendChild(document.createTextNode('Unclassified (click to assign)')); legendDiv.appendChild(ucItem);\n}"
       },
-      "pluginVersion": "5.6.0",
+      "pluginVersion": "2.2.3",
       "targets": [
         {
           "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ${asset_id} as asset_id",
+          "rawSql": "SELECT time, value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '${workcell}', $__timeFrom()::timestamptz, $__timeTo()::timestamptz)",
           "refId": "A"
+        },
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT ms.id, ms.start_time, ms.end_time, a.workcell\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND a.line = '${line:raw}'\n  AND a.workcell = '${workcell}'\n  AND sr.name = 'Unspecified'\n  AND ms.start_time BETWEEN $__timeFrom() AND $__timeTo()\nORDER BY ms.start_time ASC",
+          "refId": "B"
+        },
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT id, name FROM stop_reasons WHERE name != 'Unspecified' ORDER BY name",
+          "refId": "C"
+        },
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT ms.id, ms.start_time, ms.end_time, sr.name as reason\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND a.line = '${line:raw}'\n  AND a.workcell = '${workcell}'\n  AND sr.name != 'Unspecified'\n  AND ms.start_time BETWEEN $__timeFrom() AND $__timeTo()\nORDER BY ms.start_time ASC",
+          "refId": "D"
         }
       ],
-      "title": "Change Machine State",
-      "type": "marcusolsson-dynamictext-panel"
+      "title": "Machine State Timeline",
+      "type": "gapit-htmlgraphics-panel"
     },
     {
       "collapsed": false,
@@ -533,18 +279,21 @@
         "elements": [
           {
             "allowCustomValue": false,
+            "helpers": {},
             "id": "stop_id",
             "labelWidth": 12,
             "options": [],
             "optionsSource": "Query",
-            "queryOptions": { "source": "B", "value": "Stop ID" },
-            "title": "Stop ID",
+            "queryField": { "label": "label", "value": "value" },
+            "queryOptions": { "source": "B", "value": "value" },
+            "title": "Stop",
             "type": "select",
             "uid": "0f1c4ea9-164b-44a0-be60-af1d7aff207c",
             "value": 0
           },
           {
             "allowCustomValue": false,
+            "helpers": {},
             "id": "reason_id",
             "labelWidth": 12,
             "optionsSource": "Query",
@@ -576,26 +325,37 @@
         "saveDefault": { "icon": "save", "text": "Save Default", "variant": "hidden" },
         "submit": {
           "backgroundColor": "purple",
-          "contentType": "application/json",
           "foregroundColor": "yellow",
-          "getPayload": "return { stop_id: Number(context.panel.elements.find(e => e.id === \"stop_id\").value), reason_id: Number(context.panel.elements.find(e => e.id === \"reason_id\").value) };",
           "icon": "cloud-upload",
-          "method": "POST",
-          "payloadMode": "custom",
           "text": "Submit",
-          "url": "__API_BASE_URL__/api/v1/stop-reason",
-          "variant": "primary"
+          "variant": "primary",
+          "method": "datasource",
+          "datasource": { "uid": "${DS_POSTGRESQL}" },
+          "payloadMode": "custom",
+          "getPayload": "return { stop_id: Number(context.panel.elements.find(e => e.id === 'stop_id').value), reason_id: Number(context.panel.elements.find(e => e.id === 'reason_id').value) };",
+          "payload": {
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "UPDATE machine_stops SET stop_reason_id = ${payload.reason_id} WHERE id = ${payload.stop_id}",
+            "refId": "A"
+          }
         },
         "sync": true,
         "update": {
-          "code": "if (context.panel.response && context.panel.response.ok) { context.grafana.notifySuccess([\"Success\", \"Stop reason updated\"]); context.grafana.refresh(); } else { context.grafana.notifyError([\"Error\", \"Failed to update\"]); }",
+          "code": "if (context.panel.response) { context.grafana.notifySuccess(['Success', 'Stop reason updated']); context.grafana.refresh(); } else { context.grafana.notifyError(['Error', 'Failed to update']); }",
           "confirm": false,
-          "contentType": "application/json",
-          "getPayload": "return { stop_id: Number(context.panel.elements.find(e => e.id === \"stop_id\").value), reason_id: Number(context.panel.elements.find(e => e.id === \"reason_id\").value) };",
-          "method": "POST",
-          "payload": {},
+          "method": "datasource",
+          "datasource": { "uid": "${DS_POSTGRESQL}" },
           "payloadMode": "custom",
-          "url": "__API_BASE_URL__/api/v1/stop-reason"
+          "getPayload": "return { stop_id: Number(context.panel.elements.find(e => e.id === 'stop_id').value), reason_id: Number(context.panel.elements.find(e => e.id === 'reason_id').value) };",
+          "payload": {
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "UPDATE machine_stops SET stop_reason_id = ${payload.reason_id} WHERE id = ${payload.stop_id}",
+            "refId": "A"
+          }
         },
         "updateEnabled": "auto"
       },
@@ -620,7 +380,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT ms.id as \"Stop ID\",\n  ms.start_time as \"Start Time\",\n  ms.end_time as \"End Time\",\n  CASE WHEN ms.end_time IS NULL THEN 'ONGOING'\n       ELSE ROUND(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)))::text || 's'\n  END as \"Duration\",\n  sr.name as \"Reason\",\n  sr.category as \"Category\"\nFROM machine_stops ms\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE ms.asset_id = ${asset_id}\n  AND sr.name = 'Unspecified'\nORDER BY ms.start_time DESC\nLIMIT 20",
+          "rawSql": "SELECT ms.id as value,\n  TO_CHAR(ms.start_time, 'HH24:MI') || ' - ' || CASE WHEN ms.end_time IS NULL THEN 'ONGOING' ELSE ROUND(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)))::text || 's' END as label\nFROM machine_stops ms\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE ms.asset_id = ${asset_id}\n  AND sr.name = 'Unspecified'\nORDER BY ms.start_time DESC\nLIMIT 20",
           "refId": "B"
         }
       ],
@@ -650,7 +410,7 @@
           { "matcher": { "id": "byName", "options": "Stop ID" }, "properties": [{ "id": "custom.width", "value": 80 }] }
         ]
       },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 17 },
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 17 },
       "id": 4,
       "options": { "cellHeight": "sm", "showHeader": true },
       "pluginVersion": "12.3.0",
@@ -667,46 +427,6 @@
         }
       ],
       "title": "Stops Needing Reasons",
-      "type": "table"
-    },
-    {
-      "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "${DS_POSTGRESQL}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "align": "auto",
-            "cellOptions": { "type": "auto" },
-            "footer": { "reducers": [] },
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{ "color": "green", "value": 0 }, { "color": "red", "value": 80 }]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 17 },
-      "id": 5,
-      "options": { "cellHeight": "sm", "showHeader": true },
-      "pluginVersion": "12.3.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "${DS_POSTGRESQL}"
-          },
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT ms.id as \"Stop ID\",\n  ms.start_time as \"Start Time\",\n  CASE WHEN ms.end_time IS NULL THEN 'ONGOING'\n       ELSE ROUND(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)))::text || 's'\n  END as \"Duration\",\n  sr.name as \"Reason\"\nFROM machine_stops ms\nJOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nWHERE ms.asset_id = ${asset_id}\nORDER BY ms.start_time DESC\nLIMIT 10",
-          "refId": "A"
-        }
-      ],
-      "title": "Recent Activity",
       "type": "table"
     }
   ],
@@ -740,7 +460,7 @@
         "name": "enterprise",
         "options": [],
         "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
-        "refresh": 1,
+        "refresh": 2,
         "type": "query"
       },
       {
@@ -756,7 +476,7 @@
         "name": "site",
         "options": [],
         "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
-        "refresh": 1,
+        "refresh": 2,
         "type": "query"
       },
       {
@@ -770,7 +490,7 @@
         "name": "line",
         "options": [],
         "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line != '' AND workcell != '' ORDER BY line",
-        "refresh": 1,
+        "refresh": 2,
         "type": "query"
       },
       {
@@ -784,7 +504,7 @@
         "name": "workcell",
         "options": [],
         "query": "SELECT DISTINCT workcell FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line:raw}' ORDER BY workcell",
-        "refresh": 1,
+        "refresh": 2,
         "type": "query"
       },
       {
@@ -799,7 +519,7 @@
         "name": "asset_id",
         "options": [],
         "query": "SELECT id FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND area = 'shopfloor' AND line = '${line:raw}' AND workcell = '${workcell}' LIMIT 1",
-        "refresh": 1,
+        "refresh": 2,
         "type": "query"
       }
     ]

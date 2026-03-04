@@ -587,7 +587,7 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 27
       },
@@ -695,7 +695,7 @@
       },
       "gridPos": {
         "h": 10,
-        "w": 12,
+        "w": 8,
         "x": 12,
         "y": 27
       },
@@ -732,8 +732,239 @@
           "refId": "A"
         }
       ],
-      "title": "Line Downtime Costs",
+      "title": "Line Downtime Cost Table",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "gridPos": { "h": 10, "w": 4, "x": 8, "y": 27 },
+      "id": 40,
+      "options": {
+        "buttonGroup": { "orientation": "center", "size": "md" },
+        "confirmModal": {
+          "body": "Update scrap cost?",
+          "cancel": "Cancel",
+          "columns": { "include": ["name", "oldValue", "newValue"], "name": "Label", "newValue": "New Value", "oldValue": "Old Value" },
+          "confirm": "Confirm",
+          "elementDisplayMode": "modified",
+          "title": "Confirm update"
+        },
+        "elementValueChanged": "if (context.element.id === 'part_number') {\n  const series = context.panel.data?.series;\n  if (series && series.length > 1) {\n    const frame = series[1];\n    const partF = frame.fields.find(f => f.name === 'part_number');\n    const costF = frame.fields.find(f => f.name === 'cost_per_unit');\n    const descF = frame.fields.find(f => f.name === 'description');\n    if (partF && costF) {\n      for (let i = 0; i < partF.values.length; i++) {\n        if (String(partF.values[i]) === String(context.element.value)) {\n          const updated = context.panel.elements.map(el => ({\n            ...el,\n            helpers: el.helpers || {},\n            ...(el.id === 'cost_per_unit' ? { value: costF.values[i] } : {}),\n            ...(el.id === 'description' ? { value: descF.values[i] || '' } : {})\n          }));\n          context.panel.onChangeElements(updated);\n          break;\n        }\n      }\n    }\n  }\n}",
+        "elements": [
+          {
+            "allowCustomValue": false,
+            "helpers": {},
+            "id": "part_number",
+            "labelWidth": 14,
+            "optionsSource": "Query",
+            "queryField": { "label": "part_number", "value": "part_number" },
+            "queryOptions": { "source": "A", "value": "part_number" },
+            "title": "Part Number",
+            "type": "select",
+            "uid": "scrap-part-select"
+          },
+          {
+            "helpers": {},
+            "id": "cost_per_unit",
+            "labelWidth": 14,
+            "title": "Cost/Unit",
+            "type": "number",
+            "uid": "scrap-cost-input",
+            "value": 0
+          },
+          {
+            "helpers": {},
+            "id": "description",
+            "labelWidth": 14,
+            "title": "Description",
+            "type": "string",
+            "uid": "scrap-desc-input",
+            "value": ""
+          }
+        ],
+        "initial": {
+          "code": "",
+          "contentType": "application/json",
+          "getPayload": "return {}",
+          "highlight": false,
+          "highlightColor": "red",
+          "method": "-",
+          "payload": {}
+        },
+        "layout": { "orientation": "vertical", "padding": 10, "sectionVariant": "default", "variant": "single" },
+        "reset": { "variant": "hidden" },
+        "resetAction": { "confirm": false, "getPayload": "return {}", "mode": "initial", "payload": {} },
+        "saveDefault": { "variant": "hidden" },
+        "submit": {
+          "backgroundColor": "purple",
+          "foregroundColor": "yellow",
+          "icon": "save",
+          "text": "Update",
+          "variant": "primary",
+          "method": "datasource",
+          "datasource": { "uid": "${DS_POSTGRESQL}" },
+          "payloadMode": "custom",
+          "getPayload": "const els = context.panel.elements;\nreturn { part_number: els.find(e => e.id === 'part_number').value, cost_per_unit: Number(els.find(e => e.id === 'cost_per_unit').value), description: (els.find(e => e.id === 'description').value || '').replace(/'/g, \"''\") };",
+          "payload": {
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "UPDATE part_scrap_costs SET cost_per_unit = ${payload.cost_per_unit}, description = '${payload.description}' WHERE part_number = '${payload.part_number}'",
+            "refId": "A"
+          }
+        },
+        "sync": true,
+        "update": {
+          "code": "if (context.panel.response) { context.grafana.notifySuccess(['Success', 'Scrap cost updated']); context.grafana.refresh(); } else { context.grafana.notifyError(['Error', 'Failed to update']); }",
+          "confirm": false,
+          "method": "datasource",
+          "datasource": { "uid": "${DS_POSTGRESQL}" },
+          "payloadMode": "custom",
+          "getPayload": "const els = context.panel.elements;\nreturn { part_number: els.find(e => e.id === 'part_number').value, cost_per_unit: Number(els.find(e => e.id === 'cost_per_unit').value), description: (els.find(e => e.id === 'description').value || '').replace(/'/g, \"''\") };",
+          "payload": {
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "UPDATE part_scrap_costs SET cost_per_unit = ${payload.cost_per_unit}, description = '${payload.description}' WHERE part_number = '${payload.part_number}'",
+            "refId": "A"
+          }
+        },
+        "updateEnabled": "auto"
+      },
+      "pluginVersion": "6.3.1",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT part_number FROM part_scrap_costs ORDER BY part_number",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT part_number, cost_per_unit, description FROM part_scrap_costs ORDER BY part_number",
+          "refId": "B"
+        }
+      ],
+      "title": "Edit Scrap Cost",
+      "type": "volkovlabs-form-panel"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "gridPos": { "h": 10, "w": 4, "x": 20, "y": 27 },
+      "id": 41,
+      "options": {
+        "buttonGroup": { "orientation": "center", "size": "md" },
+        "confirmModal": {
+          "body": "Update downtime cost?",
+          "cancel": "Cancel",
+          "columns": { "include": ["name", "oldValue", "newValue"], "name": "Label", "newValue": "New Value", "oldValue": "Old Value" },
+          "confirm": "Confirm",
+          "elementDisplayMode": "modified",
+          "title": "Confirm update"
+        },
+        "elementValueChanged": "if (context.element.id === 'line_name') {\n  const series = context.panel.data?.series;\n  if (series && series.length > 1) {\n    const frame = series[1];\n    const lineF = frame.fields.find(f => f.name === 'line_name');\n    const costF = frame.fields.find(f => f.name === 'cost_per_hour');\n    if (lineF && costF) {\n      for (let i = 0; i < lineF.values.length; i++) {\n        if (String(lineF.values[i]) === String(context.element.value)) {\n          const updated = context.panel.elements.map(el => ({\n            ...el,\n            helpers: el.helpers || {},\n            ...(el.id === 'cost_per_hour' ? { value: costF.values[i] } : {})\n          }));\n          context.panel.onChangeElements(updated);\n          break;\n        }\n      }\n    }\n  }\n}",
+        "elements": [
+          {
+            "allowCustomValue": false,
+            "helpers": {},
+            "id": "line_name",
+            "labelWidth": 14,
+            "optionsSource": "Query",
+            "queryField": { "label": "line_name", "value": "line_name" },
+            "queryOptions": { "source": "A", "value": "line_name" },
+            "title": "Line",
+            "type": "select",
+            "uid": "downtime-line-select"
+          },
+          {
+            "helpers": {},
+            "id": "cost_per_hour",
+            "labelWidth": 14,
+            "title": "Cost/Hour",
+            "type": "number",
+            "uid": "downtime-cost-input",
+            "value": 0
+          }
+        ],
+        "initial": {
+          "code": "",
+          "contentType": "application/json",
+          "getPayload": "return {}",
+          "highlight": false,
+          "highlightColor": "red",
+          "method": "-",
+          "payload": {}
+        },
+        "layout": { "orientation": "vertical", "padding": 10, "sectionVariant": "default", "variant": "single" },
+        "reset": { "variant": "hidden" },
+        "resetAction": { "confirm": false, "getPayload": "return {}", "mode": "initial", "payload": {} },
+        "saveDefault": { "variant": "hidden" },
+        "submit": {
+          "backgroundColor": "purple",
+          "foregroundColor": "yellow",
+          "icon": "save",
+          "text": "Update",
+          "variant": "primary",
+          "method": "datasource",
+          "datasource": { "uid": "${DS_POSTGRESQL}" },
+          "payloadMode": "custom",
+          "getPayload": "const els = context.panel.elements;\nreturn { line_name: els.find(e => e.id === 'line_name').value, cost_per_hour: Number(els.find(e => e.id === 'cost_per_hour').value) };",
+          "payload": {
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "UPDATE line_downtime_costs SET cost_per_hour = ${payload.cost_per_hour} WHERE line_name = '${payload.line_name}'",
+            "refId": "A"
+          }
+        },
+        "sync": true,
+        "update": {
+          "code": "if (context.panel.response) { context.grafana.notifySuccess(['Success', 'Downtime cost updated']); context.grafana.refresh(); } else { context.grafana.notifyError(['Error', 'Failed to update']); }",
+          "confirm": false,
+          "method": "datasource",
+          "datasource": { "uid": "${DS_POSTGRESQL}" },
+          "payloadMode": "custom",
+          "getPayload": "const els = context.panel.elements;\nreturn { line_name: els.find(e => e.id === 'line_name').value, cost_per_hour: Number(els.find(e => e.id === 'cost_per_hour').value) };",
+          "payload": {
+            "editorMode": "code",
+            "format": "table",
+            "rawQuery": true,
+            "rawSql": "UPDATE line_downtime_costs SET cost_per_hour = ${payload.cost_per_hour} WHERE line_name = '${payload.line_name}'",
+            "refId": "A"
+          }
+        },
+        "updateEnabled": "auto"
+      },
+      "pluginVersion": "6.3.1",
+      "targets": [
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT line_name FROM line_downtime_costs ORDER BY line_name",
+          "refId": "A"
+        },
+        {
+          "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT line_name, cost_per_hour FROM line_downtime_costs ORDER BY line_name",
+          "refId": "B"
+        }
+      ],
+      "title": "Edit Downtime Cost",
+      "type": "volkovlabs-form-panel"
     }
   ],
   "preload": false,
@@ -762,38 +993,30 @@
         "type": "datasource"
       },
       {
-        "current": {
-          "text": "__ENTERPRISE__",
-          "value": "__ENTERPRISE__"
-        },
+        "current": { "selected": false, "text": "UMH-factory", "value": "UMH-factory" },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+        "definition": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "hide": 0,
+        "includeAll": false,
         "label": "Enterprise",
         "name": "enterprise",
-        "options": [
-          {
-            "selected": true,
-            "text": "__ENTERPRISE__",
-            "value": "__ENTERPRISE__"
-          }
-        ],
-        "query": "__ENTERPRISE__",
-        "type": "textbox"
+        "options": [],
+        "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "refresh": 1,
+        "type": "query"
       },
       {
-        "current": {
-          "text": "__SITE__",
-          "value": "__SITE__"
-        },
+        "current": { "selected": false, "text": "Paris", "value": "Paris" },
+        "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
+        "definition": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "hide": 0,
+        "includeAll": false,
         "label": "Site",
         "name": "site",
-        "options": [
-          {
-            "selected": true,
-            "text": "__SITE__",
-            "value": "__SITE__"
-          }
-        ],
-        "query": "__SITE__",
-        "type": "textbox"
+        "options": [],
+        "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "refresh": 1,
+        "type": "query"
       },
       {
         "allValue": "All",

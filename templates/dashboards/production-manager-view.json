@@ -611,16 +611,16 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
       "id": 10,
       "options": {
-        "bucketCount": 20,
+        "bucketCount": 15,
         "bucketOffset": 0,
-        "bucketSize": 5,
         "combine": false,
         "legend": {
-          "calcs": ["count", "mean"],
+          "calcs": ["count"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
-        }
+        },
+        "tooltip": { "mode": "multi", "sort": "desc" }
       },
       "pluginVersion": "12.3.0",
       "targets": [
@@ -632,11 +632,12 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0 as \"Duration (min)\"\nFROM machine_stops ms\nWHERE ms.asset_id IN (SELECT get_asset_ids_stable('${enterprise}', '${site}', 'shopfloor', '${line:raw}', ''))\n  AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY \"Duration (min)\"",
+          "rawSql": "SELECT\n  COALESCE(sr.name, 'Unspecified') as \"Reason\",\n  ROUND(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0, 1) as \"Duration (min)\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nLEFT JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND a.line = '${line:raw}'\n  AND ms.start_time BETWEEN (NOW() - INTERVAL '${time_period}') AND NOW()\nORDER BY ms.start_time",
           "refId": "A"
         }
       ],
-      "title": "Stop Duration Distribution",
+      "title": "Stop Reason Histogram",
+      "transformations": [],
       "type": "histogram"
     },
     {
@@ -817,7 +818,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time, value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', (NOW() - INTERVAL '${time_period}')::timestamptz, NOW())",
+          "rawSql": "SELECT time, value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz)",
           "refId": "A"
         }
       ],
