@@ -273,6 +273,16 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.10 (2026-03-04)
+
+### Other
+- Fixed hypertable issues, increased performance for timescale, bumped version. Added new dashboards.
+- minor dashboard changes. new state timeline panel
+- updated data removal functionallity
+- fixed .svg loading issue
+
+**Full Changelog**: [`v1.3.9...v1.3.10`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.9...v1.3.10)
+
 ## v1.3.9 (2026-02-25)
 
 ### Other
