@@ -107,6 +107,12 @@ else
         PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/stop-schema.sql" 2>/dev/null || true
         echo -e "${GREEN}  ✓ SQL schema initialized${NC}"
     fi
+
+    # Run hypertable migration (creates continuous aggregates needed by views.sql)
+    if [ -f "$WORK_DIR/sql/migrate-to-hypertables.sql" ]; then
+        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/migrate-to-hypertables.sql" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ Hypertables and continuous aggregates initialized${NC}"
+    fi
 fi
 
 # ============================================================
