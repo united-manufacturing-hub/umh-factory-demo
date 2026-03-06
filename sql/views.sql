@@ -53,8 +53,7 @@ SELECT
 FROM machine_stops ms
 JOIN asset a ON a.id = ms.asset_id
 LEFT JOIN stop_reasons sr ON sr.id = ms.stop_reason_id
-WHERE ms.end_time IS NULL  -- Only ongoing stops
-ORDER BY ms.start_time ASC;  -- Oldest first (longest duration)
+WHERE ms.end_time IS NULL;  -- Only ongoing stops
 
 -- Grant permissions
 DO $$ BEGIN
@@ -1476,6 +1475,7 @@ BEGIN
     LEFT JOIN latest_state ls ON ls.asset_id = a.id
     LEFT JOIN latest_parts lp ON lp.asset_id = a.id
     WHERE a.id IN (SELECT id FROM matching_assets)
+      AND a.workcell != ''
     ORDER BY a.workcell;
 END;
 $func$ LANGUAGE plpgsql STABLE;

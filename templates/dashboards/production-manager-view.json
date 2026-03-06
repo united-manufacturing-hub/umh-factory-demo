@@ -743,46 +743,19 @@
             "hideFrom": { "legend": false, "tooltip": false, "viz": false },
             "insertNulls": false,
             "lineWidth": 1,
-            "spanNulls": false
+            "spanNulls": true
           },
           "mappings": [
             {
               "options": {
-                "FAULT": { "color": "red", "index": 0, "text": "Fault" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "IDLE": { "color": "yellow", "index": 1, "text": "Idle" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "RUNNING": { "color": "green", "index": 2, "text": "Running" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "MAINTENANCE": {
-                  "color": "blue",
-                  "index": 3,
-                  "text": "Maintenance"
-                }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "STOPPED": { "color": "orange", "index": 4, "text": "Stopped" }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "SETUP": { "color": "purple", "index": 5, "text": "Setup" }
+                "1": { "color": "green", "index": 0, "text": "Running" },
+                "2": { "color": "yellow", "index": 1, "text": "Idle" },
+                "3": { "color": "orange", "index": 2, "text": "Stopped" },
+                "4": { "color": "red", "index": 3, "text": "Fault" },
+                "5": { "color": "blue", "index": 4, "text": "Maintenance" },
+                "6": { "color": "purple", "index": 5, "text": "Setup" },
+                "7": { "color": "blue", "index": 6, "text": "Planned Stop" },
+                "8": { "color": "red", "index": 7, "text": "Unplanned Stop" }
               },
               "type": "value"
             }
@@ -818,11 +791,11 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time, value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz)",
+          "rawSql": "SELECT time, CASE value WHEN 'RUNNING' THEN 1 WHEN 'IDLE' THEN 2 WHEN 'STOPPED' THEN 3 WHEN 'FAULT' THEN 4 WHEN 'MAINTENANCE' THEN 5 WHEN 'SETUP' THEN 6 WHEN 'PLANNED STOP' THEN 7 WHEN 'UNPLANNED STOP' THEN 8 ELSE 0 END as value, metric FROM get_state_timeline('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '', $__timeFrom()::timestamptz, $__timeTo()::timestamptz)",
           "refId": "A"
         }
       ],
-      "title": "Machine State Timeline",
+      "title": "All Machine States",
       "type": "state-timeline"
     }
   ],
