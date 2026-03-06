@@ -1,6 +1,6 @@
 # Auto-Classify Stops Dataflow
 # Simulates operator feedback by classifying old unclassified stops with random reasons.
-# Runs every hour. Keeps max 2 most recent unclassified stops per machine.
+# Runs every hour. First closes stale open stops, then classifies closed ones (keeps 2 most recent per machine).
 
 input:
   generate:
@@ -9,6 +9,25 @@ input:
 
 pipeline:
   processors:
+    # Step 1: Close stale open stops (older than 5 minutes).
+    # If a newer stop exists for the same asset, use that as end_time.
+    # Otherwise, use start_time + 1 hour (or NOW if that's later).
+    - sql_raw:
+        driver: postgres
+        dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable
+        query: |
+          WITH stale AS (
+            SELECT ms.id, COALESCE(
+              (SELECT MIN(ms2.start_time) FROM machine_stops ms2 WHERE ms2.asset_id = ms.asset_id AND ms2.start_time > ms.start_time),
+              GREATEST(ms.start_time + INTERVAL '1 hour', NOW())
+            ) AS computed_end
+            FROM machine_stops ms
+            WHERE ms.end_time IS NULL
+              AND ms.start_time < NOW() - INTERVAL '5 minutes'
+          )
+          UPDATE machine_stops SET end_time = stale.computed_end FROM stale WHERE machine_stops.id = stale.id
+        unsafe_dynamic_query: false
+    # Step 2: Classify old closed stops (keep 2 most recent unclassified per machine)
     - sql_raw:
         driver: postgres
         dsn: postgres://postgres:postgres@pgbouncer:5432/umh?sslmode=disable

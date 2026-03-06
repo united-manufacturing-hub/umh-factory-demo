@@ -102,12 +102,15 @@ pipeline:
               value: ${! content() }
         request_map: root = if this.asset_id != null { this.asset_id.string() } else { deleted() }
         result_map: root = root
+    # Skip if no asset found
+    - bloblang: root = if this.asset_id == null { deleted() } else { this }
+      label: filter_no_asset
     # Get previous state from cache (keyed per asset)
     - branch:
         processors:
           - try:
               - cache:
-                  key: previous_state_${! json("asset_id").string() }
+                  key: previous_state_${! meta("umh_topic") }
                   operator: get
                   resource: state_cache
           - catch:
@@ -118,10 +121,10 @@ pipeline:
     - branch:
         processors:
           - cache:
-              key: previous_state_${! json("asset_id").string() }
+              key: previous_state_${! meta("umh_topic") }
               operator: set
               resource: state_cache
-              value: ${! json("current_state").string() }
+              value: ${! content() }
         request_map: root = json("current_state").string()
         result_map: root = root
     - bloblang: |-

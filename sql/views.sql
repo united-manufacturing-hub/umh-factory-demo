@@ -414,80 +414,8 @@ END $$;
 -- Usage: SELECT * FROM v_oee_by_asset WHERE line = 'line1';
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW v_oee_by_asset AS
-WITH time_range AS (
-    SELECT
-        NOW() - INTERVAL '24 hours' AS range_start,
-        NOW() AS range_end
-),
-planned AS (
-    SELECT CASE WHEN COUNT(*) > 0
-        THEN SUM(EXTRACT(EPOCH FROM (
-            LEAST(s.end_time, tr.range_end) - GREATEST(s.start_time, tr.range_start)
-        )) / 60.0)
-        ELSE NULL
-    END AS planned_minutes
-    FROM shifts s, time_range tr
-    WHERE s.start_time < tr.range_end
-      AND s.end_time > tr.range_start
-),
-runtime_per_asset AS (
-    SELECT
-        a.id AS asset_id,
-        COALESCE((
-            WITH shift_periods AS (
-                SELECT
-                    GREATEST(s.start_time, tr.range_start) AS period_start,
-                    LEAST(s.end_time, tr.range_end) AS period_end
-                FROM shifts s, time_range tr
-                WHERE s.start_time < tr.range_end
-                  AND s.end_time > tr.range_start
-            ),
-            state_changes AS (
-                SELECT
-                    timestamp,
-                    value,
-                    LEAD(timestamp) OVER (ORDER BY timestamp) AS next_ts
-                FROM tag_string
-                WHERE name = 'state'
-                  AND asset_id = a.id
-            )
-            SELECT CASE WHEN (SELECT COUNT(*) FROM shift_periods) > 0
-                THEN COALESCE(SUM(
-                    EXTRACT(EPOCH FROM (
-                        LEAST(COALESCE(sc.next_ts, sp.period_end), sp.period_end) -
-                        GREATEST(sc.timestamp, sp.period_start)
-                    )) / 60.0
-                ), 0)
-                ELSE NULL
-            END
-            FROM state_changes sc, shift_periods sp
-            WHERE sc.value = 'RUNNING'
-              AND sc.timestamp < sp.period_end
-              AND COALESCE(sc.next_ts, sp.period_end) > sp.period_start
-        ), 0) AS runtime_minutes
-    FROM asset a
-    WHERE a.workcell != ''
-),
-parts_delta AS (
-    SELECT
-        asset_id,
-        origin,
-        MAX(value) FILTER (WHERE name = 'good_count' AND timestamp <= NOW()) AS end_good,
-        MAX(value) FILTER (WHERE name = 'good_count' AND timestamp < NOW() - INTERVAL '24 hours') AS start_good,
-        MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp <= NOW()) AS end_scrap,
-        MAX(value) FILTER (WHERE name = 'scrap_count' AND timestamp < NOW() - INTERVAL '24 hours') AS start_scrap
-    FROM tag
-    WHERE name IN ('good_count', 'scrap_count')
-      AND timestamp > NOW() - INTERVAL '25 hours'
-    GROUP BY asset_id, origin
-),
-parts_totals AS (
-    SELECT
-        asset_id,
-        SUM(GREATEST(COALESCE(end_good, 0) - COALESCE(start_good, 0), 0)) AS good_parts,
-        SUM(GREATEST(COALESCE(end_scrap, 0) - COALESCE(start_scrap, 0), 0)) AS scrap_parts
-    FROM parts_delta
-    GROUP BY asset_id
+WITH planned AS (
+    SELECT get_planned_minutes(NOW() - INTERVAL '24 hours', NOW()) AS planned_minutes
 ),
 ideal_cycle_times AS (
     SELECT DISTINCT ON (po.asset_id)
@@ -498,17 +426,6 @@ ideal_cycle_times AS (
       AND po.planned_cycle_time_ms IS NOT NULL
       AND po.planned_cycle_time_ms > 0
     ORDER BY po.asset_id, po.started_at DESC
-),
-fallback_cycle_times AS (
-    SELECT
-        asset_id,
-        PERCENTILE_CONT(0.05) WITHIN GROUP (ORDER BY value) / 1000.0 AS p5_ct_sec
-    FROM tag
-    WHERE name = 'cycle_time_ms'
-      AND value > 0
-      AND value < 600000
-      AND timestamp > NOW() - INTERVAL '24 hours'
-    GROUP BY asset_id
 )
 SELECT
     a.id AS asset_id,
@@ -525,9 +442,9 @@ SELECT
     -- Performance: (total_parts × ideal_cycle_time) / runtime
     ROUND(LEAST(
         CASE
-            WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.p5_ct_sec) > 0 THEN
-                ((COALESCE(pt.good_parts, 0) + COALESCE(pt.scrap_parts, 0))
-                 * COALESCE(ict.ideal_ct_sec, fct.p5_ct_sec) * 100.0)
+            WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) > 0 THEN
+                ((COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0))
+                 * COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) * 100.0)
                 / (rt.runtime_minutes * 60)
             ELSE 0
         END,
@@ -536,8 +453,8 @@ SELECT
     -- Quality: good parts / total parts
     ROUND(
         CASE
-            WHEN (COALESCE(pt.good_parts, 0) + COALESCE(pt.scrap_parts, 0)) > 0
-            THEN (COALESCE(pt.good_parts, 0) * 100.0 / (COALESCE(pt.good_parts, 0) + COALESCE(pt.scrap_parts, 0)))
+            WHEN (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)) > 0
+            THEN (COALESCE(parts.good_parts, 0) * 100.0 / (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)))
             ELSE 100
         END::numeric, 1
     ) AS quality_pct,
@@ -549,32 +466,58 @@ SELECT
         END, 0) / 100.0 *
         LEAST(COALESCE(
             CASE
-                WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.p5_ct_sec) > 0 THEN
-                    ((COALESCE(pt.good_parts, 0) + COALESCE(pt.scrap_parts, 0))
-                     * COALESCE(ict.ideal_ct_sec, fct.p5_ct_sec) * 100.0)
+                WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) > 0 THEN
+                    ((COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0))
+                     * COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) * 100.0)
                     / (rt.runtime_minutes * 60)
                 ELSE 0
             END, 0
         ), 100) / 100.0 *
         COALESCE(
             CASE
-                WHEN (COALESCE(pt.good_parts, 0) + COALESCE(pt.scrap_parts, 0)) > 0
-                THEN (COALESCE(pt.good_parts, 0) * 100.0 / (COALESCE(pt.good_parts, 0) + COALESCE(pt.scrap_parts, 0)))
+                WHEN (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)) > 0
+                THEN (COALESCE(parts.good_parts, 0) * 100.0 / (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)))
                 ELSE 100
             END, 100
         ) / 100.0 * 100
     )::numeric, 1) AS oee_pct,
-    COALESCE(pt.good_parts, 0) AS good_parts,
-    COALESCE(pt.scrap_parts, 0) AS scrap_parts,
+    COALESCE(parts.good_parts, 0) AS good_parts,
+    COALESCE(parts.scrap_parts, 0) AS scrap_parts,
     rt.runtime_minutes,
     p.planned_minutes,
-    COALESCE(ict.ideal_ct_sec, fct.p5_ct_sec) AS ideal_cycle_time_sec
+    COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) AS ideal_cycle_time_sec
 FROM asset a
 CROSS JOIN planned p
-LEFT JOIN runtime_per_asset rt ON rt.asset_id = a.id
-LEFT JOIN parts_totals pt ON pt.asset_id = a.id
+LEFT JOIN LATERAL (
+    SELECT COALESCE(get_runtime_minutes(a.id, NOW() - INTERVAL '24 hours', NOW()), 0) AS runtime_minutes
+) rt ON true
+LEFT JOIN LATERAL (
+    SELECT
+        SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FILTER (WHERE tag_name = 'good_count') AS good_parts,
+        SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FILTER (WHERE tag_name = 'scrap_count') AS scrap_parts
+    FROM (
+        SELECT
+            t.name AS tag_name,
+            t.origin,
+            MAX(t.value) FILTER (WHERE t.timestamp <= NOW()) AS end_v,
+            MAX(t.value) FILTER (WHERE t.timestamp < NOW() - INTERVAL '24 hours') AS start_v
+        FROM tag t
+        WHERE t.asset_id = a.id
+          AND t.name IN ('good_count', 'scrap_count')
+          AND t.timestamp > NOW() - INTERVAL '25 hours'
+        GROUP BY t.name, t.origin
+    ) sub
+) parts ON true
 LEFT JOIN ideal_cycle_times ict ON ict.asset_id = a.id
-LEFT JOIN fallback_cycle_times fct ON fct.asset_id = a.id
+LEFT JOIN LATERAL (
+    SELECT PERCENTILE_CONT(0.05) WITHIN GROUP (ORDER BY t.value) / 1000.0 AS avg_ct_sec
+    FROM tag t
+    WHERE t.asset_id = a.id
+      AND t.name = 'cycle_time_ms'
+      AND t.value > 0
+      AND t.value < 600000
+      AND t.timestamp > NOW() - INTERVAL '24 hours'
+) fct ON true
 WHERE a.workcell != '';
 
 -- Grant permissions
@@ -896,20 +839,18 @@ CREATE OR REPLACE FUNCTION get_counter_delta(
 DECLARE
     _start_bucket timestamptz := time_bucket('1 hour', _start_time);
     _end_bucket   timestamptz := time_bucket('1 hour', _end_time);
+    _result numeric;
 BEGIN
-    -- Uses cagg_counter_hourly for complete hours + raw tag for boundary hours.
-    -- For monotonic counters (good_count, scrap_count), MAX(value) WHERE timestamp <= T
-    -- equals the max across all hourly max_values up to T.
-    RETURN COALESCE((
-        SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0))
+    -- Try cagg_counter_hourly for complete hours + raw tag for boundary hours.
+    -- Falls back to raw-only query if cagg doesn't exist.
+    BEGIN
+        SELECT COALESCE(SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)), 0) INTO _result
         FROM (
             SELECT
-                asset_id,
-                origin,
+                asset_id, origin,
                 MAX(value) FILTER (WHERE ts_marker <= _end_time) AS end_v,
                 MAX(value) FILTER (WHERE ts_marker < _start_time) AS start_v
             FROM (
-                -- Complete hourly buckets from cagg (use end-of-bucket as time marker)
                 SELECT c.asset_id, c.origin, c.max_value AS value,
                        c.bucket + INTERVAL '1 hour' - INTERVAL '1 microsecond' AS ts_marker
                 FROM cagg_counter_hourly c
@@ -917,20 +858,14 @@ BEGIN
                   AND c.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
                   AND c.bucket >= _start_bucket - INTERVAL '1 hour'
                   AND c.bucket < _end_bucket
-
                 UNION ALL
-
-                -- Raw data for partial start boundary hour
                 SELECT t.asset_id, t.origin, t.value, t.timestamp AS ts_marker
                 FROM tag t
                 WHERE t.name = _tag_name
                   AND t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
                   AND t.timestamp >= _start_bucket
                   AND t.timestamp < _start_bucket + INTERVAL '1 hour'
-
                 UNION ALL
-
-                -- Raw data for partial end boundary hour
                 SELECT t.asset_id, t.origin, t.value, t.timestamp AS ts_marker
                 FROM tag t
                 WHERE t.name = _tag_name
@@ -939,8 +874,25 @@ BEGIN
                   AND t.timestamp <= _end_time
             ) combined
             GROUP BY asset_id, origin
-        ) sub
-    ), 0);
+        ) sub;
+        RETURN _result;
+    EXCEPTION WHEN undefined_table THEN
+        -- Fallback: raw tag table only (no cagg available)
+        RETURN COALESCE((
+            SELECT SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0))
+            FROM (
+                SELECT t.asset_id, t.origin,
+                    MAX(t.value) FILTER (WHERE t.timestamp <= _end_time) AS end_v,
+                    MAX(t.value) FILTER (WHERE t.timestamp < _start_time) AS start_v
+                FROM tag t
+                WHERE t.name = _tag_name
+                  AND t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+                  AND t.timestamp >= _start_time - INTERVAL '1 hour'
+                  AND t.timestamp <= _end_time
+                GROUP BY t.asset_id, t.origin
+            ) sub
+        ), 0);
+    END;
 END;
 $func$ LANGUAGE plpgsql STABLE;
 
@@ -1132,30 +1084,28 @@ CREATE OR REPLACE FUNCTION get_cycle_time_avg(
 DECLARE
     _start_bucket timestamptz;
     _end_bucket timestamptz;
+    _result numeric;
 BEGIN
-    -- Uses cagg_tag_stats_hourly for complete hours, raw tag for boundary hours.
-    -- Weighted average: SUM(sum_value) / SUM(sample_count) gives exact AVG across buckets.
-    IF _start_time IS NULL OR _end_time IS NULL THEN
-        -- All-time average from cagg only
-        RETURN (
-            SELECT SUM(c.sum_value) / NULLIF(SUM(c.sample_count), 0) / 1000.0
+    -- Try cagg_tag_stats_hourly for complete hours, raw tag for boundary hours.
+    -- Falls back to raw-only query if cagg doesn't exist.
+    BEGIN
+        IF _start_time IS NULL OR _end_time IS NULL THEN
+            SELECT SUM(c.sum_value) / NULLIF(SUM(c.sample_count), 0) / 1000.0 INTO _result
             FROM cagg_tag_stats_hourly c
             WHERE c.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
               AND c.name = 'cycle_time_ms'
               AND c.avg_value > 0
-              AND c.max_value < 300000
-        );
-    END IF;
+              AND c.max_value < 300000;
+            RETURN _result;
+        END IF;
 
-    _start_bucket := time_bucket('1 hour', _start_time);
-    _end_bucket := time_bucket('1 hour', _end_time);
+        _start_bucket := time_bucket('1 hour', _start_time);
+        _end_bucket := time_bucket('1 hour', _end_time);
 
-    RETURN (
-        SELECT total_sum / NULLIF(total_count, 0) / 1000.0
+        SELECT total_sum / NULLIF(total_count, 0) / 1000.0 INTO _result
         FROM (
             SELECT SUM(s) AS total_sum, SUM(c) AS total_count
             FROM (
-                -- Complete hourly buckets from cagg
                 SELECT c.sum_value AS s, c.sample_count AS c
                 FROM cagg_tag_stats_hourly c
                 WHERE c.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
@@ -1164,10 +1114,7 @@ BEGIN
                   AND c.bucket < _end_bucket
                   AND c.avg_value > 0
                   AND c.max_value < 300000
-
                 UNION ALL
-
-                -- Raw data for partial start boundary hour
                 SELECT SUM(t.value), COUNT(*)
                 FROM tag t
                 WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
@@ -1175,10 +1122,7 @@ BEGIN
                   AND t.value > 0 AND t.value < 300000
                   AND t.timestamp >= _start_time
                   AND t.timestamp < _start_bucket + INTERVAL '1 hour'
-
                 UNION ALL
-
-                -- Raw data for partial end boundary hour
                 SELECT SUM(t.value), COUNT(*)
                 FROM tag t
                 WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
@@ -1187,8 +1131,20 @@ BEGIN
                   AND t.timestamp >= _end_bucket
                   AND t.timestamp <= _end_time
             ) combined
-        ) totals
-    );
+        ) totals;
+        RETURN _result;
+    EXCEPTION WHEN undefined_table THEN
+        -- Fallback: raw tag table only (no cagg available)
+        RETURN (
+            SELECT AVG(t.value) / 1000.0
+            FROM tag t
+            WHERE t.asset_id IN (SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell))
+              AND t.name = 'cycle_time_ms'
+              AND t.value > 0 AND t.value < 300000
+              AND (_start_time IS NULL OR t.timestamp >= _start_time)
+              AND (_end_time IS NULL OR t.timestamp <= _end_time)
+        );
+    END;
 END;
 $func$ LANGUAGE plpgsql STABLE;
 
@@ -1608,9 +1564,13 @@ BEGIN
     JOIN asset a ON a.id = po.asset_id
     WHERE a.enterprise = _enterprise
       AND a.site = _site
-      AND (_line = '' OR a.line = _line)
-      AND po.started_at >= _start_time
-      AND po.started_at <= _end_time;
+      AND (_line = '' OR a.line = _line OR a.line LIKE _line || '-%')
+      AND (
+        -- Include orders that started in the time range
+        (po.started_at >= _start_time AND po.started_at <= _end_time)
+        -- Include IN_PROGRESS orders (even if started_at is NULL)
+        OR po.status = 'IN_PROGRESS'
+      );
 
     IF target = 0 THEN
         RETURN NULL;
