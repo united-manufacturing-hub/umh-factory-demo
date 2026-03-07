@@ -406,126 +406,6 @@ EXCEPTION WHEN undefined_object THEN NULL;
 END $$;
 
 -- -----------------------------------------------------------------------------
--- View: v_oee_by_asset
--- Purpose: OEE (Availability x Performance x Quality) calculation per asset
--- Note: Calculates OEE for the last 24 hours using time-based availability
---       and planned/ideal cycle time for performance.
--- Usage: SELECT * FROM v_oee_by_asset WHERE line = 'line1';
--- -----------------------------------------------------------------------------
-CREATE OR REPLACE VIEW v_oee_by_asset AS
-WITH planned AS (
-    SELECT get_planned_minutes(NOW() - INTERVAL '24 hours', NOW()) AS planned_minutes
-),
-ideal_cycle_times AS (
-    SELECT DISTINCT ON (po.asset_id)
-        po.asset_id,
-        po.planned_cycle_time_ms / 1000.0 AS ideal_ct_sec
-    FROM production_orders po
-    WHERE po.status = 'IN_PROGRESS'
-      AND po.planned_cycle_time_ms IS NOT NULL
-      AND po.planned_cycle_time_ms > 0
-    ORDER BY po.asset_id, po.started_at DESC
-)
-SELECT
-    a.id AS asset_id,
-    a.enterprise,
-    a.site,
-    a.area,
-    a.line,
-    a.workcell,
-    -- Availability: runtime / planned production time
-    CASE WHEN p.planned_minutes IS NOT NULL AND p.planned_minutes > 0
-        THEN ROUND(LEAST(rt.runtime_minutes * 100.0 / p.planned_minutes, 100)::numeric, 1)
-        ELSE NULL
-    END AS availability_pct,
-    -- Performance: (total_parts × ideal_cycle_time) / runtime
-    ROUND(LEAST(
-        CASE
-            WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) > 0 THEN
-                ((COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0))
-                 * COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) * 100.0)
-                / (rt.runtime_minutes * 60)
-            ELSE 0
-        END,
-        100
-    )::numeric, 1) AS performance_pct,
-    -- Quality: good parts / total parts
-    ROUND(
-        CASE
-            WHEN (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)) > 0
-            THEN (COALESCE(parts.good_parts, 0) * 100.0 / (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)))
-            ELSE 100
-        END::numeric, 1
-    ) AS quality_pct,
-    -- OEE: Availability × Performance × Quality
-    ROUND((
-        COALESCE(CASE WHEN p.planned_minutes IS NOT NULL AND p.planned_minutes > 0
-            THEN LEAST(rt.runtime_minutes * 100.0 / p.planned_minutes, 100)
-            ELSE 0
-        END, 0) / 100.0 *
-        LEAST(COALESCE(
-            CASE
-                WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) > 0 THEN
-                    ((COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0))
-                     * COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) * 100.0)
-                    / (rt.runtime_minutes * 60)
-                ELSE 0
-            END, 0
-        ), 100) / 100.0 *
-        COALESCE(
-            CASE
-                WHEN (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)) > 0
-                THEN (COALESCE(parts.good_parts, 0) * 100.0 / (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)))
-                ELSE 100
-            END, 100
-        ) / 100.0 * 100
-    )::numeric, 1) AS oee_pct,
-    COALESCE(parts.good_parts, 0) AS good_parts,
-    COALESCE(parts.scrap_parts, 0) AS scrap_parts,
-    rt.runtime_minutes,
-    p.planned_minutes,
-    COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) AS ideal_cycle_time_sec
-FROM asset a
-CROSS JOIN planned p
-LEFT JOIN LATERAL (
-    SELECT COALESCE(get_runtime_minutes(a.id, NOW() - INTERVAL '24 hours', NOW()), 0) AS runtime_minutes
-) rt ON true
-LEFT JOIN LATERAL (
-    SELECT
-        SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FILTER (WHERE tag_name = 'good_count') AS good_parts,
-        SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FILTER (WHERE tag_name = 'scrap_count') AS scrap_parts
-    FROM (
-        SELECT
-            t.name AS tag_name,
-            t.origin,
-            MAX(t.value) FILTER (WHERE t.timestamp <= NOW()) AS end_v,
-            MAX(t.value) FILTER (WHERE t.timestamp < NOW() - INTERVAL '24 hours') AS start_v
-        FROM tag t
-        WHERE t.asset_id = a.id
-          AND t.name IN ('good_count', 'scrap_count')
-          AND t.timestamp > NOW() - INTERVAL '25 hours'
-        GROUP BY t.name, t.origin
-    ) sub
-) parts ON true
-LEFT JOIN ideal_cycle_times ict ON ict.asset_id = a.id
-LEFT JOIN LATERAL (
-    SELECT PERCENTILE_CONT(0.05) WITHIN GROUP (ORDER BY t.value) / 1000.0 AS avg_ct_sec
-    FROM tag t
-    WHERE t.asset_id = a.id
-      AND t.name = 'cycle_time_ms'
-      AND t.value > 0
-      AND t.value < 600000
-      AND t.timestamp > NOW() - INTERVAL '24 hours'
-) fct ON true
-WHERE a.workcell != '';
-
--- Grant permissions
-DO $$ BEGIN
-    EXECUTE 'GRANT SELECT ON v_oee_by_asset TO grafanareader';
-EXCEPTION WHEN undefined_object THEN NULL;
-END $$;
-
--- -----------------------------------------------------------------------------
 -- View: v_availability
 -- Purpose: Availability metric per asset (runtime / planned production time)
 -- Note: Last 24 hours by default
@@ -1062,6 +942,127 @@ $func$ LANGUAGE plpgsql STABLE;
 
 DO $$ BEGIN
     EXECUTE 'GRANT EXECUTE ON FUNCTION get_runtime_minutes(integer,timestamptz,timestamptz) TO grafanareader';
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- View: v_oee_by_asset
+-- Purpose: OEE (Availability x Performance x Quality) calculation per asset
+-- Note: Calculates OEE for the last 24 hours using time-based availability
+--       and planned/ideal cycle time for performance.
+--       Placed after get_planned_minutes and get_runtime_minutes which it depends on.
+-- Usage: SELECT * FROM v_oee_by_asset WHERE line = 'line1';
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_oee_by_asset AS
+WITH planned AS (
+    SELECT get_planned_minutes(NOW() - INTERVAL '24 hours', NOW()) AS planned_minutes
+),
+ideal_cycle_times AS (
+    SELECT DISTINCT ON (po.asset_id)
+        po.asset_id,
+        po.planned_cycle_time_ms / 1000.0 AS ideal_ct_sec
+    FROM production_orders po
+    WHERE po.status = 'IN_PROGRESS'
+      AND po.planned_cycle_time_ms IS NOT NULL
+      AND po.planned_cycle_time_ms > 0
+    ORDER BY po.asset_id, po.started_at DESC
+)
+SELECT
+    a.id AS asset_id,
+    a.enterprise,
+    a.site,
+    a.area,
+    a.line,
+    a.workcell,
+    -- Availability: runtime / planned production time
+    CASE WHEN p.planned_minutes IS NOT NULL AND p.planned_minutes > 0
+        THEN ROUND(LEAST(rt.runtime_minutes * 100.0 / p.planned_minutes, 100)::numeric, 1)
+        ELSE NULL
+    END AS availability_pct,
+    -- Performance: (total_parts × ideal_cycle_time) / runtime
+    ROUND(LEAST(
+        CASE
+            WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) > 0 THEN
+                ((COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0))
+                 * COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) * 100.0)
+                / (rt.runtime_minutes * 60)
+            ELSE 0
+        END,
+        100
+    )::numeric, 1) AS performance_pct,
+    -- Quality: good parts / total parts
+    ROUND(
+        CASE
+            WHEN (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)) > 0
+            THEN (COALESCE(parts.good_parts, 0) * 100.0 / (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)))
+            ELSE 100
+        END::numeric, 1
+    ) AS quality_pct,
+    -- OEE: Availability × Performance × Quality
+    ROUND((
+        COALESCE(CASE WHEN p.planned_minutes IS NOT NULL AND p.planned_minutes > 0
+            THEN LEAST(rt.runtime_minutes * 100.0 / p.planned_minutes, 100)
+            ELSE 0
+        END, 0) / 100.0 *
+        LEAST(COALESCE(
+            CASE
+                WHEN rt.runtime_minutes > 0 AND COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) > 0 THEN
+                    ((COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0))
+                     * COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) * 100.0)
+                    / (rt.runtime_minutes * 60)
+                ELSE 0
+            END, 0
+        ), 100) / 100.0 *
+        COALESCE(
+            CASE
+                WHEN (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)) > 0
+                THEN (COALESCE(parts.good_parts, 0) * 100.0 / (COALESCE(parts.good_parts, 0) + COALESCE(parts.scrap_parts, 0)))
+                ELSE 100
+            END, 100
+        ) / 100.0 * 100
+    )::numeric, 1) AS oee_pct,
+    COALESCE(parts.good_parts, 0) AS good_parts,
+    COALESCE(parts.scrap_parts, 0) AS scrap_parts,
+    rt.runtime_minutes,
+    p.planned_minutes,
+    COALESCE(ict.ideal_ct_sec, fct.avg_ct_sec) AS ideal_cycle_time_sec
+FROM asset a
+CROSS JOIN planned p
+LEFT JOIN LATERAL (
+    SELECT COALESCE(get_runtime_minutes(a.id, NOW() - INTERVAL '24 hours', NOW()), 0) AS runtime_minutes
+) rt ON true
+LEFT JOIN LATERAL (
+    SELECT
+        SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FILTER (WHERE tag_name = 'good_count') AS good_parts,
+        SUM(GREATEST(COALESCE(end_v, 0) - COALESCE(start_v, 0), 0)) FILTER (WHERE tag_name = 'scrap_count') AS scrap_parts
+    FROM (
+        SELECT
+            t.name AS tag_name,
+            t.origin,
+            MAX(t.value) FILTER (WHERE t.timestamp <= NOW()) AS end_v,
+            MAX(t.value) FILTER (WHERE t.timestamp < NOW() - INTERVAL '24 hours') AS start_v
+        FROM tag t
+        WHERE t.asset_id = a.id
+          AND t.name IN ('good_count', 'scrap_count')
+          AND t.timestamp > NOW() - INTERVAL '25 hours'
+        GROUP BY t.name, t.origin
+    ) sub
+) parts ON true
+LEFT JOIN ideal_cycle_times ict ON ict.asset_id = a.id
+LEFT JOIN LATERAL (
+    SELECT PERCENTILE_CONT(0.05) WITHIN GROUP (ORDER BY t.value) / 1000.0 AS avg_ct_sec
+    FROM tag t
+    WHERE t.asset_id = a.id
+      AND t.name = 'cycle_time_ms'
+      AND t.value > 0
+      AND t.value < 600000
+      AND t.timestamp > NOW() - INTERVAL '24 hours'
+) fct ON true
+WHERE a.workcell != '';
+
+-- Grant permissions
+DO $$ BEGIN
+    EXECUTE 'GRANT SELECT ON v_oee_by_asset TO grafanareader';
 EXCEPTION WHEN undefined_object THEN NULL;
 END $$;
 
