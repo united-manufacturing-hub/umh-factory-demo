@@ -273,6 +273,13 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.14 (2026-03-09)
+
+### Other
+- fixed inits
+
+**Full Changelog**: [`v1.3.13...v1.3.14`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.13...v1.3.14)
+
 ## v1.3.13 (2026-03-09)
 
 ### Other
