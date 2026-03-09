@@ -17,7 +17,9 @@ pipeline:
           const path = msg.meta.http_server_request_path || '';
           const eventType = msg.payload.event_type || '';
           const data = msg.payload.data || {};
-          const lineId = msg.payload.line_id || '';
+          // Strip numeric suffix from line_id (e.g. "automotive-welding-1" -> "automotive-welding")
+          const rawLineId = msg.payload.line_id || '';
+          const lineId = rawLineId.replace(/-\d+$/, '');
 
           if (eventType === 'order.created') {
               // order.created data is the full Order struct: {id, product_id, planned_qty, ...}

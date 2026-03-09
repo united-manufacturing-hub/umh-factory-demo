@@ -108,11 +108,6 @@ else
         echo -e "${GREEN}  ✓ SQL schema initialized${NC}"
     fi
 
-    # Run hypertable migration (creates continuous aggregates needed by views.sql)
-    if [ -f "$WORK_DIR/sql/migrate-to-hypertables.sql" ]; then
-        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/migrate-to-hypertables.sql" 2>/dev/null || true
-        echo -e "${GREEN}  ✓ Hypertables and continuous aggregates initialized${NC}"
-    fi
 fi
 
 # ============================================================
@@ -160,7 +155,7 @@ elif wait_for_grafana; then
             FOLDER_UID=""
             if [[ "$dashboard_name" == "stop-reason-admin" ]] && [ -n "$ADMIN_FOLDER_UID" ]; then
                 FOLDER_UID="$ADMIN_FOLDER_UID"
-            elif [[ "$dashboard_name" == "database-info" || "$dashboard_name" == "demo-info" ]] && [ -n "$INFO_FOLDER_UID" ]; then
+            elif [[ "$dashboard_name" == "database-info" || "$dashboard_name" == "demo-info" || "$dashboard_name" == "historian-bridge-info" ]] && [ -n "$INFO_FOLDER_UID" ]; then
                 FOLDER_UID="$INFO_FOLDER_UID"
             elif [[ "$dashboard_name" == *"-oee-dashboard" ]] && [ -n "$LINES_FOLDER_UID" ]; then
                 FOLDER_UID="$LINES_FOLDER_UID"
@@ -209,6 +204,13 @@ else
     echo -e "${BLUE}Step 3: Creating SQL views for dashboards...${NC}"
 
     if wait_for_assets; then
+        # Run hypertable migration here (after assets exist, which guarantees
+        # UMH Core has created tag/tag_string tables that we need to convert)
+        if [ -f "$WORK_DIR/sql/migrate-to-hypertables.sql" ]; then
+            PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/migrate-to-hypertables.sql" 2>/dev/null || true
+            echo -e "${GREEN}  ✓ Hypertables and continuous aggregates initialized${NC}"
+        fi
+
         if [ -f "$WORK_DIR/sql/views.sql" ]; then
             PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/views.sql" 2>/dev/null || true
             VIEW_COUNT=$(PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -tAc "SELECT COUNT(*) FROM pg_views WHERE schemaname = 'public' AND viewname LIKE 'v_%'" 2>/dev/null || echo "0")

@@ -1138,7 +1138,8 @@ else
 import json, sys
 mappings = {
     'database-info.json': 'DATABASE.md',
-    'demo-info.json': 'README.md'
+    'demo-info.json': 'README.md',
+    'historian-bridge-info.json': 'HISTORIAN-BRIDGE.md'
 }
 templates_dir = sys.argv[1]
 work_dir = sys.argv[2]
