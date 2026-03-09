@@ -592,7 +592,8 @@ prepare_logo_images() {
             if convert_svg_to_png "$source_image" "$output_dir/logo.png"; then
                 echo "    ✓ Created logo.png from SVG"
             else
-                return 1
+                echo "    ⚠ PNG conversion failed, using default PNG for favicon"
+                cp "$TEMPLATES_DIR/img/umh.png" "$output_dir/logo.png"
             fi
             ;;
         png)

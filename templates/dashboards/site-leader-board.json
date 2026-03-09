@@ -65,7 +65,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(ROUND(AVG(oee_pct)::numeric, 1), 0) as \"OEE\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')",
+          "rawSql": "SELECT COALESCE(get_oee('${enterprise}', '${site}', '', '${line:raw}', '', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()), 0) as \"OEE\"",
           "refId": "A"
         }
       ],
@@ -157,7 +157,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(ROUND(AVG(quality_pct)::numeric, 1), 100) as \"FPY\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')",
+          "rawSql": "SELECT COALESCE(get_quality('${enterprise}', '${site}', '', '${line:raw}', '', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()), 100) as \"FPY\"",
           "refId": "A"
         }
       ],
@@ -400,7 +400,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  v.line as \"Line\",\n  CASE WHEN (v.good_parts + v.scrap_parts) > 0 THEN ROUND((v.scrap_parts * 100.0 / (v.good_parts + v.scrap_parts))::numeric, 2) ELSE 0 END as \"Scrap Rate\"\nFROM v_oee_by_asset v\nWHERE v.enterprise = '${enterprise}'\n  AND v.site = '${site}'\n  AND ('${line:raw}' = 'All' OR v.line = '${line:raw}')\nGROUP BY v.line, v.good_parts, v.scrap_parts\nORDER BY \"Scrap Rate\" DESC",
+          "rawSql": "SELECT\n  l.line as \"Line\",\n  CASE WHEN (d.good + d.scrap) > 0 THEN ROUND((d.scrap * 100.0 / (d.good + d.scrap))::numeric, 2) ELSE 0 END as \"Scrap Rate\"\nFROM (SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND workcell != '' AND ('${line:raw}' = 'All' OR line = '${line:raw}')) l,\nLATERAL (SELECT\n  get_counter_delta('${enterprise}', '${site}', '', l.line, '', 'good_count', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()) as good,\n  get_counter_delta('${enterprise}', '${site}', '', l.line, '', 'scrap_count', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()) as scrap\n) d\nORDER BY \"Scrap Rate\" DESC",
           "refId": "A"
         }
       ],
@@ -464,7 +464,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  line as \"Line\",\n  ROUND(AVG(availability_pct)::numeric, 1) as \"Availability\",\n  ROUND(AVG(performance_pct)::numeric, 1) as \"Performance\",\n  ROUND(AVG(quality_pct)::numeric, 1) as \"Quality\",\n  ROUND(AVG(oee_pct)::numeric, 1) as \"OEE\"\nFROM v_oee_by_asset\nWHERE enterprise = '${enterprise}'\n  AND site = '${site}'\n  AND ('${line:raw}' = 'All' OR line = '${line:raw}')\nGROUP BY line\nORDER BY line",
+          "rawSql": "SELECT\n  l.line as \"Line\",\n  COALESCE(get_availability('${enterprise}', '${site}', '', l.line, '', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()), 0) as \"Availability\",\n  COALESCE(get_performance('${enterprise}', '${site}', '', l.line, '', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()), 0) as \"Performance\",\n  COALESCE(get_quality('${enterprise}', '${site}', '', l.line, '', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()), 100) as \"Quality\",\n  COALESCE(get_oee('${enterprise}', '${site}', '', l.line, '', (NOW() - INTERVAL '24 hours')::timestamptz, NOW()), 0) as \"OEE\"\nFROM (SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND workcell != '' AND ('${line:raw}' = 'All' OR line = '${line:raw}')) l\nORDER BY l.line",
           "refId": "A"
         }
       ],
@@ -599,7 +599,7 @@
       },
       {
         "allValue": "All",
-        "current": { "selected": true, "text": "All", "value": "All" },
+        "current": { "selected": true, "text": "All", "value": "$__all" },
         "datasource": { "type": "grafana-postgresql-datasource", "uid": "${DS_POSTGRESQL}" },
         "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "hide": 0,
