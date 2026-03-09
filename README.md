@@ -273,6 +273,17 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.3.12 (2026-03-09)
+
+### Other
+- Merge branch 'new-sim' into staging
+- added info dashboards
+- bug fix for creating views.
+- updated dashboards.
+- bug fixes.
+
+**Full Changelog**: [`v1.3.11...v1.3.12`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.11...v1.3.12)
+
 ## v1.3.11 (2026-03-04)
 
 ### Other
