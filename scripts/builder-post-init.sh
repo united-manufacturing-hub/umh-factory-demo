@@ -207,6 +207,16 @@ else
         # Note: migrate-to-hypertables.sql runs AFTER historical data generation (Step 4b)
         # to avoid columnstore permission errors during bulk insert.
 
+        # Wait for tag_string table (created by timescale-bridge init statement)
+        # views.sql depends on it — if missing, psql aborts the entire script
+        echo "  Waiting for tag_string table..."
+        for i in $(seq 1 30); do
+            if PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -tAc "SELECT 1 FROM tag_string LIMIT 0" 2>/dev/null; then
+                break
+            fi
+            sleep 2
+        done
+
         if [ -f "$WORK_DIR/sql/views.sql" ]; then
             PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/views.sql" 2>/dev/null || true
             VIEW_COUNT=$(PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -tAc "SELECT COUNT(*) FROM pg_views WHERE schemaname = 'public' AND viewname LIKE 'v_%'" 2>/dev/null || echo "0")
