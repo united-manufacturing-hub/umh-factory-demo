@@ -250,6 +250,11 @@ elif [ "$HISTORY_DAYS" -gt 0 ] 2>/dev/null; then
             --host pgbouncer
 
         echo -e "${GREEN}  ✓ Historical data generated ($HISTORY_DAYS days)${NC}"
+
+        # Refresh mv_runtime_hourly (created empty in Step 3, now has data)
+        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -c \
+            "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_runtime_hourly;" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ Refreshed mv_runtime_hourly${NC}"
     else
         echo -e "${YELLOW}  Warning: generate-historical-data.py not found${NC}"
     fi

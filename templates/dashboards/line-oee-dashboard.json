@@ -1118,7 +1118,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((COALESCE(avail, 87.5) / 100.0 * LEAST(COALESCE(perf, 90), 100) / 100.0 * COALESCE(qual, 100) / 100.0 * 100)::numeric, 1) as \"Order OEE\" FROM (SELECT (SELECT COUNT(*) FILTER (WHERE t.value = 'RUNNING') * 100.0 / NULLIF(COUNT(*), 0) FROM tag_string t WHERE t.asset_id = po.asset_id AND t.name = 'state' AND t.timestamp >= po.started_at) as avail, CASE WHEN (po.quantity_completed + po.quantity_scrap) > 0 THEN (po.quantity_completed + po.quantity_scrap) * 100.0 / NULLIF(EXTRACT(EPOCH FROM (NOW() - po.started_at)) / 60.0, 0) ELSE 0 END as perf, CASE WHEN (po.quantity_completed + po.quantity_scrap) > 0 THEN po.quantity_completed * 100.0 / (po.quantity_completed + po.quantity_scrap) ELSE 100 END as qual FROM production_orders po WHERE po.order_id = '${order}') sub",
+          "rawSql": "SELECT ROUND((COALESCE(avail, 87.5) / 100.0 * LEAST(COALESCE(perf, 90), 100) / 100.0 * COALESCE(qual, 100) / 100.0 * 100)::numeric, 1) as \"Order OEE\" FROM (SELECT LEAST(COALESCE((SELECT SUM(mv.running_minutes) FROM mv_runtime_hourly mv WHERE mv.asset_id = po.asset_id AND mv.bucket >= po.started_at AND mv.bucket < COALESCE(po.completed_at, NOW())), 0) * 100.0 / NULLIF(EXTRACT(EPOCH FROM (COALESCE(po.completed_at, NOW()) - po.started_at)) / 60.0, 0), 100) as avail, CASE WHEN (po.quantity_completed + po.quantity_scrap) > 0 THEN (po.quantity_completed + po.quantity_scrap) * 100.0 / NULLIF(EXTRACT(EPOCH FROM (NOW() - po.started_at)) / 60.0, 0) ELSE 0 END as perf, CASE WHEN (po.quantity_completed + po.quantity_scrap) > 0 THEN po.quantity_completed * 100.0 / (po.quantity_completed + po.quantity_scrap) ELSE 100 END as qual FROM production_orders po WHERE po.order_id = '${order}' AND po.started_at IS NOT NULL) sub",
           "refId": "A"
         }
       ],
@@ -1195,7 +1195,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND((COUNT(*) FILTER (WHERE t.value = 'RUNNING') * 100.0 / NULLIF(COUNT(*), 0))::numeric, 1) as \"Availability\" FROM production_orders po JOIN tag_string t ON t.asset_id = po.asset_id WHERE po.order_id = '${order}' AND t.name = 'state' AND t.timestamp >= po.started_at",
+          "rawSql": "SELECT ROUND(LEAST(COALESCE(SUM(mv.running_minutes), 0) * 100.0 / NULLIF(EXTRACT(EPOCH FROM (COALESCE(po.completed_at, NOW()) - po.started_at)) / 60.0, 0), 100)::numeric, 1) as \"Availability\" FROM production_orders po LEFT JOIN mv_runtime_hourly mv ON mv.asset_id = po.asset_id AND mv.bucket >= po.started_at AND mv.bucket < COALESCE(po.completed_at, NOW()) WHERE po.order_id = '${order}' AND po.started_at IS NOT NULL",
           "refId": "A"
         }
       ],
@@ -1272,7 +1272,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH order_info AS (SELECT quantity_completed + quantity_scrap as actual_parts, EXTRACT(EPOCH FROM (COALESCE(CASE WHEN status = 'COMPLETED' THEN timestamp END, NOW()) - started_at)) as elapsed_seconds, started_at, COALESCE(CASE WHEN status = 'COMPLETED' THEN timestamp END, NOW()) as end_time FROM production_orders WHERE order_id = '${order}' AND started_at IS NOT NULL), cycle AS (SELECT COALESCE(AVG(t.value) / 1000.0, 5) as avg_ct_seconds FROM tag t, order_info oi WHERE t.asset_id IN (SELECT get_asset_ids_stable('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '')) AND t.name = 'cycle_time_ms' AND t.value > 0 AND t.timestamp BETWEEN oi.started_at AND oi.end_time) SELECT LEAST(ROUND((oi.actual_parts * c.avg_ct_seconds * 100.0 / NULLIF(oi.elapsed_seconds, 0))::numeric, 1), 100) as \"Performance\" FROM order_info oi, cycle c",
+          "rawSql": "WITH order_info AS (SELECT quantity_completed + quantity_scrap as actual_parts, EXTRACT(EPOCH FROM (COALESCE(CASE WHEN status = 'COMPLETED' THEN timestamp END, NOW()) - started_at)) as elapsed_seconds, started_at, COALESCE(CASE WHEN status = 'COMPLETED' THEN timestamp END, NOW()) as end_time FROM production_orders WHERE order_id = '${order}' AND started_at IS NOT NULL), cycle AS (SELECT COALESCE(get_cycle_time_avg('__ENTERPRISE__', '__SITE__', '__AREA__', '__LINE__', '', oi.started_at, oi.end_time), 5) as avg_ct_seconds FROM order_info oi) SELECT LEAST(ROUND((oi.actual_parts * c.avg_ct_seconds * 100.0 / NULLIF(oi.elapsed_seconds, 0))::numeric, 1), 100) as \"Performance\" FROM order_info oi, cycle c",
           "refId": "A"
         }
       ],

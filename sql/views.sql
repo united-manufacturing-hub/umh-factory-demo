@@ -1445,36 +1445,34 @@ BEGIN
     RETURN QUERY
     WITH matching_assets AS (
         SELECT get_asset_ids_stable(_enterprise, _site, _area, _line, _workcell) AS id
-    ),
-    latest_state AS (
-        SELECT DISTINCT ON (ts.asset_id)
-            ts.asset_id,
-            ts.value AS state
-        FROM tag_string ts
-        WHERE ts.asset_id IN (SELECT id FROM matching_assets)
-          AND ts.name = 'state'
-        ORDER BY ts.asset_id, ts.timestamp DESC
-    ),
-    latest_parts AS (
-        SELECT
-            t.asset_id,
-            MAX(t.value) FILTER (WHERE t.name = 'good_count') AS good_parts,
-            MAX(t.value) FILTER (WHERE t.name = 'scrap_count') AS scrap_parts,
-            (SELECT t2.value FROM tag t2 WHERE t2.asset_id = t.asset_id AND t2.name = 'cycle_time_ms' ORDER BY t2.timestamp DESC LIMIT 1) AS cycle_time
-        FROM tag t
-        WHERE t.asset_id IN (SELECT id FROM matching_assets)
-          AND t.name IN ('good_count', 'scrap_count')
-        GROUP BY t.asset_id
     )
     SELECT
         a.workcell::text AS machine,
-        COALESCE(ls.state, 'UNKNOWN')::text AS state,
-        COALESCE(lp.good_parts, 0)::integer AS good_parts,
-        COALESCE(lp.scrap_parts, 0)::integer AS scrap_parts,
-        ROUND(COALESCE(lp.cycle_time, 0)::numeric, 1) AS cycle_time
+        COALESCE(ls.value, 'UNKNOWN')::text AS state,
+        COALESCE(gp.value, 0)::integer AS good_parts,
+        COALESCE(sp.value, 0)::integer AS scrap_parts,
+        ROUND(COALESCE(ct.value, 0)::numeric, 1) AS cycle_time
     FROM asset a
-    LEFT JOIN latest_state ls ON ls.asset_id = a.id
-    LEFT JOIN latest_parts lp ON lp.asset_id = a.id
+    LEFT JOIN LATERAL (
+        SELECT ts.value FROM tag_string ts
+        WHERE ts.asset_id = a.id AND ts.name = 'state'
+        ORDER BY ts.timestamp DESC LIMIT 1
+    ) ls ON true
+    LEFT JOIN LATERAL (
+        SELECT t.value FROM tag t
+        WHERE t.asset_id = a.id AND t.name = 'good_count'
+        ORDER BY t.timestamp DESC LIMIT 1
+    ) gp ON true
+    LEFT JOIN LATERAL (
+        SELECT t.value FROM tag t
+        WHERE t.asset_id = a.id AND t.name = 'scrap_count'
+        ORDER BY t.timestamp DESC LIMIT 1
+    ) sp ON true
+    LEFT JOIN LATERAL (
+        SELECT t.value FROM tag t
+        WHERE t.asset_id = a.id AND t.name = 'cycle_time_ms'
+        ORDER BY t.timestamp DESC LIMIT 1
+    ) ct ON true
     WHERE a.id IN (SELECT id FROM matching_assets)
       AND a.workcell != ''
     ORDER BY a.workcell;
