@@ -155,7 +155,7 @@ elif wait_for_grafana; then
             FOLDER_UID=""
             if [[ "$dashboard_name" == "stop-reason-admin" ]] && [ -n "$ADMIN_FOLDER_UID" ]; then
                 FOLDER_UID="$ADMIN_FOLDER_UID"
-            elif [[ "$dashboard_name" == "database-info" || "$dashboard_name" == "demo-info" ]] && [ -n "$INFO_FOLDER_UID" ]; then
+            elif [[ "$dashboard_name" == "database-info" || "$dashboard_name" == "demo-info" || "$dashboard_name" == "historian-bridge-info" ]] && [ -n "$INFO_FOLDER_UID" ]; then
                 FOLDER_UID="$INFO_FOLDER_UID"
             elif [[ "$dashboard_name" == *"-oee-dashboard" ]] && [ -n "$LINES_FOLDER_UID" ]; then
                 FOLDER_UID="$LINES_FOLDER_UID"
