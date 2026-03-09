@@ -204,12 +204,8 @@ else
     echo -e "${BLUE}Step 3: Creating SQL views for dashboards...${NC}"
 
     if wait_for_assets; then
-        # Run hypertable migration here (after assets exist, which guarantees
-        # UMH Core has created tag/tag_string tables that we need to convert)
-        if [ -f "$WORK_DIR/sql/migrate-to-hypertables.sql" ]; then
-            PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/migrate-to-hypertables.sql" 2>/dev/null || true
-            echo -e "${GREEN}  ✓ Hypertables and continuous aggregates initialized${NC}"
-        fi
+        # Note: migrate-to-hypertables.sql runs AFTER historical data generation (Step 4b)
+        # to avoid columnstore permission errors during bulk insert.
 
         if [ -f "$WORK_DIR/sql/views.sql" ]; then
             PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/views.sql" 2>/dev/null || true
@@ -233,6 +229,11 @@ elif [ "$HISTORY_DAYS" -gt 0 ] 2>/dev/null; then
     echo -e "${BLUE}Step 4: Generating historical data ($HISTORY_DAYS days)...${NC}"
 
     if [ -f "$SCRIPTS_DIR/generate-historical-data.py" ]; then
+        # Disable columnstore before bulk insert to avoid permission errors
+        # (the timescale-bridge init statement may have already enabled it on startup)
+        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh -c \
+            "ALTER TABLE tag SET (timescaledb.enable_columnstore = false); ALTER TABLE tag_string SET (timescaledb.enable_columnstore = false);" 2>/dev/null || true
+
         python3 "$SCRIPTS_DIR/generate-historical-data.py" \
             --days "$HISTORY_DAYS" \
             --factory-setup "$WORK_DIR/factory-setup.yaml" \
@@ -245,6 +246,21 @@ elif [ "$HISTORY_DAYS" -gt 0 ] 2>/dev/null; then
 else
     echo ""
     echo -e "${BLUE}Step 4: Historical data generation skipped (HISTORY_DAYS=0)${NC}"
+fi
+
+# ============================================================
+# Step 4b: Enable hypertable optimizations (after bulk insert)
+# ============================================================
+echo ""
+if [ "$NO_HISTORIAN" = "true" ]; then
+    echo -e "${BLUE}Step 4b: Skipping hypertable migration (--no-historian)${NC}"
+else
+    echo -e "${BLUE}Step 4b: Enabling columnstore, continuous aggregates, and policies...${NC}"
+
+    if [ -f "$WORK_DIR/sql/migrate-to-hypertables.sql" ]; then
+        PGPASSWORD=postgres psql -h pgbouncer -U postgres -d umh < "$WORK_DIR/sql/migrate-to-hypertables.sql" 2>/dev/null || true
+        echo -e "${GREEN}  ✓ Hypertables and continuous aggregates initialized${NC}"
+    fi
 fi
 
 # ============================================================
