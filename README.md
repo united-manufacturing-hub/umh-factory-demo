@@ -35,9 +35,9 @@ curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factor
 curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --no-historian --fixed-demo
 ```
 
-**Latest dev:**
+**Test a branch (for PR review):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --dev
+curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --branch=feat/my-feature
 ```
 
 **Specific version:**
@@ -164,7 +164,7 @@ These flags can be passed to `install.sh` or `quick-start.sh`:
 
 | Flag | Description |
 |------|-------------|
-| `--dev` | Use the latest dev prerelease |
+| `--branch=<name>` | Test a specific branch (downloads from GitHub, runs as local) |
 | `--version=X.Y.Z` | Use a specific template version |
 | `--repo=owner/repo` | Use a custom GitHub repository |
 | `--local=/path/to/repo` | Use local templates (skip GitHub download) |
@@ -233,6 +233,26 @@ Then run the curl command again.
 
 - [Architecture](docs/ARCHITECTURE.md) - Directory structure and builder flow
 - [Contributing](docs/CONTRIBUTING.md) - How to add a new machine template
+
+## Contributing
+
+### Workflow
+
+1. **Branch from staging:** `git checkout -b feat/my-feature origin/staging`
+2. **Develop locally:** Make your changes and test with `--local`:
+   ```bash
+   bash install.sh --local=/path/to/your/checkout
+   ```
+3. **Push and open a PR** to `staging`. A bot will comment with the test command.
+4. **Reviewer tests** your branch remotely:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --branch=feat/my-feature
+   ```
+5. **Merge** — a stable release is created automatically.
+
+### Adding a new machine type
+
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the machine YAML format.
 
 ## Developer Tools
 
