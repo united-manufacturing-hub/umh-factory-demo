@@ -1,3 +1,42 @@
+# Contributing
+
+## Development Workflow
+
+All changes go through pull requests to `staging`. Direct pushes are not allowed.
+
+1. **Create a feature branch** from `staging`:
+   ```bash
+   git checkout -b feat/my-feature origin/staging
+   ```
+
+2. **Develop and test locally** using the `--local` flag:
+   ```bash
+   bash install.sh --local=/path/to/your/checkout --fixed-demo
+   ```
+   Make sure everything works before pushing.
+
+3. **Push your branch and open a PR** targeting `staging`:
+   ```bash
+   git push -u origin feat/my-feature
+   ```
+   A GitHub Action will automatically comment on the PR with a test command for reviewers.
+
+4. **Reviewer tests your branch** remotely using `--branch`:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/united-manufacturing-hub/umh-factory-demo/staging/install.sh -o install.sh && bash install.sh --branch=feat/my-feature
+   ```
+
+5. **After approval and merge**, a stable release is created automatically from `staging`.
+
+### Commit messages
+
+Use [conventional commits](https://www.conventionalcommits.org/) for automatic version bumping:
+- `feat: ...` — bumps minor version
+- `fix: ...` — bumps patch version
+- `feat!: ...` or `BREAKING CHANGE` — bumps major version
+
+---
+
 # Adding a New Machine Type
 
 This guide explains how to add a new machine type to the simulator.
