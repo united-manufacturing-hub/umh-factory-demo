@@ -32,7 +32,7 @@ fi
 
 # If --branch, download branch tarball and run as local
 if [ -n "$BRANCH" ]; then
-    TMPDIR=$(mktemp -d)
+    TMPDIR=$(mktemp -d "${HOME}/.umh-branch-XXXXXX")
     trap 'rm -rf "$TMPDIR"' EXIT
 
     TARBALL_URL="https://github.com/${REPO}/archive/refs/heads/${BRANCH}.tar.gz"
