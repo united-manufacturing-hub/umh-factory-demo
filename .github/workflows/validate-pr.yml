@@ -1,0 +1,232 @@
+name: Validate PR
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [staging]
+
+jobs:
+  validate-templates:
+    name: Validate JSON templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate all template dashboard JSON files
+        run: |
+          echo "Validating template dashboard JSON files..."
+          ERRORS=0
+          for f in templates/dashboards/*.json; do
+            if ! jq empty "$f" 2>/dev/null; then
+              echo "❌ Invalid JSON: $f"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✓ $f"
+            fi
+          done
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ $ERRORS template files have invalid JSON"
+            exit 1
+          fi
+          echo "✅ All template JSON files are valid"
+
+      - name: Check for empty allValue in Grafana variables
+        run: |
+          echo "Checking for empty allValue strings in dashboards..."
+          ERRORS=0
+          for f in templates/dashboards/*.json; do
+            # Find allValue: "" which breaks Grafana multi-value expansion
+            if jq -e '.templating.list[]? | select(.allValue == "")' "$f" >/dev/null 2>&1; then
+              echo "❌ $f has empty allValue (use a sentinel like 'All' instead)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ $ERRORS dashboards have empty allValue strings"
+            exit 1
+          fi
+          echo "✅ No empty allValue strings found"
+
+  dry-run:
+    name: "Dry-run: ${{ matrix.name }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: single-line
+            location_0: TestCorp
+            location_1: Munich
+            selected_lines: "automotive-welding:1"
+          - name: multi-line
+            location_0: Acme
+            location_1: NewYork
+            selected_lines: "automotive-welding:2,food-beverage-filling:1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends jq imagemagick librsvg2-bin
+          pip install --no-cache-dir --break-system-packages ruamel.yaml
+
+      - name: Create mock workspace
+        run: |
+          # builder-generate.sh hardcodes WORK_DIR="/workspace"
+          sudo mkdir -p /workspace
+          sudo chown $USER:$USER /workspace
+
+          # Create a minimal umh-core docker-compose.yaml that the builder expects
+          cat > /workspace/docker-compose.yaml << EOF
+          services:
+            umh-core:
+              image: management.umh.app/oci/united-manufacturing-hub/umh-core:0.0.1
+              environment:
+                - LOCATION_0=${{ matrix.location_0 }}
+                - LOCATION_1=${{ matrix.location_1 }}
+                - AUTH_TOKEN=test-token-for-ci-validation
+                - RELEASE_CHANNEL=stable
+                - API_URL=https://management.umh.app/api
+              ports:
+                - "8090:8090"
+                - "4840-4880:4840-4880"
+                - "502:502"
+          EOF
+
+          # Fix heredoc indentation — remove leading whitespace
+          sed -i 's/^          //' /workspace/docker-compose.yaml
+
+          echo "Mock docker-compose.yaml:"
+          cat /workspace/docker-compose.yaml
+
+      - name: Run builder-generate.sh
+        env:
+          TEMPLATES_DIR: ${{ github.workspace }}
+          SCRIPTS_DIR: ${{ github.workspace }}/scripts
+          SELECTED_LINES: ${{ matrix.selected_lines }}
+        run: |
+          bash scripts/builder-generate.sh
+
+      - name: Validate generated dashboard JSON files
+        run: |
+          echo "Validating generated dashboard JSON files..."
+          ERRORS=0
+          for f in /workspace/dashboards/*.json; do
+            [ -f "$f" ] || continue
+            if ! jq empty "$f" 2>/dev/null; then
+              echo "❌ Invalid JSON: $(basename "$f")"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "✓ $(basename "$f")"
+            fi
+          done
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ $ERRORS generated dashboard files have invalid JSON"
+            exit 1
+          fi
+          echo "✅ All generated dashboard JSON files are valid"
+
+      - name: Check placeholder substitution
+        env:
+          EXPECTED_ENTERPRISE: ${{ matrix.location_0 }}
+          EXPECTED_SITE: ${{ matrix.location_1 }}
+        run: |
+          ERRORS=0
+
+          # 1. No leftover placeholders in any generated dashboard
+          echo "Checking for leftover placeholders..."
+          PLACEHOLDERS=(
+            __ENTERPRISE__ __SITE__ __AREA__ __LINE__ __WORKCELL__
+            __LINE_DISPLAY__ __MACHINE_DISPLAY__ __API_BASE_URL__
+            __MACHINE_STATUS_SQL__ __MARKDOWN_CONTENT__
+            __SETUP_STATE_TIMELINE_TARGETS__ __STATE_TIMELINE_TARGETS__
+            __TYPE_SPECIFIC_PANELS__
+          )
+          for f in /workspace/dashboards/*.json; do
+            [ -f "$f" ] || continue
+            for placeholder in "${PLACEHOLDERS[@]}"; do
+              if grep -q "$placeholder" "$f"; then
+                echo "❌ $(basename "$f") contains leftover placeholder: $placeholder"
+                ERRORS=$((ERRORS + 1))
+              fi
+            done
+          done
+
+          # 2. Verify substituted values actually appear in generated output
+          echo ""
+          echo "Checking substituted values appear in output..."
+
+          # LOCATION_0 (enterprise) should appear in dashboards that use it
+          if grep -rl "$EXPECTED_ENTERPRISE" /workspace/dashboards/ >/dev/null 2>&1; then
+            COUNT=$(grep -rl "$EXPECTED_ENTERPRISE" /workspace/dashboards/ | wc -l)
+            echo "✓ LOCATION_0 '$EXPECTED_ENTERPRISE' found in $COUNT dashboard(s)"
+          else
+            echo "❌ LOCATION_0 '$EXPECTED_ENTERPRISE' not found in any generated dashboard"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # LOCATION_1 (site) should appear in dashboards that use it
+          if grep -rl "$EXPECTED_SITE" /workspace/dashboards/ >/dev/null 2>&1; then
+            COUNT=$(grep -rl "$EXPECTED_SITE" /workspace/dashboards/ | wc -l)
+            echo "✓ LOCATION_1 '$EXPECTED_SITE' found in $COUNT dashboard(s)"
+          else
+            echo "❌ LOCATION_1 '$EXPECTED_SITE' not found in any generated dashboard"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "❌ $ERRORS placeholder issues found"
+            exit 1
+          fi
+          echo "✅ All placeholders correctly substituted"
+
+      - name: Verify generated output
+        run: |
+          echo "Checking generated output..."
+          ERRORS=0
+
+          # Every template in templates/dashboards/ should either:
+          # 1. Appear as-is in the output (direct copy/sed), OR
+          # 2. Be a meta-template that produces per-line/per-machine variants
+          # Meta-templates (line-oee-dashboard.json, machine-dashboard.json) produce
+          # output like automotive-welding-oee-dashboard.json, so we check by suffix.
+          for template in templates/dashboards/*.json; do
+            name=$(basename "$template")
+
+            # Check for direct match first
+            if [ -f "/workspace/dashboards/$name" ]; then
+              echo "✓ $name (direct)"
+              continue
+            fi
+
+            # Check for meta-template variants (e.g., line-oee-dashboard.json -> *-oee-dashboard.json)
+            suffix="${name#line-}"         # strip "line-" prefix if present
+            suffix="${suffix#machine-}"    # strip "machine-" prefix if present
+            variants=$(ls /workspace/dashboards/*-"$suffix" 2>/dev/null | wc -l)
+            if [ "$variants" -gt 0 ]; then
+              echo "✓ $name (meta-template, $variants variants generated)"
+              continue
+            fi
+
+            echo "❌ Template $name produced no output (neither direct nor variants)"
+            ERRORS=$((ERRORS + 1))
+          done
+
+          OUTPUT_COUNT=$(ls -1 /workspace/dashboards/*.json 2>/dev/null | wc -l)
+          TEMPLATE_COUNT=$(ls -1 templates/dashboards/*.json 2>/dev/null | wc -l)
+          echo ""
+          echo "Templates: $TEMPLATE_COUNT | Generated: $OUTPUT_COUNT"
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "❌ $ERRORS templates produced no output"
+            exit 1
+          fi
+          echo "✅ All templates accounted for in generated output"
+
+      - name: List generated output
+        if: always()
+        run: |
+          echo "=== Generated files ==="
+          find /workspace -type f | sort
