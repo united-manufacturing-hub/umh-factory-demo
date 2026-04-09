@@ -1,0 +1,240 @@
+{
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 32,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "SVGBaseFix": true,
+        "add100Percentage": true,
+        "centerAlignContent": false,
+        "cspPolicies": {
+          "script": "'unsafe-eval' 'unsafe-inline'",
+          "style": "'unsafe-inline'"
+        },
+        "css": "* { box-sizing: border-box; margin: 0; padding: 0; }\n.erp-root { font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif; background: #f8f9fa; color: #1a1a2e; width: 100%; height: 100%; overflow-y: auto; padding: 0; }\n.erp-header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }\n.erp-header-left { display: flex; align-items: center; gap: 16px; }\n.erp-logo { width: 32px; height: 32px; background: #0054a6; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; }\n.erp-title { font-size: 18px; font-weight: 600; color: #1a1a2e; }\n.erp-subtitle { font-size: 12px; color: #6b7280; margin-top: 2px; }\n.erp-header-right { display: flex; align-items: center; gap: 12px; }\n.erp-timestamp { font-size: 11px; color: #9ca3af; }\n.erp-body { padding: 24px 32px; }\n.erp-kpi-row { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }\n.erp-kpi { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; position: relative; overflow: hidden; }\n.erp-kpi-label { font-size: 11px; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }\n.erp-kpi-value { font-size: 32px; font-weight: 700; color: #1a1a2e; line-height: 1; }\n.erp-kpi-value.red { color: #dc2626; }\n.erp-kpi-value.green { color: #059669; }\n.erp-kpi-value.amber { color: #d97706; }\n.erp-kpi-sub { font-size: 12px; color: #6b7280; margin-top: 6px; }\n.erp-kpi-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }\n.erp-badge-red { background: #fef2f2; color: #dc2626; }\n.erp-badge-green { background: #f0fdf4; color: #059669; }\n.erp-kpi-ticker { height: 32px; margin-top: 8px; }\n.erp-ticker-bar { display: inline-block; width: 3px; margin-right: 1px; background: #dc2626; border-radius: 1px; vertical-align: bottom; opacity: 0.6; animation: tickerPulse 2s ease-in-out infinite; }\n@keyframes tickerPulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.9; } }\n.erp-section { margin-bottom: 24px; }\n.erp-section-title { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }\n.erp-collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; }\n.erp-collapsible:hover { color: #0054a6; }\n.erp-chevron { font-size: 12px; transition: transform 0.2s; }\n.erp-chevron.open { transform: rotate(90deg); }\n.erp-collapsed { display: none; }\n.erp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }\n.erp-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; }\n.erp-table { width: 100%; border-collapse: collapse; font-size: 13px; }\n.erp-table-sm { font-size: 12px; }\n.erp-table th { text-align: left; padding: 8px 12px; font-weight: 500; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e5e7eb; background: #f9fafb; }\n.erp-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }\n.erp-table tr:hover td { background: #f9fafb; }\n.erp-table .num { text-align: right; font-variant-numeric: tabular-nums; }\n.erp-table .impact { font-weight: 600; color: #dc2626; }\n.erp-table .recovery { font-weight: 500; color: #059669; }\n.erp-cat-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 500; }\n.erp-cat-Unplanned { background: #fef2f2; color: #dc2626; }\n.erp-cat-External { background: #eff6ff; color: #2563eb; }\n.erp-cat-Planned { background: #f0fdf4; color: #059669; }\n.erp-cat-Quality { background: #fefce8; color: #ca8a04; }\n.erp-cat-Unknown { background: #f3f4f6; color: #6b7280; }\n.erp-bar-container { margin-bottom: 4px; }\n.erp-bar-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background 0.15s; }\n.erp-bar-header:hover { background: #f3f4f6; }\n.erp-bar-header.active { background: #eff6ff; }\n.erp-bar-name { color: #374151; font-weight: 600; display: flex; align-items: center; gap: 6px; }\n.erp-bar-chevron { font-size: 10px; color: #9ca3af; transition: transform 0.2s; display: inline-block; }\n.erp-bar-chevron.open { transform: rotate(90deg); }\n.erp-bar-value { color: #6b7280; font-weight: 500; }\n.erp-bar-track { height: 20px; background: #f3f4f6; border-radius: 4px; overflow: hidden; margin: 0 8px; }\n.erp-bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 10px; color: #fff; font-weight: 500; }\n.erp-bar-reasons { padding-left: 16px; margin: 4px 8px 8px; overflow: hidden; transition: max-height 0.25s ease, opacity 0.2s ease; }\n.erp-bar-reasons.collapsed { max-height: 0 !important; opacity: 0; margin: 0 8px; }\n.erp-bar-reason { font-size: 11px; color: #6b7280; display: flex; justify-content: space-between; padding: 3px 4px; border-radius: 3px; cursor: pointer; transition: background 0.15s; }\n.erp-bar-reason:hover { background: #f3f4f6; }\n.erp-bar-reason.active { background: #eff6ff; font-weight: 600; color: #1a1a2e; }\n.erp-trend-legend { font-size: 11px; font-weight: 400; color: #9ca3af; }\n.erp-trend-row { display: flex; align-items: flex-end; gap: 4px; height: 80px; padding-top: 16px; position: relative; }\n.erp-trend-bar { flex: 1; background: #dbeafe; border-radius: 3px 3px 0 0; position: relative; min-height: 4px; transition: height 0.3s; cursor: default; }\n.erp-trend-bar.current { background: #0054a6; }\n.erp-trend-bar:hover { opacity: 0.8; }\n.erp-trend-bar-val { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 9px; color: #6b7280; white-space: nowrap; font-weight: 500; }\n.erp-trend-labels { display: flex; gap: 4px; font-size: 10px; color: #9ca3af; margin-top: 4px; }\n.erp-trend-labels span { flex: 1; text-align: center; }\n.erp-trend-reset { margin-top: 8px; font-size: 11px; color: #0054a6; cursor: pointer; text-align: center; font-weight: 500; padding: 4px; border-radius: 4px; }\n.erp-trend-reset:hover { background: #eff6ff; }\n.erp-footer { padding: 12px 32px; font-size: 11px; color: #9ca3af; border-top: 1px solid #e5e7eb; background: #fff; display: flex; justify-content: space-between; }\n",
+        "dynamicData": true,
+        "dynamicFieldConfigCode": "",
+        "dynamicHtmlCode": "",
+        "dynamicHtmlIsEnabled": false,
+        "html": "<div class=\"erp-root\">\n  <div class=\"erp-header\">\n    <div class=\"erp-header-left\">\n      <div class=\"erp-logo\">UMH</div>\n      <div>\n        <div class=\"erp-title\">Manufacturing Margin Analysis</div>\n        <div class=\"erp-subtitle\" id=\"erp-site-label\">${enterprise} \u2014 ${site}</div>\n      </div>\n    </div>\n    <div class=\"erp-header-right\">\n      <div class=\"erp-timestamp\" id=\"erp-time\"></div>\n    </div>\n  </div>\n  <div class=\"erp-body\">\n    <div class=\"erp-kpi-row\">\n      <div class=\"erp-kpi\" id=\"kpi-total-card\">\n        <div class=\"erp-kpi-label\">Total Margin Leakage</div>\n        <div class=\"erp-kpi-value red\" id=\"kpi-total\">--</div>\n        <div class=\"erp-kpi-ticker\" id=\"kpi-ticker\"></div>\n        <div class=\"erp-kpi-sub\" id=\"kpi-total-sub\"></div>\n      </div>\n      <div class=\"erp-kpi\">\n        <div class=\"erp-kpi-label\">vs. Prior Period</div>\n        <div class=\"erp-kpi-value\" id=\"kpi-delta\">--</div>\n        <div class=\"erp-kpi-sub\" id=\"kpi-delta-sub\"></div>\n      </div>\n      <div class=\"erp-kpi\">\n        <div class=\"erp-kpi-label\">% of Production Value</div>\n        <div class=\"erp-kpi-value\" id=\"kpi-pct\">--</div>\n        <div class=\"erp-kpi-sub\" id=\"kpi-pct-sub\"></div>\n      </div>\n      <div class=\"erp-kpi\">\n        <div class=\"erp-kpi-label\">Projected Monthly Loss</div>\n        <div class=\"erp-kpi-value\" id=\"kpi-proj\">--</div>\n        <div class=\"erp-kpi-sub\" id=\"kpi-proj-sub\"></div>\n      </div>\n    </div>\n\n    <div class=\"erp-grid-2\">\n      <div class=\"erp-section\">\n        <div class=\"erp-section-title\">Top Cost Drivers by Line</div>\n        <div class=\"erp-card\" id=\"cost-drivers\"></div>\n      </div>\n      <div class=\"erp-section\">\n        <div class=\"erp-section-title\">Weekly Loss Trend <span class=\"erp-trend-legend\" id=\"trend-filter-label\">(All Lines \u2014 Downtime Cost in \u20ac)</span></div>\n        <div class=\"erp-card\">\n          <div class=\"erp-trend-row\" id=\"trend-bars\"></div>\n          <div class=\"erp-trend-labels\" id=\"trend-labels\"></div>\n          <div class=\"erp-trend-reset\" id=\"trend-reset\" style=\"display:none\">Show All</div>\n        </div>\n      </div>\n    </div>\n\n    <div class=\"erp-section\">\n      <div class=\"erp-section-title\">Top Cost Drivers \u2014 Recovery Opportunities</div>\n      <div class=\"erp-card\">\n        <table class=\"erp-table\">\n          <thead>\n            <tr>\n              <th>Line</th>\n              <th>Root Cause</th>\n              <th>Category</th>\n              <th class=\"num\">Occurrences</th>\n              <th class=\"num\">Downtime</th>\n              <th class=\"num\">\u20ac Impact</th>\n              <th class=\"num\">Projected /mo</th>\n              <th class=\"num\">Recovery Potential</th>\n            </tr>\n          </thead>\n          <tbody id=\"incidents-body\"></tbody>\n        </table>\n      </div>\n    </div>\n\n    <div class=\"erp-section\">\n      <div class=\"erp-section-title erp-collapsible\" id=\"evidence-toggle\">\n        <span>Evidence Trail \u2014 Individual Events</span>\n        <span class=\"erp-chevron\" id=\"evidence-chevron\">&#9654;</span>\n      </div>\n      <div class=\"erp-card erp-collapsed\" id=\"evidence-card\">\n        <table class=\"erp-table erp-table-sm\">\n          <thead>\n            <tr>\n              <th>Timestamp</th>\n              <th>Line</th>\n              <th>Machine</th>\n              <th>Batch/Order</th>\n              <th>Reason</th>\n              <th>Category</th>\n              <th class=\"num\">Duration</th>\n              <th class=\"num\">\u20ac Impact</th>\n            </tr>\n          </thead>\n          <tbody id=\"evidence-body\"></tbody>\n        </table>\n      </div>\n    </div>\n  </div>\n  <div class=\"erp-footer\">\n    <span>Source: United Manufacturing Hub \u2014 Real-time shop floor data</span>\n    <span id=\"erp-footer-time\"></span>\n  </div>\n</div>",
+        "onInit": "\nvar fmt = function(n) {\n  if (n == null || isNaN(n)) return '\\u20ac0';\n  if (Math.abs(n) >= 1000) return '\\u20ac' + (n/1000).toFixed(1) + 'K';\n  return '\\u20ac' + Math.round(n);\n};\nvar fmtFull = function(n) {\n  if (n == null || isNaN(n)) return '\\u20ac0';\n  return '\\u20ac' + Math.round(n).toLocaleString('de-DE');\n};\nfunction getField(series, name) {\n  if (!series || !series.fields) return null;\n  for (var i = 0; i < series.fields.length; i++) {\n    if (series.fields[i].name === name) {\n      var vals = series.fields[i].values;\n      return vals && vals.length > 0 ? vals[0] : null;\n    }\n  }\n  return null;\n}\nfunction getRows(series) {\n  if (!series || !series.fields || !series.fields.length) return [];\n  var len = series.fields[0].values ? series.fields[0].values.length : 0;\n  var rows = [];\n  for (var r = 0; r < len; r++) {\n    var row = {};\n    for (var f = 0; f < series.fields.length; f++) {\n      row[series.fields[f].name] = series.fields[f].values[r];\n    }\n    rows.push(row);\n  }\n  return rows;\n}\nfunction findSeries(d, refId) {\n  for (var i = 0; i < d.series.length; i++) {\n    if (d.series[i].refId === refId) return d.series[i];\n  }\n  return null;\n}\n\nvar recoveryRates = {\n  'Unplanned': 0.75, 'Quality': 0.85, 'External': 0.25, 'Planned': 0.15, 'Unknown': 0.50\n};\nvar colors = ['#dc2626','#d97706','#0054a6','#059669','#7c3aed','#db2777'];\nvar monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\n\nvar trendFilter = { type: 'all', line: null, reason: null };\nvar allTrendRows = [];\n\n// ---- Wire up ALL event handlers ONCE, outside _render ----\n\n// Evidence toggle\nvar etoggle = htmlNode.querySelector('#evidence-toggle');\nvar ecard = htmlNode.querySelector('#evidence-card');\nvar echev = htmlNode.querySelector('#evidence-chevron');\nif (etoggle) {\n  etoggle.addEventListener('click', function() {\n    var hidden = ecard.classList.toggle('erp-collapsed');\n    echev.classList.toggle('open', !hidden);\n  });\n}\n\n// Trend reset\nvar resetBtn = htmlNode.querySelector('#trend-reset');\nif (resetBtn) {\n  resetBtn.addEventListener('click', function() {\n    trendFilter = { type: 'all', line: null, reason: null };\n    renderTrend();\n    updateDriverHighlights();\n  });\n}\n\n// Cost drivers: single delegated click handler on the container\nvar driversEl = htmlNode.querySelector('#cost-drivers');\nif (driversEl) {\n  driversEl.addEventListener('click', function(e) {\n    var target = e.target.closest('[data-action]');\n    if (!target) return;\n    var action = target.getAttribute('data-action');\n    var lineName = target.getAttribute('data-line');\n\n    if (action === 'toggle-line') {\n      var reasonsDiv = htmlNode.querySelector('[data-reasons-for=\"' + lineName + '\"]');\n      var chevronEl = target.querySelector('.erp-bar-chevron');\n      if (reasonsDiv) {\n        var wasCollapsed = reasonsDiv.classList.contains('collapsed');\n        reasonsDiv.classList.toggle('collapsed');\n        if (chevronEl) chevronEl.classList.toggle('open', wasCollapsed);\n      }\n      if (trendFilter.type === 'line' && trendFilter.line === lineName) {\n        trendFilter = { type: 'all', line: null, reason: null };\n      } else {\n        trendFilter = { type: 'line', line: lineName, reason: null };\n      }\n      renderTrend();\n      updateDriverHighlights();\n    } else if (action === 'select-reason') {\n      var reasonName = target.getAttribute('data-reason');\n      if (trendFilter.type === 'reason' && trendFilter.line === lineName && trendFilter.reason === reasonName) {\n        trendFilter = { type: 'line', line: lineName, reason: null };\n      } else {\n        trendFilter = { type: 'reason', line: lineName, reason: reasonName };\n      }\n      renderTrend();\n      updateDriverHighlights();\n    }\n  });\n}\n\n// ---- Helper functions ----\n\nfunction updateDriverHighlights() {\n  var headers = htmlNode.querySelectorAll('.erp-bar-header');\n  for (var i = 0; i < headers.length; i++) headers[i].classList.remove('active');\n  var reasons = htmlNode.querySelectorAll('.erp-bar-reason');\n  for (var i = 0; i < reasons.length; i++) reasons[i].classList.remove('active');\n\n  if (trendFilter.type === 'line') {\n    var h = htmlNode.querySelector('.erp-bar-header[data-line=\"' + trendFilter.line + '\"]');\n    if (h) h.classList.add('active');\n  } else if (trendFilter.type === 'reason') {\n    var r = htmlNode.querySelector('.erp-bar-reason[data-line=\"' + trendFilter.line + '\"][data-reason=\"' + trendFilter.reason + '\"]');\n    if (r) r.classList.add('active');\n  }\n}\n\nfunction renderTrend() {\n  var el = htmlNode.querySelector.bind(htmlNode);\n  var filtered = allTrendRows;\n  var filterLabel = 'All Lines';\n\n  if (trendFilter.type === 'line' && trendFilter.line) {\n    filtered = allTrendRows.filter(function(r) { return r.line_name === trendFilter.line; });\n    filterLabel = trendFilter.line;\n  } else if (trendFilter.type === 'reason' && trendFilter.line && trendFilter.reason) {\n    filtered = allTrendRows.filter(function(r) { return r.line_name === trendFilter.line && r.reason === trendFilter.reason; });\n    filterLabel = trendFilter.line + ' \\u2014 ' + trendFilter.reason;\n  }\n\n  var byWeek = {};\n  filtered.forEach(function(r) {\n    var ws = r.week_start;\n    if (!byWeek[ws]) byWeek[ws] = { week_start: ws, cost: 0 };\n    byWeek[ws].cost += (r.downtime_cost || 0) + (r.scrap_cost || 0);\n  });\n  var weeks = Object.values(byWeek).sort(function(a,b) { return a.week_start < b.week_start ? -1 : 1; });\n\n  el('#trend-filter-label').textContent = '(' + filterLabel + ' \\u2014 Downtime Cost in \\u20ac)';\n  el('#trend-reset').style.display = trendFilter.type === 'all' ? 'none' : 'block';\n\n  var maxWeek = 1;\n  weeks.forEach(function(w) { if (w.cost > maxWeek) maxWeek = w.cost; });\n\n  var trendHtml = '';\n  var labelHtml = '';\n  weeks.forEach(function(w, i) {\n    var h = Math.max((w.cost / maxWeek * 100), 3);\n    var isLast = i === weeks.length - 1;\n    trendHtml += '<div class=\"erp-trend-bar' + (isLast ? ' current' : '') + '\" style=\"height:' + h + '%\">';\n    trendHtml += '<span class=\"erp-trend-bar-val\">' + fmt(w.cost) + '</span>';\n    trendHtml += '</div>';\n    var d = new Date(w.week_start);\n    labelHtml += '<span>' + d.getDate() + ' ' + monthNames[d.getMonth()] + '</span>';\n  });\n  el('#trend-bars').innerHTML = trendHtml || '<div style=\"color:#9ca3af;text-align:center;width:100%\">No trend data</div>';\n  el('#trend-labels').innerHTML = labelHtml;\n}\n\n// ---- Main render (only updates data, no event binding) ----\n\nhtmlNode._render = function() {\n  var now = new Date();\n  var el = htmlNode.querySelector.bind(htmlNode);\n  el('#erp-time').textContent = 'Updated ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});\n  el('#erp-footer-time').textContent = 'Generated: ' + now.toLocaleString();\n  el('#erp-site-label').textContent = '';\n\n  var totalS = findSeries(data, 'total_loss');\n  var prevS = findSeries(data, 'prev_period_loss');\n  var lineS = findSeries(data, 'cost_by_line');\n  var incS = findSeries(data, 'top_incidents');\n  var trendS = findSeries(data, 'weekly_trend');\n  var prodS = findSeries(data, 'production_value');\n  var evidS = findSeries(data, 'evidence_detail');\n\n  var total = getField(totalS, 'total_loss') || 0;\n  var prev = getField(prevS, 'prev_loss') || 0;\n  var prodValue = getField(prodS, 'production_value') || 1;\n\n  el('#kpi-total').textContent = fmtFull(total);\n  el('#kpi-total-sub').textContent = 'Period total';\n  var tickerHtml = '';\n  for (var i = 0; i < 30; i++) {\n    var h = Math.max(4, Math.random() * 28 + (total > prevTotal ? 8 : 0));\n    tickerHtml += '<span class=\"erp-ticker-bar\" style=\"height:' + h + 'px;animation-delay:' + (i * 0.07) + 's\"></span>';\n  }\n  el('#kpi-ticker').innerHTML = tickerHtml;\n  prevTotal = total;\n\n  var delta = total - prev;\n  var deltaEl = el('#kpi-delta');\n  if (prev > 0) {\n    var deltaPct = ((delta / prev) * 100).toFixed(0);\n    deltaEl.textContent = (delta >= 0 ? '+' : '') + fmt(delta);\n    deltaEl.className = 'erp-kpi-value ' + (delta > 0 ? 'red' : 'green');\n    el('#kpi-delta-sub').innerHTML = '<span class=\"erp-kpi-badge ' + (delta > 0 ? 'erp-badge-red' : 'erp-badge-green') + '\">' + (delta >= 0 ? '\\u2191' : '\\u2193') + ' ' + Math.abs(deltaPct) + '% vs prior period</span>';\n  } else {\n    deltaEl.textContent = '--';\n    deltaEl.className = 'erp-kpi-value';\n    el('#kpi-delta-sub').textContent = 'No prior period data';\n  }\n\n  var pctEl = el('#kpi-pct');\n  if (prodValue <= 1) {\n    pctEl.textContent = 'N/A';\n    pctEl.className = 'erp-kpi-value';\n    el('#kpi-pct-sub').textContent = 'No production orders in period';\n  } else {\n    var pct = (total / prodValue * 100);\n    pctEl.textContent = pct.toFixed(1) + '%';\n    pctEl.className = 'erp-kpi-value ' + (pct > 5 ? 'red' : pct > 2 ? 'amber' : 'green');\n    el('#kpi-pct-sub').textContent = 'of ' + fmtFull(prodValue) + ' output value';\n  }\n\n  var dayOfMonth = now.getDate();\n  var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();\n  var projected = dayOfMonth > 0 ? (total / dayOfMonth * daysInMonth) : 0;\n  el('#kpi-proj').textContent = fmtFull(projected);\n  el('#kpi-proj').className = 'erp-kpi-value red';\n  el('#kpi-proj-sub').textContent = 'Based on ' + dayOfMonth + '/' + daysInMonth + ' days elapsed';\n\n  // Cost drivers\n  var lineRows = getRows(lineS);\n  var byLine = {};\n  lineRows.forEach(function(r) {\n    if (!byLine[r.line_name]) byLine[r.line_name] = { total: 0, reasons: [] };\n    byLine[r.line_name].total += r.impact || 0;\n    byLine[r.line_name].reasons.push(r);\n  });\n  var lineKeys = Object.keys(byLine).sort(function(a,b) { return byLine[b].total - byLine[a].total; });\n  var maxImpact = lineKeys.length > 0 ? byLine[lineKeys[0]].total : 1;\n\n  var driverHtml = '';\n  lineKeys.forEach(function(line, idx) {\n    var pctW = Math.max((byLine[line].total / maxImpact * 100), 2);\n    var c = colors[idx % colors.length];\n    var reasons = byLine[line].reasons.sort(function(a,b) { return (b.impact||0) - (a.impact||0); });\n    driverHtml += '<div class=\"erp-bar-container\" data-line=\"' + line + '\">';\n    driverHtml += '<div class=\"erp-bar-header\" data-action=\"toggle-line\" data-line=\"' + line + '\">';\n    driverHtml += '<span class=\"erp-bar-name\"><span class=\"erp-bar-chevron\">&#9654;</span> ' + line + '</span>';\n    driverHtml += '<span class=\"erp-bar-value\">' + fmtFull(byLine[line].total) + '</span>';\n    driverHtml += '</div>';\n    driverHtml += '<div class=\"erp-bar-track\" style=\"margin:0 8px\"><div class=\"erp-bar-fill\" style=\"width:' + pctW + '%;background:' + c + '\"></div></div>';\n    driverHtml += '<div class=\"erp-bar-reasons collapsed\" data-reasons-for=\"' + line + '\">';\n    reasons.forEach(function(r) {\n      var cat = r.category || 'Unknown';\n      driverHtml += '<div class=\"erp-bar-reason\" data-action=\"select-reason\" data-line=\"' + line + '\" data-reason=\"' + r.reason + '\">';\n      driverHtml += '<span><span class=\"erp-cat-badge erp-cat-' + cat + '\">' + cat + '</span> ' + r.reason + '</span>';\n      driverHtml += '<span>' + fmtFull(r.impact||0) + '</span>';\n      driverHtml += '</div>';\n    });\n    driverHtml += '</div></div>';\n  });\n  el('#cost-drivers').innerHTML = driverHtml || '<div style=\"color:#9ca3af;padding:20px;text-align:center\">No cost data</div>';\n\n  // Store trend data and render\n  allTrendRows = getRows(trendS);\n  renderTrend();\n  updateDriverHighlights();\n\n  // Top incidents\n  var incidents = getRows(incS);\n  var incHtml = '';\n  incidents.forEach(function(inc) {\n    var cat = inc.category || 'Unknown';\n    var rate = recoveryRates[cat] || 0.50;\n    var recoveryVal = Math.round((inc.projected_monthly || 0) * rate);\n    incHtml += '<tr>';\n    incHtml += '<td>' + (inc.line_name||'-') + '</td>';\n    incHtml += '<td>' + (inc.reason||'-') + '</td>';\n    incHtml += '<td><span class=\"erp-cat-badge erp-cat-' + cat + '\">' + cat + '</span></td>';\n    incHtml += '<td class=\"num\">' + (inc.occurrences||0) + '</td>';\n    incHtml += '<td class=\"num\">' + (inc.total_min||0) + ' min</td>';\n    incHtml += '<td class=\"num impact\">' + fmtFull(inc.total_impact||0) + '</td>';\n    incHtml += '<td class=\"num impact\">' + fmtFull(inc.projected_monthly||0) + '</td>';\n    incHtml += '<td class=\"num recovery\">\\u2192 ' + fmtFull(recoveryVal) + ' <span style=\"font-size:10px;color:#9ca3af\">(' + Math.round(rate*100) + '%)</span></td>';\n    incHtml += '</tr>';\n  });\n  el('#incidents-body').innerHTML = incHtml || '<tr><td colspan=\"8\" style=\"text-align:center;color:#9ca3af;padding:20px\">No data</td></tr>';\n\n  // Evidence\n  var evidence = getRows(evidS);\n  var evHtml = '';\n  evidence.forEach(function(ev) {\n    var cat = ev.category || 'Unknown';\n    var ts = ev.timestamp ? new Date(ev.timestamp) : null;\n    var tsStr = ts ? ts.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';\n    evHtml += '<tr>';\n    evHtml += '<td>' + tsStr + '</td>';\n    evHtml += '<td>' + (ev.line_name||'-') + '</td>';\n    evHtml += '<td>' + (ev.machine||'-') + '</td>';\n    evHtml += '<td>' + (ev.batch||'-') + '</td>';\n    evHtml += '<td>' + (ev.reason||'-') + '</td>';\n    evHtml += '<td><span class=\"erp-cat-badge erp-cat-' + cat + '\">' + cat + '</span></td>';\n    evHtml += '<td class=\"num\">' + (ev.duration_min||0) + ' min</td>';\n    evHtml += '<td class=\"num impact\">' + fmtFull(ev.impact||0) + '</td>';\n    evHtml += '</tr>';\n  });\n  el('#evidence-body').innerHTML = evHtml || '<tr><td colspan=\"8\" style=\"text-align:center;color:#9ca3af;padding:20px\">No events</td></tr>';\n};\n\nvar prevTotal = 0;\nhtmlNode._render();\n",
+        "onRender": "if (htmlNode._render) htmlNode._render();",
+        "panelupdatealiases": [],
+        "rootCSS": ""
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW())\n    WHEN 'week' THEN date_trunc('week', NOW())\n    WHEN '7d' THEN NOW() - INTERVAL '7 days'\n    WHEN '30d' THEN NOW() - INTERVAL '30 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1),\n      NOW() - INTERVAL '8 hours')\n    ELSE date_trunc('month', NOW())\n  END AS t_from,\n  NOW() AS t_to\n)\nSELECT\n  COALESCE((SELECT SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0))\n   FROM machine_stops ms\n   JOIN asset a ON ms.asset_id = a.id\n   LEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\n   WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n     AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n     AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n  ), 0)\n  +\n  COALESCE((SELECT SUM(po.quantity_scrap * COALESCE(psc.cost_per_unit, 0))\n   FROM production_orders po\n   JOIN asset a ON po.asset_id = a.id\n   LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n   WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n     AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n     AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n     AND po.quantity_scrap > 0\n  ), 0) AS total_loss",
+          "refId": "total_loss"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW()) - INTERVAL '1 month'\n    WHEN 'week' THEN date_trunc('week', NOW()) - INTERVAL '1 week'\n    WHEN '7d' THEN NOW() - INTERVAL '14 days'\n    WHEN '30d' THEN NOW() - INTERVAL '60 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT start_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1),\n      NOW() - INTERVAL '16 hours')\n    ELSE date_trunc('month', NOW()) - INTERVAL '1 month'\n  END AS t_from,\n  CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW())\n    WHEN 'week' THEN date_trunc('week', NOW())\n    WHEN '7d' THEN NOW() - INTERVAL '7 days'\n    WHEN '30d' THEN NOW() - INTERVAL '30 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT end_time FROM shifts WHERE end_time <= NOW() ORDER BY end_time DESC LIMIT 1),\n      NOW() - INTERVAL '8 hours')\n    ELSE date_trunc('month', NOW())\n  END AS t_to\n)\nSELECT\n  COALESCE((SELECT SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, (SELECT t_to FROM tr)) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0))\n   FROM machine_stops ms\n   JOIN asset a ON ms.asset_id = a.id\n   LEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\n   WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n     AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n     AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n  ), 0)\n  +\n  COALESCE((SELECT SUM(po.quantity_scrap * COALESCE(psc.cost_per_unit, 0))\n   FROM production_orders po\n   JOIN asset a ON po.asset_id = a.id\n   LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n   WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n     AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n     AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n     AND po.quantity_scrap > 0\n  ), 0) AS prev_loss",
+          "refId": "prev_period_loss"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW())\n    WHEN 'week' THEN date_trunc('week', NOW())\n    WHEN '7d' THEN NOW() - INTERVAL '7 days'\n    WHEN '30d' THEN NOW() - INTERVAL '30 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1),\n      NOW() - INTERVAL '8 hours')\n    ELSE date_trunc('month', NOW())\n  END AS t_from,\n  NOW() AS t_to\n)\nSELECT\n  a.line AS line_name,\n  COALESCE(sr.name, 'Unspecified') AS reason,\n  sr.category AS category,\n  COUNT(*) AS stops,\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0))::integer AS downtime_min,\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0)))::integer AS impact\nFROM machine_stops ms\nJOIN asset a ON ms.asset_id = a.id\nLEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nLEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\nGROUP BY a.line, sr.name, sr.category\nORDER BY impact DESC",
+          "refId": "cost_by_line"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW())\n    WHEN 'week' THEN date_trunc('week', NOW())\n    WHEN '7d' THEN NOW() - INTERVAL '7 days'\n    WHEN '30d' THEN NOW() - INTERVAL '30 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1),\n      NOW() - INTERVAL '8 hours')\n    ELSE date_trunc('month', NOW())\n  END AS t_from,\n  NOW() AS t_to\n)\nSELECT\n  a.line AS line_name,\n  COALESCE(sr.name, 'Unspecified') AS reason,\n  COALESCE(sr.category, 'Unknown') AS category,\n  COUNT(*) AS occurrences,\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0))::integer AS total_min,\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0)))::integer AS total_impact,\n  ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0)) * 30.0 / GREATEST(EXTRACT(EPOCH FROM (NOW() - (SELECT t_from FROM tr))) / 86400.0, 1))::integer AS projected_monthly\nFROM machine_stops ms\nJOIN asset a ON ms.asset_id = a.id\nLEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nLEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\nGROUP BY a.line, sr.name, sr.category\nORDER BY total_impact DESC\nLIMIT 5",
+          "refId": "top_incidents"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH weekly_downtime AS (\n  SELECT\n    date_trunc('week', ms.start_time)::date AS week_start,\n    a.line AS line_name,\n    COALESCE(sr.name, 'Unspecified') AS reason,\n    ROUND(SUM(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0)))::integer AS downtime_cost\n  FROM machine_stops ms\n  JOIN asset a ON ms.asset_id = a.id\n  LEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id\n  LEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\n  WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND ms.start_time >= NOW() - INTERVAL '8 weeks'\n  GROUP BY date_trunc('week', ms.start_time), a.line, sr.name\n)\nSELECT week_start, line_name, reason, downtime_cost, 0 AS scrap_cost\nFROM weekly_downtime\nORDER BY week_start, line_name, reason",
+          "refId": "weekly_trend"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW())\n    WHEN 'week' THEN date_trunc('week', NOW())\n    WHEN '7d' THEN NOW() - INTERVAL '7 days'\n    WHEN '30d' THEN NOW() - INTERVAL '30 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1),\n      NOW() - INTERVAL '8 hours')\n    ELSE date_trunc('month', NOW())\n  END AS t_from,\n  NOW() AS t_to\n),\ngood AS (\n  SELECT COALESCE(SUM(po.quantity_completed * COALESCE(psc.cost_per_unit, 10)), 0) AS val\n  FROM production_orders po\n  JOIN asset a ON po.asset_id = a.id\n  LEFT JOIN part_scrap_costs psc ON po.part_number = psc.part_number\n  WHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND po.started_at BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\n)\nSELECT GREATEST(val, 1) AS production_value FROM good",
+          "refId": "production_value"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH tr AS (\n  SELECT CASE '${period}'\n    WHEN 'mtd' THEN date_trunc('month', NOW())\n    WHEN 'week' THEN date_trunc('week', NOW())\n    WHEN '7d' THEN NOW() - INTERVAL '7 days'\n    WHEN '30d' THEN NOW() - INTERVAL '30 days'\n    WHEN 'shift' THEN COALESCE(\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() AND end_time >= NOW() ORDER BY start_time DESC LIMIT 1),\n      (SELECT start_time FROM shifts WHERE start_time <= NOW() ORDER BY start_time DESC LIMIT 1),\n      NOW() - INTERVAL '8 hours')\n    ELSE date_trunc('month', NOW())\n  END AS t_from,\n  NOW() AS t_to\n)\nSELECT\n  ms.start_time AS timestamp,\n  a.line AS line_name,\n  a.workcell AS machine,\n  COALESCE(sr.name, 'Unspecified') AS reason,\n  COALESCE(sr.category, 'Unknown') AS category,\n  COALESCE(po.order_id, '-') AS batch,\n  ROUND(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 60.0, 1) AS duration_min,\n  ROUND(EXTRACT(EPOCH FROM (COALESCE(ms.end_time, NOW()) - ms.start_time)) / 3600.0 * COALESCE(ldc.cost_per_hour, 0))::integer AS impact\nFROM machine_stops ms\nJOIN asset a ON ms.asset_id = a.id\nLEFT JOIN stop_reasons sr ON ms.stop_reason_id = sr.id\nLEFT JOIN line_downtime_costs ldc ON a.line = ldc.line_name\nLEFT JOIN LATERAL (\n  SELECT order_id FROM production_orders po2\n  WHERE po2.asset_id IN (SELECT id FROM asset WHERE line = a.line AND enterprise = a.enterprise)\n    AND po2.started_at <= ms.start_time\n    AND (po2.completed_at IS NULL OR po2.completed_at >= ms.start_time)\n  ORDER BY po2.started_at DESC LIMIT 1\n) po ON true\nWHERE a.enterprise = '${enterprise}' AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time BETWEEN (SELECT t_from FROM tr) AND (SELECT t_to FROM tr)\nORDER BY ms.start_time DESC\nLIMIT 50",
+          "refId": "evidence_detail"
+        }
+      ],
+      "title": "",
+      "transparent": true,
+      "type": "gapit-htmlgraphics-panel"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": [
+    "cfo",
+    "finance",
+    "margin",
+    "erp"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "label": "Data Source",
+        "name": "DS_POSTGRESQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "hide": 2,
+        "includeAll": false,
+        "name": "enterprise",
+        "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "hide": 2,
+        "includeAll": false,
+        "name": "site",
+        "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "All",
+        "current": {
+          "text": "All",
+          "value": "All"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "hide": 0,
+        "includeAll": true,
+        "includeAllOption": true,
+        "name": "line",
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' ORDER BY line",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "Month to Date",
+          "value": "mtd"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "name": "period",
+        "options": [
+          {
+            "selected": true,
+            "text": "Month to Date",
+            "value": "mtd"
+          },
+          {
+            "selected": false,
+            "text": "This Week",
+            "value": "week"
+          },
+          {
+            "selected": false,
+            "text": "Last 7 Days",
+            "value": "7d"
+          },
+          {
+            "selected": false,
+            "text": "Last 30 Days",
+            "value": "30d"
+          },
+          {
+            "selected": false,
+            "text": "Current Shift",
+            "value": "shift"
+          }
+        ],
+        "query": "mtd,week,7d,30d,shift",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": true
+  },
+  "title": "CFO Margin Report",
+  "uid": "cfo-margin-report"
+}

@@ -955,6 +955,9 @@ sed \
     > "$WORK_DIR/dashboards/margin-leakage-dashboard.json"
 echo -e "${GREEN}    ✓ margin-leakage-dashboard.json${NC}"
 
+cp "$TEMPLATES_DIR/templates/dashboards/cfo-margin-report.json" "$WORK_DIR/dashboards/cfo-margin-report.json"
+echo -e "${GREEN}    ✓ cfo-margin-report.json${NC}"
+
 # --- Generate factory line setup dashboard ---
 echo "  Generating factory line setup dashboard..."
 
