@@ -18,12 +18,16 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": null,
   "links": [],
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
       "panels": [],
       "repeat": "line",
@@ -38,31 +42,52 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "max": 120,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "orange", "value": 70 },
-              { "color": "yellow", "value": 90 },
-              { "color": "green", "value": 100 }
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 100
+              }
             ]
           },
           "unit": "percent"
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 5, "x": 0, "y": 1 },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
       "id": 1,
       "options": {
         "minVizHeight": 75,
         "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -94,22 +119,41 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 10 },
-              { "color": "orange", "value": 15 },
-              { "color": "red", "value": 20 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "orange",
+                "value": 15
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
             ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 2, "w": 2, "x": 5, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 0,
+        "y": 1
+      },
       "id": 2,
       "options": {
         "colorMode": "value",
@@ -118,7 +162,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -150,22 +196,41 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 30 },
-              { "color": "orange", "value": 60 },
-              { "color": "red", "value": 120 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "orange",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 120
+              }
             ]
           },
           "unit": "m"
         },
         "overrides": []
       },
-      "gridPos": { "h": 2, "w": 2, "x": 7, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 6,
+        "y": 1
+      },
       "id": 4,
       "options": {
         "colorMode": "value",
@@ -174,7 +239,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -206,16 +273,28 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "blue", "value": 0 }]
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 2, "w": 2, "x": 9, "y": 1 },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 9,
+        "y": 1
+      },
       "id": 5,
       "options": {
         "colorMode": "value",
@@ -224,7 +303,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -256,20 +337,36 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 10 },
-              { "color": "red", "value": 50 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 50
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 2, "w": 2, "x": 9, "y": 3 },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 12,
+        "y": 1
+      },
       "id": 6,
       "options": {
         "colorMode": "value",
@@ -278,7 +375,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -310,20 +409,36 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": 0 },
-              { "color": "yellow", "value": 3 },
-              { "color": "red", "value": 10 }
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 3
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 2, "w": 2, "x": 7, "y": 3 },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 15,
+        "y": 1
+      },
       "id": 7,
       "options": {
         "colorMode": "value",
@@ -332,7 +447,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -365,21 +482,85 @@
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "options": { "RUNNING": { "color": "green", "index": 0, "text": "RUN" } }, "type": "value" },
-            { "options": { "IDLE": { "color": "yellow", "index": 1, "text": "IDLE" } }, "type": "value" },
-            { "options": { "STOPPED": { "color": "orange", "index": 2, "text": "STOP" } }, "type": "value" },
-            { "options": { "MAINTENANCE": { "color": "blue", "index": 3, "text": "MAINT" } }, "type": "value" },
-            { "options": { "FAULT": { "color": "red", "index": 4, "text": "FAULT" } }, "type": "value" },
-            { "options": { "SETUP": { "color": "orange", "index": 5, "text": "SETUP" } }, "type": "value" }
+            {
+              "options": {
+                "RUNNING": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "RUN"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "IDLE": {
+                  "color": "yellow",
+                  "index": 1,
+                  "text": "IDLE"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "STOPPED": {
+                  "color": "orange",
+                  "index": 2,
+                  "text": "STOP"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "MAINTENANCE": {
+                  "color": "blue",
+                  "index": 3,
+                  "text": "MAINT"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "FAULT": {
+                  "color": "red",
+                  "index": 4,
+                  "text": "FAULT"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "SETUP": {
+                  "color": "orange",
+                  "index": 5,
+                  "text": "SETUP"
+                }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "gray", "value": 0 }]
+            "steps": [
+              {
+                "color": "gray",
+                "value": 0
+              }
+            ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 3, "w": 11, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 4,
+        "w": 18,
+        "x": 0,
+        "y": 4
+      },
       "id": 8,
       "options": {
         "colorMode": "background",
@@ -388,7 +569,9 @@
         "orientation": "auto",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "/.*/",
           "values": false
         },
@@ -416,8 +599,14 @@
           "id": "rowsToFields",
           "options": {
             "mappings": [
-              { "fieldName": "metric", "handlerKey": "field.name" },
-              { "fieldName": "state", "handlerKey": "field.value" }
+              {
+                "fieldName": "metric",
+                "handlerKey": "field.name"
+              },
+              {
+                "fieldName": "state",
+                "handlerKey": "field.value"
+              }
             ]
           }
         }
@@ -431,17 +620,29 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "blue", "value": 0 }]
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
           },
           "unit": "s"
         },
         "overrides": []
       },
-      "gridPos": { "h": 2, "w": 2, "x": 5, "y": 3 },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
       "id": 3,
       "options": {
         "colorMode": "value",
@@ -450,7 +651,9 @@
         "orientation": "horizontal",
         "percentChangeColorMode": "standard",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -477,7 +680,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
       "id": 102,
       "panels": [],
       "title": "Active Issues Requiring Attention",
@@ -490,79 +698,189 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "filterable": false,
             "inspect": false
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": 0 }]
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Duration" },
+            "matcher": {
+              "id": "byName",
+              "options": "Duration"
+            },
             "properties": [
-              { "id": "custom.width", "value": 100 },
+              {
+                "id": "custom.width",
+                "value": 100
+              },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    { "color": "green", "value": 0 },
-                    { "color": "yellow", "value": 5 },
-                    { "color": "orange", "value": 15 },
-                    { "color": "red", "value": 30 }
+                    {
+                      "color": "green",
+                      "value": 0
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 5
+                    },
+                    {
+                      "color": "orange",
+                      "value": 15
+                    },
+                    {
+                      "color": "red",
+                      "value": 30
+                    }
                   ]
                 }
               },
               {
                 "id": "custom.cellOptions",
-                "value": { "type": "color-background", "mode": "gradient" }
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
               },
-              { "id": "unit", "value": "m" }
+              {
+                "id": "unit",
+                "value": "m"
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Category" },
+            "matcher": {
+              "id": "byName",
+              "options": "Category"
+            },
             "properties": [
-              { "id": "custom.width", "value": 100 },
+              {
+                "id": "custom.width",
+                "value": 100
+              },
               {
                 "id": "mappings",
                 "value": [
-                  { "options": { "Unplanned": { "color": "red", "index": 0 } }, "type": "value" },
-                  { "options": { "Planned": { "color": "blue", "index": 1 } }, "type": "value" },
-                  { "options": { "External": { "color": "orange", "index": 2 } }, "type": "value" },
-                  { "options": { "Unknown": { "color": "gray", "index": 3 } }, "type": "value" }
+                  {
+                    "options": {
+                      "Unplanned": {
+                        "color": "red",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "Planned": {
+                        "color": "blue",
+                        "index": 1
+                      }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "External": {
+                        "color": "orange",
+                        "index": 2
+                      }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "Unknown": {
+                        "color": "gray",
+                        "index": 3
+                      }
+                    },
+                    "type": "value"
+                  }
                 ]
               },
-              { "id": "custom.cellOptions", "value": { "type": "color-text" } }
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Machine" },
-            "properties": [{ "id": "custom.width", "value": 140 }]
+            "matcher": {
+              "id": "byName",
+              "options": "Machine"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "Reason" },
-            "properties": [{ "id": "custom.width", "value": 150 }]
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 150
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "Line" },
-            "properties": [{ "id": "custom.width", "value": 100 }]
+            "matcher": {
+              "id": "byName",
+              "options": "Line"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
       "id": 9,
       "options": {
         "cellHeight": "sm",
         "showHeader": true,
-        "sortBy": [{ "displayName": "Duration", "desc": true }]
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Duration"
+          }
+        ]
       },
       "pluginVersion": "12.3.0",
       "targets": [
@@ -583,7 +901,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
       "id": 103,
       "panels": [],
       "title": "Current Order Progress",
@@ -596,46 +919,111 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
-            "cellOptions": { "type": "auto" },
+            "cellOptions": {
+              "type": "auto"
+            },
             "filterable": false,
             "inspect": false
           },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{ "color": "green", "value": 0 }]
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
           }
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Progress" },
+            "matcher": {
+              "id": "byName",
+              "options": "Progress"
+            },
             "properties": [
-              { "id": "unit", "value": "percent" },
-              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "basic" } },
-              { "id": "max", "value": 100 },
-              { "id": "custom.width", "value": 200 }
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "basic",
+                  "type": "gauge"
+                }
+              },
+              {
+                "id": "max",
+                "value": 100
+              },
+              {
+                "id": "custom.width",
+                "value": 200
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Status" },
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
             "properties": [
               {
                 "id": "mappings",
                 "value": [
-                  { "options": { "COMPLETED": { "color": "green", "index": 0 } }, "type": "value" },
-                  { "options": { "IN_PROGRESS": { "color": "blue", "index": 1 } }, "type": "value" },
-                  { "options": { "PENDING": { "color": "orange", "index": 2 } }, "type": "value" }
+                  {
+                    "options": {
+                      "COMPLETED": {
+                        "color": "green",
+                        "index": 0
+                      }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "IN_PROGRESS": {
+                        "color": "blue",
+                        "index": 1
+                      }
+                    },
+                    "type": "value"
+                  },
+                  {
+                    "options": {
+                      "PENDING": {
+                        "color": "orange",
+                        "index": 2
+                      }
+                    },
+                    "type": "value"
+                  }
                 ]
               },
-              { "id": "custom.cellOptions", "value": { "type": "color-background", "mode": "basic" } }
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "basic",
+                  "type": "color-background"
+                }
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 28 },
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
       "id": 10,
       "options": {
         "cellHeight": "sm",
@@ -662,7 +1050,12 @@
   "preload": false,
   "refresh": "10s",
   "schemaVersion": 42,
-  "tags": ["andon", "shopfloor", "line", "operator"],
+  "tags": [
+    "andon",
+    "shopfloor",
+    "line",
+    "operator"
+  ],
   "templating": {
     "list": [
       {
@@ -697,7 +1090,11 @@
         "type": "query"
       },
       {
-        "current": { "selected": false, "text": "Paris", "value": "Paris" },
+        "current": {
+          "selected": false,
+          "text": "Paris",
+          "value": "Paris"
+        },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
@@ -714,7 +1111,11 @@
       },
       {
         "allValue": "All",
-        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "${DS_POSTGRESQL}"
@@ -722,8 +1123,8 @@
         "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
         "hide": 2,
         "includeAll": true,
-        "multi": true,
         "label": "Line",
+        "multi": true,
         "name": "line",
         "options": [],
         "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
@@ -741,8 +1142,16 @@
         "label": "Time Range",
         "name": "shift_mode",
         "options": [
-          { "selected": true, "text": "Current Shift", "value": "shift" },
-          { "selected": false, "text": "Today", "value": "today" }
+          {
+            "selected": true,
+            "text": "Current Shift",
+            "value": "shift"
+          },
+          {
+            "selected": false,
+            "text": "Today",
+            "value": "today"
+          }
         ],
         "query": "Current Shift : shift, Today : today",
         "type": "custom"
@@ -764,11 +1173,13 @@
       }
     ]
   },
-  "time": { "from": "now-1h", "to": "now" },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "browser",
   "title": "Andon Board",
   "uid": "andon-board",
-  "version": 1,
   "weekStart": ""
 }

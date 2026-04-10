@@ -18,7 +18,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": null,
   "links": [],
   "panels": [
     {
@@ -299,6 +298,262 @@
         "x": 0,
         "y": 7
       },
+      "id": 102,
+      "panels": [],
+      "title": "Performance KPIs",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 60
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "green",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 8
+      },
+      "id": 30,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT get_oee('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '${workcell:raw}', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"OEE\"",
+          "refId": "A"
+        }
+      ],
+      "title": "OEE",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "yellow",
+                "value": 85
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "id": 31,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT get_performance('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '${workcell:raw}', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"Performance\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Performance",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "yellow",
+                "value": 85
+              },
+              {
+                "color": "green",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 8
+      },
+      "id": 32,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT get_availability('${enterprise}', '${site}', 'shopfloor', '${line:raw}', '${workcell:raw}', $__timeFrom()::timestamptz, $__timeTo()::timestamptz) as \"Availability\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Availability",
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
       "id": 101,
       "panels": [],
       "title": "State Timeline",
@@ -310,29 +565,76 @@
         "uid": "${DS_POSTGRESQL}"
       },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "gridPos": {
         "h": 12,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 14
       },
       "id": 20,
       "options": {
-        "add100Percentage": true,
-        "centerAlignContent": false,
-        "overflow": "visible",
         "SVGBaseFix": true,
+        "add100Percentage": true,
+        "calcsMutation": "standard",
+        "centerAlignContent": false,
+        "codeData": "{\n  \"text\": \"Random text\"\n}",
         "cspPolicies": {
-          "style": "'unsafe-inline'",
-          "script": "'unsafe-eval' 'unsafe-inline'"
+          "script": "'unsafe-eval' 'unsafe-inline'",
+          "style": "'unsafe-inline'"
         },
-        "html": "<div class=\"tl-container\">\n  <div class=\"tl-rows\"></div>\n  <div class=\"tl-axis\"></div>\n  <div class=\"tl-legend\"></div>\n  <div class=\"tl-tooltip\"></div>\n  <div class=\"tl-selection\">\n    <div class=\"tl-sel-info\">Click an unclassified stop to classify it</div>\n    <div class=\"tl-sel-buttons\"></div>\n  </div>\n</div>",
         "css": "* { box-sizing: border-box; }\n.tl-container { padding:8px; font-family:Inter,-apple-system,sans-serif; height:100%; width:100%; display:flex; flex-direction:column; color:#e0e0e0; position:relative; overflow:hidden; }\n.tl-rows { flex:1; overflow-y:auto; }\n.tl-row { display:flex; align-items:center; margin-bottom:3px; }\n.tl-label { width:160px; font-size:11px; color:#ccc; text-align:right; padding-right:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }\n.tl-bar { flex:1; height:48px; position:relative; background:#1a1a2e; border-radius:4px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.3); }\n.tl-seg { position:absolute; top:0; height:100%; transition:opacity 0.15s; cursor:default; }\n.tl-seg:hover { opacity:0.8; }\n.tl-unclass { position:absolute; top:0; height:100%; cursor:pointer; border:2px dashed #ff4500; border-radius:2px; background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,69,0,0.35) 3px,rgba(255,69,0,0.35) 6px); z-index:2; transition:border-color 0.2s; }\n.tl-unclass:hover { border-color:#ff6347; }\n.tl-unclass.selected { border-color:#3b82f6; box-shadow:0 0 8px rgba(59,130,246,0.5); }\n.tl-axis { display:flex; justify-content:space-between; padding:4px 0 0 160px; font-size:10px; color:#888; flex-shrink:0; }\n.tl-legend { display:flex; flex-wrap:wrap; gap:12px; padding:6px 0 0 0; flex-shrink:0; }\n.tl-legend-item { display:flex; align-items:center; gap:4px; font-size:11px; color:#ccc; }\n.tl-legend-dot { width:12px; height:12px; border-radius:3px; }\n.tl-tooltip { display:none; position:absolute; background:#252538; border:1px solid #444; border-radius:6px; padding:10px 14px; z-index:1000; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.4); white-space:nowrap; }\n.tl-selection { flex-shrink:0; margin-top:8px; padding:10px 12px; background:#1a1a2e; border-radius:6px; border:1px solid #333; min-height:44px; }\n.tl-sel-info { font-size:12px; color:#888; }\n.tl-sel-info.active { color:#e0e0e0; }\n.tl-sel-info .sel-label { color:#888; font-size:11px; }\n.tl-sel-info .sel-value { color:#e0e0e0; font-weight:500; }\n.tl-sel-info .sel-stop-id { color:#3b82f6; font-weight:600; }\n.tl-sel-buttons { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }\n.tl-sel-buttons:empty { display:none; margin-top:0; }\n.tl-reason-btn { padding:6px 14px; border:1px solid #555; border-radius:16px; background:#252538; color:#e0e0e0; font-size:12px; cursor:pointer; transition:all 0.15s; white-space:nowrap; }\n.tl-reason-btn:hover { background:#3b82f6; border-color:#3b82f6; color:#fff; }\n.tl-reason-btn.saving { opacity:0.5; pointer-events:none; }\n.tl-toggle-wrap { display:flex; align-items:center; gap:8px; margin-left:auto; cursor:pointer; user-select:none; }\n.tl-toggle-input { display:none; }\n.tl-toggle-slider { width:36px; height:20px; border-radius:10px; background:#555; position:relative; transition:background 0.2s; flex-shrink:0; }\n.tl-toggle-slider::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#ccc; transition:transform 0.2s; }\n.tl-toggle-input:checked + .tl-toggle-slider { background:#ff4500; }\n.tl-toggle-input:checked + .tl-toggle-slider::after { transform:translateX(16px); background:#fff; }\n.tl-toggle-label { font-size:11px; color:#ccc; }",
+        "dynamicData": false,
+        "dynamicFieldDisplayValues": false,
+        "dynamicHtmlGraphics": false,
+        "dynamicProps": false,
+        "html": "<div class=\"tl-container\">\n  <div class=\"tl-rows\"></div>\n  <div class=\"tl-axis\"></div>\n  <div class=\"tl-legend\"></div>\n  <div class=\"tl-tooltip\"></div>\n  <div class=\"tl-selection\">\n    <div class=\"tl-sel-info\">Click an unclassified stop to classify it</div>\n    <div class=\"tl-sel-buttons\"></div>\n  </div>\n</div>",
         "onInit": "var STATE_COLORS = {\n  'RUNNING': '#73BF69', 'IDLE': '#FADE2A', 'STOPPED': '#FF9830',\n  'MAINTENANCE': '#5794F2', 'FAULT': '#F2495C', 'SETUP': '#B877D9',\n  'PLANNED STOP': '#5794F2', 'UNPLANNED STOP': '#F2495C'\n};\nhtmlNode._STATE_COLORS = STATE_COLORS;\nhtmlNode._state = { selectedStopId: null, selectedStopData: null, machines: {}, unclassified: [], classifiedStops: [], stopReasons: [], tMin: 0, tMax: 0, filterUnclassified: false };\nhtmlNode._formatTime = function(ms) { var d = new Date(ms); return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); };\nhtmlNode._formatDuration = function(ms) { var h = Math.floor(ms / 3600000); var m = Math.floor((ms % 3600000) / 60000); var s = Math.floor((ms % 60000) / 1000); if (h > 0) return h + 'h ' + m + 'm'; if (m > 0) return m + 'm ' + s + 's'; return s + 's'; };\nhtmlNode._dsUid = null;\nvar container = htmlNode.querySelector('.tl-container');\nvar tooltip = htmlNode.querySelector('.tl-tooltip');\nvar selInfo = htmlNode.querySelector('.tl-sel-info');\nvar selButtons = htmlNode.querySelector('.tl-sel-buttons');\nfunction clearSelection() {\n  var state = htmlNode._state;\n  state.selectedStopId = null;\n  state.selectedStopData = null;\n  htmlNode.querySelectorAll('.tl-unclass.selected').forEach(function(u) { u.classList.remove('selected'); u.style.borderColor = '#ff4500'; });\n  selInfo.className = 'tl-sel-info';\n  selInfo.textContent = 'Click an unclassified stop to classify it';\n  selButtons.innerHTML = '';\n}\nhtmlNode._clearSelection = clearSelection;\ncontainer.addEventListener('mousemove', function(e) {\n  var uc = e.target.closest('.tl-unclass');\n  var seg = e.target.closest('.tl-seg');\n  if (!seg && !uc) { tooltip.style.display = 'none'; return; }\n  var html = '';\n  if (uc) {\n    var stopId = uc.dataset.stopId;\n    var s = parseInt(uc.dataset.start);\n    var en = parseInt(uc.dataset.visualEnd || uc.dataset.start);\n    html = '<div style=\"font-weight:600;color:#ff4500;\">Unclassified Stop #' + stopId + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + uc.dataset.machine + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + htmlNode._formatTime(s) + ' - ' + htmlNode._formatTime(en) + '</div>' +\n      '<div style=\"color:#888;font-size:10px;\">' + htmlNode._formatDuration(en - s) + '</div>' +\n      '<div style=\"color:#3b82f6;font-size:10px;margin-top:4px;\">Click to assign reason</div>';\n  } else {\n    var st = seg.dataset.state;\n    var s = parseInt(seg.dataset.start);\n    var en = parseInt(seg.dataset.end);\n    html = '<div style=\"font-weight:600;color:' + (STATE_COLORS[st] || '#fff') + ';\">' + st + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + seg.dataset.machine + '</div>' +\n      '<div style=\"color:#aaa;font-size:11px;\">' + htmlNode._formatTime(s) + ' - ' + htmlNode._formatTime(en) + '</div>' +\n      '<div style=\"color:#888;font-size:10px;\">' + htmlNode._formatDuration(en - s) + '</div>';\n    var classified = htmlNode._state.classifiedStops;\n    for (var ci = 0; ci < classified.length; ci++) {\n      var cs = classified[ci];\n      if (cs.start >= s && cs.start < en) {\n        html += '<div style=\"color:#22c55e;font-size:11px;margin-top:4px;\">Stop #' + cs.id + ': ' + cs.reason + '</div>';\n      }\n    }\n  }\n  tooltip.innerHTML = html;\n  tooltip.style.display = 'block';\n  var rect = container.getBoundingClientRect();\n  var tx = e.clientX - rect.left + 12;\n  var ty = e.clientY - rect.top + 12;\n  if (tx + 200 > rect.width) tx = e.clientX - rect.left - 200;\n  if (ty + 100 > rect.height) ty = e.clientY - rect.top - 100;\n  tooltip.style.left = tx + 'px';\n  tooltip.style.top = ty + 'px';\n});\ncontainer.addEventListener('mouseleave', function() { tooltip.style.display = 'none'; });\ncontainer.addEventListener('click', function(e) {\n  var uc = e.target.closest('.tl-unclass');\n  if (e.target.closest('.tl-reason-btn') || e.target.closest('.tl-sel-buttons') || e.target.closest('.tl-sel-info') || e.target.closest('.tl-toggle-wrap')) return;\n  if (!uc) { clearSelection(); return; }\n  e.stopPropagation();\n  var state = htmlNode._state;\n  var stopId = parseInt(uc.dataset.stopId);\n  var machine = uc.dataset.machine;\n  var startMs = parseInt(uc.dataset.start);\n  var endMs = parseInt(uc.dataset.visualEnd || Date.now());\n  state.selectedStopId = stopId;\n  state.selectedStopData = { id: stopId, machine: machine, start: startMs, end: endMs };\n  htmlNode.querySelectorAll('.tl-unclass').forEach(function(u) {\n    if (parseInt(u.dataset.stopId) === stopId) { u.classList.add('selected'); u.style.borderColor = '#3b82f6'; }\n    else { u.classList.remove('selected'); u.style.borderColor = '#ff4500'; }\n  });\n  selInfo.className = 'tl-sel-info active';\n  selInfo.innerHTML = '<span class=\"sel-stop-id\">Stop #' + stopId + '</span>' +\n    '&nbsp;&nbsp;<span class=\"sel-label\">Machine:</span> <span class=\"sel-value\">' + machine + '</span>' +\n    '&nbsp;&nbsp;<span class=\"sel-label\">Time:</span> <span class=\"sel-value\">' + htmlNode._formatTime(startMs) + ' - ' + htmlNode._formatTime(endMs) + '</span>' +\n    '&nbsp;&nbsp;<span class=\"sel-label\">Duration:</span> <span class=\"sel-value\">' + htmlNode._formatDuration(endMs - startMs) + '</span>';\n  selButtons.innerHTML = '';\n  state.stopReasons.forEach(function(r) {\n    var btn = document.createElement('button');\n    btn.className = 'tl-reason-btn';\n    btn.textContent = r.name;\n    btn.dataset.reasonId = r.id;\n    btn.dataset.reasonName = r.name;\n    btn.addEventListener('click', function(ev) {\n      ev.stopPropagation();\n      var rid = Number(btn.dataset.reasonId);\n      var rname = btn.dataset.reasonName;\n      btn.classList.add('saving');\n      btn.textContent = 'Saving...';\n      var dsUid = htmlNode._dsUid || '${DS_POSTGRESQL}';\n      fetch('/api/ds/query', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ queries: [{ refId: 'A', datasource: { uid: dsUid }, rawSql: 'UPDATE machine_stops SET stop_reason_id = ' + rid + ' WHERE id = ' + stopId, format: 'table', rawQuery: true }], from: 'now-1h', to: 'now' })\n      }).then(function(resp) {\n        if (resp.ok) {\n          state.unclassified = state.unclassified.filter(function(s) { return s.id !== stopId; });\n          state.classifiedStops.push({ id: stopId, start: startMs, end: endMs, reason: rname });\n          var overlay = htmlNode.querySelector('.tl-unclass[data-stop-id=\"' + stopId + '\"]');\n          if (overlay) overlay.remove();\n          clearSelection();\n        } else {\n          btn.classList.remove('saving');\n          btn.textContent = rname;\n        }\n      }).catch(function() {\n        btn.classList.remove('saving');\n        btn.textContent = rname;\n      });\n    });\n    selButtons.appendChild(btn);\n  });\n});",
-        "onRender": "var state = htmlNode._state;\nvar STATE_COLORS = htmlNode._STATE_COLORS;\nvar formatTime = htmlNode._formatTime;\nvar rowsDiv = htmlNode.querySelector('.tl-rows');\nvar axisDiv = htmlNode.querySelector('.tl-axis');\nvar legendDiv = htmlNode.querySelector('.tl-legend');\nif (!data || !data.series || !data.series.length) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No data</div>'; return; }\nvar seriesA = data.series[0];\nif (!seriesA || !seriesA.fields) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No timeline data</div>'; return; }\nvar timeField = seriesA.fields.find(function(f) { return f.name === 'time'; });\nvar valueField = seriesA.fields.find(function(f) { return f.name === 'value'; });\nvar metricField = seriesA.fields.find(function(f) { return f.name === 'metric'; });\nif (!timeField || !valueField || !metricField) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">Missing fields</div>'; return; }\ntry { if (data.request && data.request.targets && data.request.targets[0] && data.request.targets[0].datasource) { htmlNode._dsUid = data.request.targets[0].datasource.uid; } } catch(e) {}\nvar newUnclassified = [];\nif (data.series.length > 1 && data.series[1] && data.series[1].fields) {\n  var dB = data.series[1];\n  var idF = dB.fields.find(function(f) { return f.name === 'id'; });\n  var stF = dB.fields.find(function(f) { return f.name === 'start_time'; });\n  var enF = dB.fields.find(function(f) { return f.name === 'end_time'; });\n  var wcF = dB.fields.find(function(f) { return f.name === 'workcell'; });\n  if (idF && stF && wcF) {\n    for (var bi = 0; bi < idF.values.length; bi++) {\n      var rawEnd = enF ? enF.values[bi] : null;\n      var endMs = (rawEnd && rawEnd !== '' && rawEnd !== null) ? new Date(rawEnd).getTime() : 0;\n      if (isNaN(endMs) || endMs < 1000000000000) endMs = 0;\n      newUnclassified.push({ id: idF.values[bi], start: new Date(stF.values[bi]).getTime(), end: endMs, workcell: wcF.values[bi] });\n    }\n  }\n}\nvar classifiedIds = {};\nstate.classifiedStops.forEach(function(c) { classifiedIds[c.id] = true; });\nstate.unclassified = newUnclassified.filter(function(s) { return !classifiedIds[s.id]; });\nstate.stopReasons = [];\nif (data.series.length > 2 && data.series[2] && data.series[2].fields) {\n  var dC = data.series[2];\n  var riF = dC.fields.find(function(f) { return f.name === 'id'; });\n  var rnF = dC.fields.find(function(f) { return f.name === 'name'; });\n  if (riF && rnF) { for (var ci = 0; ci < riF.values.length; ci++) { state.stopReasons.push({ id: riF.values[ci], name: rnF.values[ci] }); } }\n}\nif (data.series.length > 3 && data.series[3] && data.series[3].fields) {\n  var dD = data.series[3];\n  var diF = dD.fields.find(function(f) { return f.name === 'id'; });\n  var dsF = dD.fields.find(function(f) { return f.name === 'start_time'; });\n  var deF = dD.fields.find(function(f) { return f.name === 'end_time'; });\n  var drF = dD.fields.find(function(f) { return f.name === 'reason'; });\n  if (diF && dsF && drF) {\n    var dbClassified = {};\n    for (var di = 0; di < diF.values.length; di++) {\n      var cid = diF.values[di];\n      dbClassified[cid] = { id: cid, start: new Date(dsF.values[di]).getTime(), end: deF && deF.values[di] ? new Date(deF.values[di]).getTime() : 0, reason: drF.values[di] };\n    }\n    state.classifiedStops.forEach(function(c) { dbClassified[c.id] = c; });\n    state.classifiedStops = [];\n    for (var k in dbClassified) { state.classifiedStops.push(dbClassified[k]); }\n  }\n}\nvar machines = {};\nfor (var i = 0; i < timeField.values.length; i++) {\n  var m = metricField.values[i];\n  if (!machines[m]) machines[m] = [];\n  machines[m].push({ time: new Date(timeField.values[i]).getTime(), value: valueField.values[i] });\n}\nfor (var mk in machines) { machines[mk].sort(function(a, b) { return a.time - b.time; }); }\nvar allTimes = [];\nfor (var mk in machines) { machines[mk].forEach(function(d) { allTimes.push(d.time); }); }\nif (!allTimes.length) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No data</div>'; return; }\nstate.machines = machines;\nstate.tMin = Math.min.apply(null, allTimes);\nstate.tMax = Math.max.apply(null, allTimes.concat([Date.now()]));\nhtmlNode._buildUI = function() {\n  var st = htmlNode._state;\n  var SC = htmlNode._STATE_COLORS;\n  var fTime = htmlNode._formatTime;\n  var rd = htmlNode.querySelector('.tl-rows');\n  var ad = htmlNode.querySelector('.tl-axis');\n  var ld = htmlNode.querySelector('.tl-legend');\n  var mc = st.machines;\n  var tMin = st.tMin;\n  var tMax = st.tMax;\n  var tRange = tMax - tMin || 1;\n  rd.innerHTML = '';\n  var usedStates = {};\n  var sortedMachines = Object.keys(mc).sort();\n  for (var mi = 0; mi < sortedMachines.length; mi++) {\n    var machine = sortedMachines[mi];\n    var points = mc[machine];\n    var machineStops = st.unclassified.filter(function(s) { return s.workcell === machine; });\n    machineStops.sort(function(a, b) { return a.start - b.start; });\n    if (st.filterUnclassified && !machineStops.length) continue;\n    var row = document.createElement('div'); row.className = 'tl-row';\n    var label = document.createElement('div'); label.className = 'tl-label'; label.textContent = machine; row.appendChild(label);\n    var bar = document.createElement('div'); bar.className = 'tl-bar'; bar.dataset.machine = machine;\n    if (st.filterUnclassified) {\n      var stopsData = [];\n      for (var si = 0; si < machineStops.length; si++) {\n        var stop = machineStops[si];\n        var ve = stop.end > 0 ? stop.end : 0;\n        if (!ve) { for (var vi = 0; vi < points.length; vi++) { if (points[vi].time > stop.start && points[vi].value === 'RUNNING') { ve = points[vi].time; break; } } }\n        if (!ve || ve <= stop.start) ve = stop.start + 60000;\n        if (si + 1 < machineStops.length && ve > machineStops[si + 1].start) ve = machineStops[si + 1].start;\n        if (ve <= stop.start) ve = stop.start + 10000;\n        stopsData.push({ stop: stop, visualEnd: ve, duration: ve - stop.start });\n      }\n      var totalDur = 0;\n      for (var si = 0; si < stopsData.length; si++) totalDur += stopsData[si].duration;\n      if (totalDur === 0) totalDur = 1;\n      var gapPct = stopsData.length > 1 ? 0.5 : 0;\n      var totalGapPct = gapPct * (stopsData.length - 1);\n      var availPct = 100 - totalGapPct;\n      var leftPos = 0;\n      for (var si = 0; si < stopsData.length; si++) {\n        var sd = stopsData[si];\n        var widthPct = (sd.duration / totalDur) * availPct;\n        var overlay = document.createElement('div');\n        overlay.className = 'tl-unclass' + (st.selectedStopId === sd.stop.id ? ' selected' : '');\n        overlay.style.left = leftPos + '%'; overlay.style.width = widthPct + '%';\n        if (st.selectedStopId === sd.stop.id) overlay.style.borderColor = '#3b82f6';\n        overlay.dataset.stopId = sd.stop.id; overlay.dataset.start = sd.stop.start; overlay.dataset.visualEnd = sd.visualEnd; overlay.dataset.machine = machine;\n        bar.appendChild(overlay);\n        leftPos += widthPct + gapPct;\n      }\n    } else {\n      for (var pi = 0; pi < points.length; pi++) {\n        var segStart = points[pi].time;\n        var segEnd = pi + 1 < points.length ? points[pi + 1].time : tMax;\n        var leftPct = ((segStart - tMin) / tRange) * 100;\n        var widthPct = ((segEnd - segStart) / tRange) * 100;\n        if (widthPct < 0.05) continue;\n        usedStates[points[pi].value] = true;\n        var seg = document.createElement('div'); seg.className = 'tl-seg';\n        seg.style.left = leftPct + '%'; seg.style.width = widthPct + '%';\n        seg.style.background = SC[points[pi].value] || '#6b7280';\n        seg.dataset.state = points[pi].value; seg.dataset.start = segStart; seg.dataset.end = segEnd; seg.dataset.machine = machine;\n        bar.appendChild(seg);\n      }\n      for (var si = 0; si < machineStops.length; si++) {\n        var stop = machineStops[si];\n        var visualEnd = stop.end > 0 ? stop.end : 0;\n        if (!visualEnd) { for (var vi = 0; vi < points.length; vi++) { if (points[vi].time > stop.start && points[vi].value === 'RUNNING') { visualEnd = points[vi].time; break; } } }\n        if (!visualEnd || visualEnd <= stop.start) visualEnd = stop.start + 60000;\n        if (si + 1 < machineStops.length && visualEnd > machineStops[si + 1].start) visualEnd = machineStops[si + 1].start;\n        if (visualEnd <= stop.start) visualEnd = stop.start + 10000;\n        var oLeft = ((Math.max(stop.start, tMin) - tMin) / tRange) * 100;\n        var oWidth = ((Math.min(visualEnd, tMax) - Math.max(stop.start, tMin)) / tRange) * 100;\n        if (oWidth < 0.3) oWidth = 0.3;\n        var overlay = document.createElement('div');\n        overlay.className = 'tl-unclass' + (st.selectedStopId === stop.id ? ' selected' : '');\n        overlay.style.left = oLeft + '%'; overlay.style.width = oWidth + '%';\n        if (st.selectedStopId === stop.id) overlay.style.borderColor = '#3b82f6';\n        overlay.dataset.stopId = stop.id; overlay.dataset.start = stop.start; overlay.dataset.visualEnd = visualEnd; overlay.dataset.machine = machine;\n        bar.appendChild(overlay);\n      }\n    }\n    row.appendChild(bar); rd.appendChild(row);\n  }\n  ad.innerHTML = '';\n  if (!st.filterUnclassified) {\n    for (var ai = 0; ai <= 5; ai++) { var span = document.createElement('span'); span.textContent = fTime(tMin + (tRange * ai / 5)); ad.appendChild(span); }\n  }\n  ld.innerHTML = '';\n  if (!st.filterUnclassified) {\n    var stateKeys = Object.keys(usedStates);\n    for (var li = 0; li < stateKeys.length; li++) {\n      var s = stateKeys[li]; var item = document.createElement('div'); item.className = 'tl-legend-item';\n      var dot = document.createElement('div'); dot.className = 'tl-legend-dot'; dot.style.background = SC[s] || '#6b7280';\n      item.appendChild(dot); item.appendChild(document.createTextNode(s)); ld.appendChild(item);\n    }\n  }\n  if (st.unclassified.length > 0) {\n    var ucItem = document.createElement('div'); ucItem.className = 'tl-legend-item';\n    var ucDot = document.createElement('div'); ucDot.className = 'tl-legend-dot';\n    ucDot.style.cssText = 'border:2px dashed #ff4500;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(255,69,0,0.35) 2px,rgba(255,69,0,0.35) 4px);';\n    ucItem.appendChild(ucDot); ucItem.appendChild(document.createTextNode('Unclassified (' + st.unclassified.length + ')')); ld.appendChild(ucItem);\n    var tw = document.createElement('label'); tw.className = 'tl-toggle-wrap';\n    var ti = document.createElement('input'); ti.type = 'checkbox'; ti.className = 'tl-toggle-input'; ti.checked = st.filterUnclassified;\n    var ts = document.createElement('span'); ts.className = 'tl-toggle-slider';\n    var tl = document.createElement('span'); tl.className = 'tl-toggle-label'; tl.textContent = 'Unclassified only';\n    tw.appendChild(ti); tw.appendChild(ts); tw.appendChild(tl);\n    ti.addEventListener('change', function() { st.filterUnclassified = this.checked; htmlNode._buildUI(); });\n    ld.appendChild(tw);\n  }\n  if (st.selectedStopId && st.selectedStopData) {\n    var stillExists = st.unclassified.some(function(s) { return s.id === st.selectedStopId; });\n    if (!stillExists) { htmlNode._clearSelection(); }\n  }\n};\nhtmlNode._buildUI();"
+        "onInitOnResize": false,
+        "onRender": "var state = htmlNode._state;\nvar STATE_COLORS = htmlNode._STATE_COLORS;\nvar formatTime = htmlNode._formatTime;\nvar rowsDiv = htmlNode.querySelector('.tl-rows');\nvar axisDiv = htmlNode.querySelector('.tl-axis');\nvar legendDiv = htmlNode.querySelector('.tl-legend');\nif (!data || !data.series || !data.series.length) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No data</div>'; return; }\nvar seriesA = data.series[0];\nif (!seriesA || !seriesA.fields) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No timeline data</div>'; return; }\nvar timeField = seriesA.fields.find(function(f) { return f.name === 'time'; });\nvar valueField = seriesA.fields.find(function(f) { return f.name === 'value'; });\nvar metricField = seriesA.fields.find(function(f) { return f.name === 'metric'; });\nif (!timeField || !valueField || !metricField) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">Missing fields</div>'; return; }\ntry { if (data.request && data.request.targets && data.request.targets[0] && data.request.targets[0].datasource) { htmlNode._dsUid = data.request.targets[0].datasource.uid; } } catch(e) {}\nvar newUnclassified = [];\nif (data.series.length > 1 && data.series[1] && data.series[1].fields) {\n  var dB = data.series[1];\n  var idF = dB.fields.find(function(f) { return f.name === 'id'; });\n  var stF = dB.fields.find(function(f) { return f.name === 'start_time'; });\n  var enF = dB.fields.find(function(f) { return f.name === 'end_time'; });\n  var wcF = dB.fields.find(function(f) { return f.name === 'workcell'; });\n  if (idF && stF && wcF) {\n    for (var bi = 0; bi < idF.values.length; bi++) {\n      var rawEnd = enF ? enF.values[bi] : null;\n      var endMs = (rawEnd && rawEnd !== '' && rawEnd !== null) ? new Date(rawEnd).getTime() : 0;\n      if (isNaN(endMs) || endMs < 1000000000000) endMs = 0;\n      newUnclassified.push({ id: idF.values[bi], start: new Date(stF.values[bi]).getTime(), end: endMs, workcell: wcF.values[bi] });\n    }\n  }\n}\nvar classifiedIds = {};\nstate.classifiedStops.forEach(function(c) { classifiedIds[c.id] = true; });\nstate.unclassified = newUnclassified.filter(function(s) { return !classifiedIds[s.id]; });\nstate.stopReasons = [];\nif (data.series.length > 2 && data.series[2] && data.series[2].fields) {\n  var dC = data.series[2];\n  var riF = dC.fields.find(function(f) { return f.name === 'id'; });\n  var rnF = dC.fields.find(function(f) { return f.name === 'name'; });\n  if (riF && rnF) { for (var ci = 0; ci < riF.values.length; ci++) { state.stopReasons.push({ id: riF.values[ci], name: rnF.values[ci] }); } }\n}\nif (data.series.length > 3 && data.series[3] && data.series[3].fields) {\n  var dD = data.series[3];\n  var diF = dD.fields.find(function(f) { return f.name === 'id'; });\n  var dsF = dD.fields.find(function(f) { return f.name === 'start_time'; });\n  var deF = dD.fields.find(function(f) { return f.name === 'end_time'; });\n  var drF = dD.fields.find(function(f) { return f.name === 'reason'; });\n  if (diF && dsF && drF) {\n    var dbClassified = {};\n    for (var di = 0; di < diF.values.length; di++) {\n      var cid = diF.values[di];\n      dbClassified[cid] = { id: cid, start: new Date(dsF.values[di]).getTime(), end: deF && deF.values[di] ? new Date(deF.values[di]).getTime() : 0, reason: drF.values[di] };\n    }\n    state.classifiedStops.forEach(function(c) { dbClassified[c.id] = c; });\n    state.classifiedStops = [];\n    for (var k in dbClassified) { state.classifiedStops.push(dbClassified[k]); }\n  }\n}\nvar machines = {};\nfor (var i = 0; i < timeField.values.length; i++) {\n  var m = metricField.values[i];\n  if (!machines[m]) machines[m] = [];\n  machines[m].push({ time: new Date(timeField.values[i]).getTime(), value: valueField.values[i] });\n}\nfor (var mk in machines) { machines[mk].sort(function(a, b) { return a.time - b.time; }); }\nvar allTimes = [];\nfor (var mk in machines) { machines[mk].forEach(function(d) { allTimes.push(d.time); }); }\nif (!allTimes.length) { rowsDiv.innerHTML = '<div style=\"color:#888;padding:20px;\">No data</div>'; return; }\nstate.machines = machines;\nstate.tMin = Math.min.apply(null, allTimes);\nstate.tMax = Math.max.apply(null, allTimes.concat([Date.now()]));\nhtmlNode._buildUI = function() {\n  var st = htmlNode._state;\n  var SC = htmlNode._STATE_COLORS;\n  var fTime = htmlNode._formatTime;\n  var rd = htmlNode.querySelector('.tl-rows');\n  var ad = htmlNode.querySelector('.tl-axis');\n  var ld = htmlNode.querySelector('.tl-legend');\n  var mc = st.machines;\n  var tMin = st.tMin;\n  var tMax = st.tMax;\n  var tRange = tMax - tMin || 1;\n  rd.innerHTML = '';\n  var usedStates = {};\n  var sortedMachines = Object.keys(mc).sort();\n  for (var mi = 0; mi < sortedMachines.length; mi++) {\n    var machine = sortedMachines[mi];\n    var points = mc[machine];\n    var machineStops = st.unclassified.filter(function(s) { return s.workcell === machine; });\n    machineStops.sort(function(a, b) { return a.start - b.start; });\n    if (st.filterUnclassified && !machineStops.length) continue;\n    var row = document.createElement('div'); row.className = 'tl-row';\n    var label = document.createElement('div'); label.className = 'tl-label'; label.textContent = machine; row.appendChild(label);\n    var bar = document.createElement('div'); bar.className = 'tl-bar'; bar.dataset.machine = machine;\n    if (st.filterUnclassified) {\n      var stopsData = [];\n      for (var si = 0; si < machineStops.length; si++) {\n        var stop = machineStops[si];\n        var ve = stop.end > 0 ? stop.end : 0;\n        if (!ve) { for (var vi = 0; vi < points.length; vi++) { if (points[vi].time > stop.start && points[vi].value === 'RUNNING') { ve = points[vi].time; break; } } }\n        if (!ve || ve <= stop.start) ve = stop.start + 60000;\n        if (si + 1 < machineStops.length && ve > machineStops[si + 1].start) ve = machineStops[si + 1].start;\n        if (ve <= stop.start) ve = stop.start + 10000;\n        stopsData.push({ stop: stop, visualEnd: ve, duration: ve - stop.start });\n      }\n      var totalDur = 0;\n      for (var si = 0; si < stopsData.length; si++) totalDur += stopsData[si].duration;\n      if (totalDur === 0) totalDur = 1;\n      var gapPct = stopsData.length > 1 ? 0.5 : 0;\n      var totalGapPct = gapPct * (stopsData.length - 1);\n      var availPct = 100 - totalGapPct;\n      var leftPos = 0;\n      for (var si = 0; si < stopsData.length; si++) {\n        var sd = stopsData[si];\n        var widthPct = (sd.duration / totalDur) * availPct;\n        var overlay = document.createElement('div');\n        overlay.className = 'tl-unclass' + (st.selectedStopId === sd.stop.id ? ' selected' : '');\n        overlay.style.left = leftPos + '%'; overlay.style.width = widthPct + '%';\n        if (st.selectedStopId === sd.stop.id) overlay.style.borderColor = '#3b82f6';\n        overlay.dataset.stopId = sd.stop.id; overlay.dataset.start = sd.stop.start; overlay.dataset.visualEnd = sd.visualEnd; overlay.dataset.machine = machine;\n        bar.appendChild(overlay);\n        leftPos += widthPct + gapPct;\n      }\n    } else {\n      for (var pi = 0; pi < points.length; pi++) {\n        var segStart = points[pi].time;\n        var segEnd = pi + 1 < points.length ? points[pi + 1].time : tMax;\n        var leftPct = ((segStart - tMin) / tRange) * 100;\n        var widthPct = ((segEnd - segStart) / tRange) * 100;\n        if (widthPct < 0.05) continue;\n        usedStates[points[pi].value] = true;\n        var seg = document.createElement('div'); seg.className = 'tl-seg';\n        seg.style.left = leftPct + '%'; seg.style.width = widthPct + '%';\n        seg.style.background = SC[points[pi].value] || '#6b7280';\n        seg.dataset.state = points[pi].value; seg.dataset.start = segStart; seg.dataset.end = segEnd; seg.dataset.machine = machine;\n        bar.appendChild(seg);\n      }\n      for (var si = 0; si < machineStops.length; si++) {\n        var stop = machineStops[si];\n        var visualEnd = stop.end > 0 ? stop.end : 0;\n        if (!visualEnd) { for (var vi = 0; vi < points.length; vi++) { if (points[vi].time > stop.start && points[vi].value === 'RUNNING') { visualEnd = points[vi].time; break; } } }\n        if (!visualEnd || visualEnd <= stop.start) visualEnd = stop.start + 60000;\n        if (si + 1 < machineStops.length && visualEnd > machineStops[si + 1].start) visualEnd = machineStops[si + 1].start;\n        if (visualEnd <= stop.start) visualEnd = stop.start + 10000;\n        var oLeft = ((Math.max(stop.start, tMin) - tMin) / tRange) * 100;\n        var oWidth = ((Math.min(visualEnd, tMax) - Math.max(stop.start, tMin)) / tRange) * 100;\n        if (oWidth < 0.3) oWidth = 0.3;\n        var overlay = document.createElement('div');\n        overlay.className = 'tl-unclass' + (st.selectedStopId === stop.id ? ' selected' : '');\n        overlay.style.left = oLeft + '%'; overlay.style.width = oWidth + '%';\n        if (st.selectedStopId === stop.id) overlay.style.borderColor = '#3b82f6';\n        overlay.dataset.stopId = stop.id; overlay.dataset.start = stop.start; overlay.dataset.visualEnd = visualEnd; overlay.dataset.machine = machine;\n        bar.appendChild(overlay);\n      }\n    }\n    row.appendChild(bar); rd.appendChild(row);\n  }\n  ad.innerHTML = '';\n  if (!st.filterUnclassified) {\n    for (var ai = 0; ai <= 5; ai++) { var span = document.createElement('span'); span.textContent = fTime(tMin + (tRange * ai / 5)); ad.appendChild(span); }\n  }\n  ld.innerHTML = '';\n  if (!st.filterUnclassified) {\n    var stateKeys = Object.keys(usedStates);\n    for (var li = 0; li < stateKeys.length; li++) {\n      var s = stateKeys[li]; var item = document.createElement('div'); item.className = 'tl-legend-item';\n      var dot = document.createElement('div'); dot.className = 'tl-legend-dot'; dot.style.background = SC[s] || '#6b7280';\n      item.appendChild(dot); item.appendChild(document.createTextNode(s)); ld.appendChild(item);\n    }\n  }\n  if (st.unclassified.length > 0) {\n    var ucItem = document.createElement('div'); ucItem.className = 'tl-legend-item';\n    var ucDot = document.createElement('div'); ucDot.className = 'tl-legend-dot';\n    ucDot.style.cssText = 'border:2px dashed #ff4500;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(255,69,0,0.35) 2px,rgba(255,69,0,0.35) 4px);';\n    ucItem.appendChild(ucDot); ucItem.appendChild(document.createTextNode('Unclassified (' + st.unclassified.length + ')')); ld.appendChild(ucItem);\n    var tw = document.createElement('label'); tw.className = 'tl-toggle-wrap';\n    var ti = document.createElement('input'); ti.type = 'checkbox'; ti.className = 'tl-toggle-input'; ti.checked = st.filterUnclassified;\n    var ts = document.createElement('span'); ts.className = 'tl-toggle-slider';\n    var tl = document.createElement('span'); tl.className = 'tl-toggle-label'; tl.textContent = 'Unclassified only';\n    tw.appendChild(ti); tw.appendChild(ts); tw.appendChild(tl);\n    ti.addEventListener('change', function() { st.filterUnclassified = this.checked; htmlNode._buildUI(); });\n    ld.appendChild(tw);\n  }\n  if (st.selectedStopId && st.selectedStopData) {\n    var stillExists = st.unclassified.some(function(s) { return s.id === st.selectedStopId; });\n    if (!stillExists) { htmlNode._clearSelection(); }\n  }\n};\nhtmlNode._buildUI();",
+        "overflow": "visible",
+        "panelupdateOnMount": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull",
+            "last",
+            "firstNotNull",
+            "first",
+            "min",
+            "max",
+            "mean",
+            "sum",
+            "count",
+            "range",
+            "delta",
+            "step",
+            "diff",
+            "logmin",
+            "allIsZero",
+            "allIsNull",
+            "diffperc"
+          ]
+        },
+        "renderOnMount": true,
+        "rootCSS": "",
+        "useGrafanaScrollbar": true
       },
       "pluginVersion": "2.2.3",
       "targets": [
@@ -412,7 +714,6 @@
       },
       {
         "current": {
-          "selected": false,
           "text": "UMH-factory",
           "value": "UMH-factory"
         },
@@ -421,7 +722,6 @@
           "uid": "${DS_POSTGRESQL}"
         },
         "definition": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
-        "hide": 0,
         "includeAll": false,
         "label": "Enterprise",
         "name": "enterprise",
@@ -432,7 +732,6 @@
       },
       {
         "current": {
-          "selected": false,
           "text": "Paris",
           "value": "Paris"
         },
@@ -441,7 +740,6 @@
           "uid": "${DS_POSTGRESQL}"
         },
         "definition": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
-        "hide": 0,
         "includeAll": false,
         "label": "Site",
         "name": "site",
@@ -503,6 +801,5 @@
   "timezone": "browser",
   "title": "Operator Dashboard 2",
   "uid": "operator-dashboard-2",
-  "version": 1,
   "weekStart": ""
 }
