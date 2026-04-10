@@ -293,6 +293,24 @@ Run `./export-dashboard.sh --help` for all options.
 
 ## Changelog
 
+## v1.4.0 (2026-04-10)
+
+### Features
+- add CFO margin report and update dashboards (#1)
+- add PR validation CI with builder dry-run tests
+- add PR test command auto-comment workflow
+- simplify release workflow to staging-only
+- add --branch flag, remove --dev from install.sh
+
+### Fixes
+- use HOME for branch temp dir to work with colima/docker mounts
+
+### Other
+- docs: add development workflow to CONTRIBUTING.md
+- docs: update README with branch workflow and --branch flag
+
+**Full Changelog**: [`v1.3.15...v1.4.0`](https://github.com/united-manufacturing-hub/umh-factory-demo/compare/v1.3.15...v1.4.0)
+
 ## v1.3.15 (2026-03-09)
 
 ### Other
