@@ -212,6 +212,32 @@ jobs:
 
             echo "❌ Template $name produced no output (neither direct nor variants)"
             ERRORS=$((ERRORS + 1))
+
+            # Check if the template is referenced in builder-generate.sh at all
+            if ! grep -q "$name" scripts/builder-generate.sh; then
+              echo ""
+              echo "   ⚠ '$name' is not referenced in scripts/builder-generate.sh"
+              echo "   To fix, add one of these lines to builder-generate.sh:"
+              echo ""
+              # Check if template has placeholders that need substitution
+              if grep -qE '__ENTERPRISE__|__SITE__|__AREA__' "templates/dashboards/$name"; then
+                PLACEHOLDERS=$(grep -oE '__[A-Z_]+__' "templates/dashboards/$name" | sort -u | tr '\n' ' ')
+                echo "   # Template uses placeholders: $PLACEHOLDERS"
+                echo "   sed \\"
+                grep -oE '__[A-Z_]+__' "templates/dashboards/$name" | sort -u | while read -r ph; do
+                  case "$ph" in
+                    __ENTERPRISE__) echo "       -e \"s|__ENTERPRISE__|\${LOCATION_0}|g\" \\" ;;
+                    __SITE__)       echo "       -e \"s|__SITE__|\${LOCATION_1}|g\" \\" ;;
+                    __AREA__)       echo "       -e \"s|__AREA__|shopfloor|g\" \\" ;;
+                  esac
+                done
+                echo "       \"\$TEMPLATES_DIR/templates/dashboards/$name\" \\"
+                echo "       > \"\$WORK_DIR/dashboards/$name\""
+              else
+                echo "   cp \"\$TEMPLATES_DIR/templates/dashboards/$name\" \"\$WORK_DIR/dashboards/$name\""
+              fi
+              echo ""
+            fi
           done
 
           OUTPUT_COUNT=$(ls -1 /workspace/dashboards/*.json 2>/dev/null | wc -l)
