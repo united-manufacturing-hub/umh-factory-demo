@@ -195,6 +195,153 @@ else
 fi
 
 # ============================================================
+# Step 2b: Create alert rules via Grafana ruler API
+# ============================================================
+echo ""
+if [ "$NO_GRAFANA" = "true" ] || [ "$NO_HISTORIAN" = "true" ]; then
+    echo -e "${BLUE}Step 2b: Skipping alert rule creation (--no-grafana or --no-historian)${NC}"
+elif wait_for_grafana; then
+    echo -e "${BLUE}Step 2b: Creating alert rules...${NC}"
+    python3 - <<'PYEOF'
+import json, urllib.request, urllib.error, base64, sys, os
+import yaml
+
+GRAFANA = "http://grafana:3000"
+AUTH = base64.b64encode(b"admin:admin").decode()
+HEADERS = {"Content-Type": "application/json", "Authorization": f"Basic {AUTH}"}
+
+def api(method, path, data=None):
+    req = urllib.request.Request(
+        f"{GRAFANA}{path}",
+        data=json.dumps(data).encode() if data else None,
+        headers=HEADERS,
+        method=method
+    )
+    try:
+        with urllib.request.urlopen(req) as r:
+            body = r.read()
+            return json.loads(body) if body.strip() else {}
+    except urllib.error.HTTPError as e:
+        raise Exception(f"{e.status}: {e.read().decode()}")
+
+# Get or create Alerts folder
+try:
+    folders = api("GET", "/api/folders")
+    folder_uid = next((f["uid"] for f in folders if f["title"] == "Alerts"), None)
+    if not folder_uid:
+        folder_uid = api("POST", "/api/folders", {"title": "Alerts"})["uid"]
+except Exception as e:
+    print(f"  Error: Could not get/create Alerts folder: {e}", file=sys.stderr)
+    sys.exit(1)
+
+rules_file = "/workspace/alert-rules/maintenance.yaml"
+
+try:
+    with open(rules_file) as f:
+        config = yaml.safe_load(f)
+except Exception as e:
+    print(f"  Error: Could not read {rules_file}: {e}", file=sys.stderr)
+    sys.exit(1)
+
+groups = config.get("groups", [])
+success = 0
+for group in groups:
+    try:
+        api("POST", f"/api/ruler/grafana/api/v1/rules/{folder_uid}", group)
+        success += 1
+    except Exception as e:
+        print(f"  Warning: Failed to create rule group '{group.get('name', '?')}': {e}", file=sys.stderr)
+
+print(f"  \u2713 Created {success}/{len(groups)} alert rule groups")
+PYEOF
+else
+    echo -e "${YELLOW}  Warning: Grafana not responding, skipping alert rule creation${NC}"
+fi
+
+# ============================================================
+# Step 2c: Configure notification contact points and routing
+# ============================================================
+echo ""
+if [ "$NO_GRAFANA" = "true" ]; then
+    echo -e "${BLUE}Step 2c: Skipping notification config (--no-grafana)${NC}"
+elif wait_for_grafana; then
+    echo -e "${BLUE}Step 2c: Configuring notification contact points and routing...${NC}"
+    python3 - <<'PYEOF'
+import json, urllib.request, urllib.error, base64, sys, os
+import yaml
+
+GRAFANA = "http://grafana:3000"
+AUTH = base64.b64encode(b"admin:admin").decode()
+HEADERS = {"Content-Type": "application/json", "Authorization": f"Basic {AUTH}"}
+HEADERS_NOPROV = {**HEADERS, "X-Disable-Provenance": "true"}
+
+def api(method, path, data=None, headers=None):
+    req = urllib.request.Request(
+        f"{GRAFANA}{path}",
+        data=json.dumps(data).encode() if data else None,
+        headers=headers or HEADERS,
+        method=method
+    )
+    try:
+        with urllib.request.urlopen(req) as r:
+            body = r.read()
+            return json.loads(body) if body.strip() else {}
+    except urllib.error.HTTPError as e:
+        raise Exception(f"{e.status}: {e.read().decode()}")
+
+templates_dir = os.environ.get("TEMPLATES_DIR", "")
+notif_file = f"{templates_dir}/templates/alert-rules/notification-config.yaml"
+
+try:
+    with open(notif_file) as f:
+        config = yaml.safe_load(f)
+except Exception as e:
+    print(f"  Warning: Could not read {notif_file}: {e}", file=sys.stderr)
+    sys.exit(0)
+
+# Create contact points (skip if name already exists)
+try:
+    existing_names = {cp["name"] for cp in api("GET", "/api/v1/provisioning/contact-points", headers=HEADERS_NOPROV)}
+except Exception as e:
+    print(f"  Warning: Could not fetch existing contact points: {e}", file=sys.stderr)
+    sys.exit(0)
+
+cp_success = 0
+cp_skipped = 0
+for cp in config.get("contact_points", []):
+    if cp["name"] in existing_names:
+        cp_skipped += 1
+        continue
+    try:
+        api("POST", "/api/v1/provisioning/contact-points", {
+            "name": cp["name"],
+            "type": cp["type"],
+            "settings": cp.get("settings", {}),
+            "disableResolveMessage": False,
+        }, headers=HEADERS_NOPROV)
+        cp_success += 1
+    except Exception as e:
+        print(f"  Warning: Failed to create contact point '{cp['name']}': {e}", file=sys.stderr)
+
+print(f"  \u2713 Contact points: {cp_success} created, {cp_skipped} already existed")
+
+# Set notification routing policy
+policy = config.get("policy")
+if not policy:
+    print("  Warning: No 'policy' key found in notification-config.yaml", file=sys.stderr)
+    sys.exit(0)
+
+try:
+    api("PUT", "/api/v1/provisioning/policies", policy, headers=HEADERS_NOPROV)
+    print(f"  \u2713 Notification policy updated")
+except Exception as e:
+    print(f"  Warning: Failed to update notification policy: {e}", file=sys.stderr)
+PYEOF
+else
+    echo -e "${YELLOW}  Warning: Grafana not responding, skipping notification config${NC}"
+fi
+
+# ============================================================
 # Step 3: Create SQL views (needs asset table from UMH Core)
 # ============================================================
 echo ""
@@ -291,6 +438,10 @@ echo -e "${GREEN}  ✓ Removed sql/ (already applied to database)${NC}"
 # Remove dashboards dir (already imported to Grafana via API)
 rm -rf "$WORK_DIR/dashboards/"
 echo -e "${GREEN}  ✓ Removed dashboards/ (already imported to Grafana)${NC}"
+
+# Remove alert-rules dir (already imported to Grafana via API)
+rm -rf "$WORK_DIR/alert-rules/"
+echo -e "${GREEN}  ✓ Removed alert-rules/ (already imported to Grafana)${NC}"
 
 # Remove factory-setup.yaml (intermediate config)
 rm -f "$WORK_DIR/factory-setup.yaml"

@@ -1,0 +1,188 @@
+# Alert rule definitions — ruler API format
+# Single source of truth. Read by builder-post-init.sh and posted directly to
+# the Grafana ruler API (/api/ruler/grafana/api/v1/rules/{folder_uid}).
+#
+# Field names follow the ruler API convention (snake_case):
+#   no_data_state, exec_err_state, grafana_alert, keep_firing_for, etc.
+# Do NOT add apiVersion/disableProvenance — those are file-provisioning fields.
+
+groups:
+  - name: "State Alerts"
+    interval: "30s"
+    rules:
+      - grafana_alert:
+          uid: "maint-machine-fault-v1"
+          title: "Machine Fault — Unresolved"
+          condition: "C"
+          no_data_state: "OK"
+          exec_err_state: "Error"
+          missing_series_evals_to_resolve: 1
+          data:
+            - refId: "A"
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: "df9o2whw2o7wgb"
+              model:
+                editorMode: code
+                format: table
+                refId: "A"
+                rawSql: |
+                  SELECT
+                    a.line,
+                    a.workcell,
+                    COUNT(*) AS value
+                  FROM machine_stops ms
+                  JOIN asset a ON a.id = ms.asset_id
+                  JOIN LATERAL (
+                    SELECT value FROM tag_string
+                    WHERE asset_id = ms.asset_id AND name = 'state'
+                    ORDER BY timestamp DESC LIMIT 1
+                  ) cs ON true
+                  WHERE ms.end_time IS NULL
+                    AND ms.start_time < NOW() - INTERVAL '15 seconds'
+                    AND cs.value IN ('STOPPED', 'FAULT')
+                    AND a.enterprise = '__ENTERPRISE__'
+                    AND a.site = '__SITE__'
+                  GROUP BY a.line, a.workcell
+            - refId: "B"
+              relativeTimeRange:
+                from: 0
+                to: 0
+              datasourceUid: "-100"
+              model:
+                refId: "B"
+                type: reduce
+                expression: "A"
+                reducer: last
+                settings:
+                  mode: replaceNN
+                  replaceWithValue: 0
+                datasource:
+                  type: __expr__
+                  uid: "-100"
+            - refId: "C"
+              relativeTimeRange:
+                from: 0
+                to: 0
+              datasourceUid: "-100"
+              model:
+                refId: "C"
+                type: threshold
+                expression: "B"
+                conditions:
+                  - evaluator:
+                      type: gt
+                      params: [0]
+                datasource:
+                  type: __expr__
+                  uid: "-100"
+        for: "0s"
+        keep_firing_for: "0s"
+        labels:
+          domain: maintenance
+        annotations:
+          summary: "Unresolved stop on {{ $labels.workcell }} ({{ $labels.line }})"
+          description: "Machine has been in STOPPED or FAULT state for over 15 seconds with no resolution. Investigate on-site or classify the stop reason to resolve this alert."
+          runbook_url: "http://localhost:8080/d/operator-dashboard?var-line={{ $labels.line }}&var-workcell={{ $labels.workcell }}"
+
+  - name: "Condition Alerts"
+    interval: "30s"
+    rules:
+      - grafana_alert:
+          uid: "maint-process-param-v1"
+          title: "Process Parameter Out of Range"
+          condition: "C"
+          no_data_state: "OK"
+          exec_err_state: "Error"
+          missing_series_evals_to_resolve: 1
+          data:
+            - refId: "A"
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: "df9o2whw2o7wgb"
+              model:
+                editorMode: code
+                format: table
+                refId: "A"
+                rawSql: |
+                  WITH baseline AS (
+                    SELECT
+                      s.asset_id,
+                      s.name,
+                      SUM(s.sum_value) / NULLIF(SUM(s.sample_count), 0) AS baseline_mean,
+                      STDDEV_POP(s.avg_value)                            AS baseline_stddev,
+                      SUM(s.sample_count)                                AS total_samples
+                    FROM cagg_tag_stats_hourly s
+                    WHERE s.bucket >= NOW() - INTERVAL '24 hours' - INTERVAL '5 minutes'
+                      AND s.bucket <  NOW() - INTERVAL '5 minutes'
+                    GROUP BY s.asset_id, s.name
+                    HAVING SUM(s.sample_count) >= 500
+                  ),
+                  current_val AS (
+                    SELECT
+                      t.asset_id,
+                      t.name,
+                      AVG(t.value) AS current_value,
+                      COUNT(*)     AS sample_count
+                    FROM tag t
+                    WHERE t.timestamp >= NOW() - INTERVAL '5 minutes'
+                    GROUP BY t.asset_id, t.name
+                    HAVING COUNT(*) >= 10
+                  )
+                  SELECT
+                    a.line,
+                    a.workcell,
+                    cv.name AS tag_name,
+                    ROUND(CAST(
+                      (cv.current_value - b.baseline_mean) / NULLIF(b.baseline_stddev, 0)
+                    AS NUMERIC), 2) AS value
+                  FROM current_val cv
+                  JOIN baseline b ON b.asset_id = cv.asset_id AND b.name = cv.name
+                  JOIN asset    a ON a.id = cv.asset_id
+                  WHERE b.baseline_stddev > 0
+                    AND (cv.current_value - b.baseline_mean) / NULLIF(b.baseline_stddev, 0) > 3.5
+                    AND cv.name ~ '(_c|_bar|_kpa|_l_min|_m3_h|_kw|_kwh|_w|_a|_ka|_v|_rpm|_mm_s|_kn)$'
+                    AND a.enterprise = '__ENTERPRISE__'
+                    AND a.site = '__SITE__'
+            - refId: "B"
+              relativeTimeRange:
+                from: 0
+                to: 0
+              datasourceUid: "-100"
+              model:
+                refId: "B"
+                type: reduce
+                expression: "A"
+                reducer: last
+                settings:
+                  mode: replaceNN
+                  replaceWithValue: 0
+                datasource:
+                  type: __expr__
+                  uid: "-100"
+            - refId: "C"
+              relativeTimeRange:
+                from: 0
+                to: 0
+              datasourceUid: "-100"
+              model:
+                refId: "C"
+                type: threshold
+                expression: "B"
+                conditions:
+                  - evaluator:
+                      type: gt
+                      params: [3.5]
+                datasource:
+                  type: __expr__
+                  uid: "-100"
+        for: "0s"
+        keep_firing_for: "0s"
+        labels:
+          domain: maintenance
+        annotations:
+          summary: "Process parameter out of range: {{ $labels.tag_name }} on {{ $labels.workcell }}"
+          description: "Tag '{{ $labels.tag_name }}' on {{ $labels.workcell }} ({{ $labels.line }}) has deviated more than 3.5 standard deviations from its 24-hour baseline. Possible quality or equipment issue."
+          runbook_url: "http://localhost:8080/d/operator-dashboard?var-line={{ $labels.line }}&var-workcell={{ $labels.workcell }}"
