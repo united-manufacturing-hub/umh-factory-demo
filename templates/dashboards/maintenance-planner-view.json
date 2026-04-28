@@ -1,0 +1,1005 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 22,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 20,
+      "panels": [],
+      "title": "Reliability KPIs",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Mean Time Between Failures: (period length \u2212 downtime) \u00f7 count. ",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "noValue": "\u2014",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 60
+              },
+              {
+                "color": "yellow",
+                "value": 120
+              },
+              {
+                "color": "green",
+                "value": 480
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 0,
+        "y": 1
+      },
+      "id": 21,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH machine_count AS (\n  SELECT GREATEST(COUNT(DISTINCT ms.asset_id), 1) AS cnt\n  FROM machine_stops ms\n  JOIN asset a ON a.id = ms.asset_id\n  JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND ms.start_time >= $__timeFrom()::timestamptz\n    AND ms.start_time <  $__timeTo()::timestamptz\n    AND sr.category = 'Unplanned'\n),\nstats AS (\n  SELECT\n    COUNT(*) AS fault_count,\n    COALESCE(SUM(EXTRACT(EPOCH FROM (\n      LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n      - ms.start_time\n    )) / 60.0), 0) AS fault_downtime_min\n  FROM machine_stops ms\n  JOIN asset a ON a.id = ms.asset_id\n  JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND ms.start_time >= $__timeFrom()::timestamptz\n    AND ms.start_time <  $__timeTo()::timestamptz\n    AND sr.category = 'Unplanned'\n)\nSELECT ROUND(\n  (\n    (mc.cnt * EXTRACT(EPOCH FROM ($__timeTo()::timestamptz - $__timeFrom()::timestamptz)) / 60.0 - s.fault_downtime_min)\n    / NULLIF(s.fault_count, 0)\n  )::numeric\n, 1) AS \"MTBF\"\nFROM stats s, machine_count mc",
+          "refId": "A"
+        }
+      ],
+      "title": "MTBF",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Mean Time To Repair: average duration of resolved fault stops.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "noValue": "\u2014",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 30
+              },
+              {
+                "color": "orange",
+                "value": 60
+              },
+              {
+                "color": "red",
+                "value": 120
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 4,
+        "y": 1
+      },
+      "id": 22,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ROUND(\n  (AVG(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)) / 60.0))::numeric\n, 1) AS \"MTTR\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time >= $__timeFrom()::timestamptz\n  AND ms.start_time <  $__timeTo()::timestamptz\n  AND ms.end_time IS NOT NULL\n  AND sr.category = 'Unplanned'",
+          "refId": "A"
+        }
+      ],
+      "title": "MTTR",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Total FAULT stops in the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "orange",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 8,
+        "y": 1
+      },
+      "id": 23,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COUNT(*) AS \"Fault Stops\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time >= $__timeFrom()::timestamptz\n  AND ms.start_time <  $__timeTo()::timestamptz\n  AND sr.category = 'Unplanned'",
+          "refId": "A"
+        }
+      ],
+      "title": "Number of Stops",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Total cumulative time lost to FAULT stops in the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "yellow",
+                "value": 120
+              },
+              {
+                "color": "orange",
+                "value": 480
+              },
+              {
+                "color": "red",
+                "value": 1440
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 1
+      },
+      "id": 24,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(ROUND(\n  (SUM(EXTRACT(EPOCH FROM (\n    LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n    - ms.start_time\n  )) / 60.0))::numeric\n, 1), 0) AS \"Total Fault Downtime\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time >= $__timeFrom()::timestamptz\n  AND ms.start_time <  $__timeTo()::timestamptz\n  AND sr.category = 'Unplanned'",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Downtime",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Total time in planned MAINTENANCE stops in the selected time range.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "blue",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "m"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 1
+      },
+      "id": 25,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(ROUND(\n  (SUM(EXTRACT(EPOCH FROM (\n    LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n    - ms.start_time\n  )) / 60.0))::numeric\n, 1), 0) AS \"Planned Maint Time\"\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time >= $__timeFrom()::timestamptz\n  AND ms.start_time <  $__timeTo()::timestamptz\n  AND sr.category = 'Planned'",
+          "refId": "A"
+        }
+      ],
+      "title": "Planned Maintenance Time",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Planned Maintenance Percentage: planned downtime \u00f7 (planned + unplanned downtime). Target \u2265 85%.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "\u2014"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "noValue": "\u2014",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 50
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "green",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "id": 26,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "last"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH totals AS (\n  SELECT\n    COALESCE(SUM(EXTRACT(EPOCH FROM (\n      LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n      - ms.start_time\n    )) / 60.0) FILTER (WHERE sr.category = 'Unplanned'), 0) AS unplanned_min,\n    COALESCE(SUM(EXTRACT(EPOCH FROM (\n      LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n      - ms.start_time\n    )) / 60.0) FILTER (WHERE sr.category = 'Planned'), 0) AS planned_min\n  FROM machine_stops ms\n  JOIN asset a ON a.id = ms.asset_id\n  JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND ms.start_time >= $__timeFrom()::timestamptz\n    AND ms.start_time <  $__timeTo()::timestamptz\n)\nSELECT CASE\n  WHEN planned_min + unplanned_min = 0 THEN NULL\n  ELSE ROUND((planned_min / (planned_min + unplanned_min) * 100)::numeric, 1)\nEND AS \"Planned Maintenance %\"\nFROM totals",
+          "refId": "A"
+        }
+      ],
+      "title": "Planned Maintenance %",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 30,
+      "panels": [],
+      "title": "Machine Reliability Summary",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Per-machine reliability breakdown for the selected time range. Sorted by fault stop count \u2014 highest impact machines first.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true,
+            "footer": {
+              "reducers": []
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Stops"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 100
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "MTBF"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              },
+              {
+                "id": "unit",
+                "value": "m"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-RdYlGr"
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "MTTR"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 110
+              },
+              {
+                "id": "unit",
+                "value": "m"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Downtime"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              },
+              {
+                "id": "unit",
+                "value": "m"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "continuous-GrYlRd"
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Planned Maintenance %"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": 0 },
+                    { "color": "orange", "value": 50 },
+                    { "color": "yellow", "value": 70 },
+                    { "color": "green", "value": 85 }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "thresholds" }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Machine"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": false,
+                    "title": "Open in Operator Dashboard",
+                    "url": "/d/operator-dashboard?var-enterprise=${enterprise}&var-site=${site}&var-line=${__data.fields.Line}&var-workcell=${__data.fields.Machine}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Line"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Days Since Last Fault"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 200
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": 0 },
+                    { "color": "orange", "value": 3 },
+                    { "color": "yellow", "value": 7 },
+                    { "color": "green", "value": 14 }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": { "mode": "thresholds" }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-text" }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 31,
+      "options": {
+        "cellHeight": "sm",
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Stops"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH base AS (\n  SELECT\n    a.line     AS \"Line\",\n    a.workcell AS \"Machine\",\n    COUNT(*) FILTER (WHERE sr.category = 'Unplanned') AS stops,\n    ROUND(\n      (\n        (EXTRACT(EPOCH FROM ($__timeTo()::timestamptz - $__timeFrom()::timestamptz)) / 60.0\n         - COALESCE(SUM(EXTRACT(EPOCH FROM (\n             LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n             - ms.start_time\n           )) / 60.0) FILTER (WHERE sr.category = 'Unplanned'), 0))\n        / NULLIF(COUNT(*) FILTER (WHERE sr.category = 'Unplanned'), 0)\n      )::numeric\n    , 1) AS mtbf,\n    ROUND(\n      (AVG(EXTRACT(EPOCH FROM (ms.end_time - ms.start_time)) / 60.0)\n       FILTER (WHERE sr.category = 'Unplanned' AND ms.end_time IS NOT NULL)\n      )::numeric\n    , 1) AS mttr,\n    COALESCE(ROUND(\n      (SUM(EXTRACT(EPOCH FROM (\n        LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n        - ms.start_time\n      )) / 60.0) FILTER (WHERE sr.category = 'Unplanned')\n      )::numeric\n    , 1), 0) AS downtime,\n    COALESCE(ROUND(\n      (SUM(EXTRACT(EPOCH FROM (\n        LEAST(COALESCE(ms.end_time, $__timeTo()::timestamptz), $__timeTo()::timestamptz)\n        - ms.start_time\n      )) / 60.0) FILTER (WHERE sr.category = 'Planned')\n      )::numeric\n    , 1), 0) AS planned_maint,\n    MAX(ms.start_time) FILTER (WHERE sr.category = 'Unplanned') AS last_fault\n  FROM machine_stops ms\n  JOIN asset a ON a.id = ms.asset_id\n  JOIN stop_reasons sr ON sr.id = ms.stop_reason_id\n  WHERE a.enterprise = '${enterprise}'\n    AND a.site = '${site}'\n    AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n    AND ms.start_time >= $__timeFrom()::timestamptz\n    AND ms.start_time <  $__timeTo()::timestamptz\n  GROUP BY a.line, a.workcell\n)\nSELECT\n  \"Line\",\n  \"Machine\",\n  stops         AS \"Stops\",\n  mtbf          AS \"MTBF\",\n  mttr          AS \"MTTR\",\n  downtime      AS \"Downtime\",\n  CASE\n    WHEN planned_maint + downtime = 0 THEN NULL\n    ELSE ROUND((planned_maint / (planned_maint + downtime) * 100)::numeric, 1)\n  END AS \"Planned Maintenance %\",\n  ROUND((EXTRACT(EPOCH FROM ($__timeTo()::timestamptz - last_fault)) / 86400.0)::numeric, 1) AS \"Days Since Last Fault\"\nFROM base\nORDER BY stops DESC, \"Machine\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Machine Reliability Summary",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 40,
+      "panels": [],
+      "title": "Stop Frequency by Machine",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Daily fault stop count per machine. Each dot = faults that day. A rising trend indicates a degrading machine.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "showValues": false,
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 41,
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  date_trunc('day', ms.start_time) AS \"time\",\n  a.workcell AS metric,\n  COUNT(*) AS value\nFROM machine_stops ms\nJOIN asset a ON a.id = ms.asset_id\nJOIN stop_reasons sr ON sr.id = ms.stop_reason_id\nWHERE a.enterprise = '${enterprise}'\n  AND a.site = '${site}'\n  AND ('${line:raw}' = 'All' OR a.line = '${line:raw}')\n  AND ms.start_time >= $__timeFrom()::timestamptz\n  AND ms.start_time <  $__timeTo()::timestamptz\n  AND sr.category = 'Unplanned'\nGROUP BY 1, 2\nORDER BY 1, 2",
+          "refId": "A"
+        }
+      ],
+      "title": "Daily Stop Frequency by Machine",
+      "transformations": [],
+      "type": "timeseries"
+    }
+  ],
+  "preload": false,
+  "refresh": "5m",
+  "schemaVersion": 42,
+  "tags": [
+    "maintenance",
+    "planner",
+    "mtbf",
+    "mttr"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "label": "Data Source",
+        "name": "DS_POSTGRESQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "includeAll": false,
+        "label": "Enterprise",
+        "name": "enterprise",
+        "options": [],
+        "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "includeAll": false,
+        "label": "Site",
+        "name": "site",
+        "options": [],
+        "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "All",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
+        "includeAll": true,
+        "label": "Line",
+        "name": "line",
+        "options": [],
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Maintenance Planner View",
+  "uid": "maint-planner-view-v1",
+  "version": 2,
+  "weekStart": ""
+}

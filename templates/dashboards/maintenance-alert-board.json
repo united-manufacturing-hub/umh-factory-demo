@@ -1,0 +1,248 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 32,
+      "options": {
+        "alertInstanceLabelFilter": "domain=\"maintenance\",line=\"$line\"",
+        "alertName": "",
+        "dashboardAlerts": false,
+        "groupBy": [
+          "alertname"
+        ],
+        "groupMode": "custom",
+        "maxItems": 100,
+        "showInactiveAlerts": false,
+        "sortOrder": 5,
+        "stateFilter": {
+          "error": false,
+          "firing": true,
+          "noData": false,
+          "normal": false,
+          "pending": false,
+          "recovering": false
+        },
+        "viewMode": "list"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "Alert Overview",
+      "type": "alertlist"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 40,
+      "panels": [],
+      "title": "Process Param Anomaly Detail",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "description": "Actual values vs baseline mean ± 2.5σ. Red dashed lines = alert threshold.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 0,
+            "lineWidth": 2,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Alert Threshold"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 1
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "dash": [4, 4],
+                  "fill": "dash"
+                }
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 0
+              },
+              {
+                "id": "custom.spanNulls",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "id": 41,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "repeat": "anomalous_tag",
+      "repeatDirection": "v",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT time, value, metric FROM (\n  -- Actual tag values per workcell\n  SELECT\n    t.timestamp AS time,\n    t.value,\n    a.workcell AS metric\n  FROM tag t\n  JOIN asset a ON a.id = t.asset_id\n  WHERE t.timestamp BETWEEN $__timeFrom()::timestamptz AND $__timeTo()::timestamptz\n    AND t.name = ${anomalous_tag:sqlstring}\n    AND a.line = '${line}'\n\n  UNION ALL\n\n  -- Alert threshold line (z-score = 3.5)\n  SELECT times.t, stats.threshold, 'Alert Threshold'\n  FROM (VALUES ($__timeFrom()::timestamptz), ($__timeTo()::timestamptz)) AS times(t),\n       (SELECT SUM(sum_value)/SUM(sample_count) + 3.5 * STDDEV_POP(avg_value) AS threshold\n        FROM cagg_tag_stats_hourly c\n        JOIN asset a ON a.id = c.asset_id\n        WHERE c.name = ${anomalous_tag:sqlstring}\n          AND a.line = '${line}'\n          AND c.bucket >= NOW() - INTERVAL '24 hours'\n          AND c.bucket < NOW() - INTERVAL '5 minutes') AS stats\n) combined\nORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "${anomalous_tag}",
+      "transformations": [],
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "hide": 2,
+        "name": "DS_POSTGRESQL",
+        "options": [],
+        "query": "grafana-postgresql-datasource",
+        "refresh": 1,
+        "type": "datasource"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "includeAll": false,
+        "name": "enterprise",
+        "options": [],
+        "query": "SELECT DISTINCT enterprise FROM asset WHERE enterprise != '' ORDER BY enterprise",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "includeAll": false,
+        "name": "site",
+        "options": [],
+        "query": "SELECT DISTINCT site FROM asset WHERE enterprise = '${enterprise}' AND site != '' ORDER BY site",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "",
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
+        "includeAll": false,
+        "label": "Line",
+        "name": "line",
+        "options": [],
+        "query": "SELECT DISTINCT line FROM asset WHERE enterprise = '${enterprise}' AND site = '${site}' AND line != '' AND workcell != '' ORDER BY line",
+        "refresh": 1,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT t.name AS tag_name\nFROM tag t\nJOIN asset a ON a.id = t.asset_id\nWHERE a.workcell != ''\n  AND a.line = '${line}'\n  AND t.timestamp >= NOW() - INTERVAL '24 hours'\n  AND (\n    t.name LIKE '%_temp_c' OR t.name LIKE '%_bar'\n    OR t.name LIKE '%_kpa' OR t.name LIKE '%_l_min'\n    OR t.name LIKE '%_m3_h' OR t.name LIKE '%_kw'\n    OR t.name LIKE '%_kwh' OR t.name LIKE '%_a'\n    OR t.name LIKE '%_rpm' OR t.name LIKE '%_mm_s'\n    OR t.name LIKE '%_nm'\n  )\n  AND t.name NOT IN (\n    'cycle_count','good_count','scrap_count','blocked_by_buffer',\n    'reject_count','defect_count','expulsion_count','spatter_count'\n  )\n  AND t.name NOT LIKE '%_position_mm'\n  AND t.name NOT IN ('tcp_x','tcp_y','tcp_z','cycle_time_ms','travel_speed_mm_s','ram_speed_mm_s')\nORDER BY tag_name",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Process Parameters",
+        "multi": true,
+        "name": "anomalous_tag",
+        "options": [],
+        "query": "SELECT DISTINCT t.name AS tag_name\nFROM tag t\nJOIN asset a ON a.id = t.asset_id\nWHERE a.workcell != ''\n  AND a.line = '${line}'\n  AND t.timestamp >= NOW() - INTERVAL '24 hours'\n  AND (\n    t.name LIKE '%_temp_c' OR t.name LIKE '%_bar'\n    OR t.name LIKE '%_kpa' OR t.name LIKE '%_l_min'\n    OR t.name LIKE '%_m3_h' OR t.name LIKE '%_kw'\n    OR t.name LIKE '%_kwh' OR t.name LIKE '%_a'\n    OR t.name LIKE '%_rpm' OR t.name LIKE '%_mm_s'\n    OR t.name LIKE '%_nm'\n  )\n  AND t.name NOT IN (\n    'cycle_count','good_count','scrap_count','blocked_by_buffer',\n    'reject_count','defect_count','expulsion_count','spatter_count'\n  )\n  AND t.name NOT LIKE '%_position_mm'\n  AND t.name NOT IN ('tcp_x','tcp_y','tcp_z','cycle_time_ms','travel_speed_mm_s','ram_speed_mm_s')\nORDER BY tag_name",
+        "refresh": 2,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Maintenance Alert Board",
+  "uid": "maint-alert-board-v1",
+  "weekStart": ""
+}

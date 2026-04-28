@@ -7,3 +7,4 @@ dashboardRework/*.yaml
 dashboardRework/*.json
 temp/
 docs/superpowers/
+templates/dashboards/maintenance-alert-board-debug.json

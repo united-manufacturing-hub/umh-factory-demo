@@ -1,0 +1,38 @@
+# Notification contact points and routing policy for factory demo.
+# Read by builder-post-init.sh Step 2c and applied via Grafana Provisioning API.
+#
+# contact_points: list of Grafana contact point objects
+#   - name:     display name (must be unique in Grafana)
+#   - type:     grafana receiver type ("email" or "teams")
+#   - settings: type-specific settings map
+#
+# policy: notification routing policy (PUT /api/v1/provisioning/policies)
+#   Root receiver stays grafana-default-email.
+#   Two child routes both match label domain=maintenance:
+#     1. Email — On-Call  (continue: true so routing falls through to Teams)
+#     2. Teams — Maintenance
+
+contact_points:
+  - name: "Email — On-Call"
+    type: email
+    settings:
+      addresses: "k.mueller@demo-factory.com"
+
+  - name: "Teams — Maintenance"
+    type: teams
+    settings:
+      url: "https://outlook.office.com/webhook/7f3a9c2d-4b8e-0f2a-9e1c-2d5b8a3f6e9d@7f3a9c2d-4b8e-0f2a-9e1c-2d5b8a3f6e9d/IncomingWebhook/a3f8b2c9d4e5f6a7b8c9d0e1f2a3b4c5/6d2e9f4a-8c3b-0e7d-9f2a-1b4c8e3d7f2a"
+
+policy:
+  receiver: "grafana-default-email"
+  group_by:
+    - grafana_folder
+    - alertname
+  routes:
+    - receiver: "Email — On-Call"
+      object_matchers:
+        - ["domain", "=", "maintenance"]
+      continue: true
+    - receiver: "Teams — Maintenance"
+      object_matchers:
+        - ["domain", "=", "maintenance"]

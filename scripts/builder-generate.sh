@@ -401,6 +401,7 @@ else
     echo -e "${GREEN}  ✓ All services already present${NC}"
 fi
 
+
 # ============================================================
 # Step 5: Replace named volume with local volume
 # ============================================================
@@ -433,6 +434,7 @@ if [ "$NO_GRAFANA" != "true" ] && [ -d "$TEMPLATES_DIR/config/grafana-provisioni
     cp -r "$TEMPLATES_DIR/config/grafana-provisioning/"* "$WORK_DIR/grafana-provisioning/"
     echo -e "${GREEN}  ✓ Copied: grafana-provisioning/${NC}"
 fi
+
 
 # Copy nginx config from config/
 if [ "$NO_GRAFANA" != "true" ] && [ -f "$TEMPLATES_DIR/config/nginx.conf" ]; then
@@ -947,6 +949,23 @@ echo -e "${GREEN}    ✓ production-manager-view.json${NC}"
 
 cp "$TEMPLATES_DIR/templates/dashboards/andon-board.json" "$WORK_DIR/dashboards/andon-board.json"
 echo -e "${GREEN}    ✓ andon-board.json${NC}"
+
+cp "$TEMPLATES_DIR/templates/dashboards/maintenance-alert-board.json" "$WORK_DIR/dashboards/maintenance-alert-board.json"
+echo -e "${GREEN}    ✓ maintenance-alert-board.json${NC}"
+
+cp "$TEMPLATES_DIR/templates/dashboards/maintenance-planner-view.json" "$WORK_DIR/dashboards/maintenance-planner-view.json"
+echo -e "${GREEN}    ✓ maintenance-planner-view.json${NC}"
+
+# Process alert rule templates (substitutes __ENTERPRISE__ / __SITE__ same as dashboards)
+if [ "$NO_HISTORIAN" != "true" ] && [ -f "$TEMPLATES_DIR/templates/alert-rules/maintenance.yaml" ]; then
+    mkdir -p "$WORK_DIR/alert-rules"
+    sed \
+        -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
+        -e "s|__SITE__|${LOCATION_1}|g" \
+        "$TEMPLATES_DIR/templates/alert-rules/maintenance.yaml" \
+        > "$WORK_DIR/alert-rules/maintenance.yaml"
+    echo -e "${GREEN}    ✓ alert-rules/maintenance.yaml${NC}"
+fi
 
 sed \
     -e "s|__ENTERPRISE__|${LOCATION_0}|g" \
